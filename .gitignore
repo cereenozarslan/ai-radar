@@ -1,0 +1,17 @@
+# Ortam değişkenleri ve gizli anahtarlar
+.env
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Veritabanı ve üretilen veri
+data/*.db
+data/*.sqlite3
+chroma_data/
+
+# Editör
+.vscode/
