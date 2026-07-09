@@ -1,7 +1,14 @@
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
-from ai_radar.collectors.x_twitter import to_item_dict
+import ai_radar.collectors.x_twitter as x_twitter
+from ai_radar.collectors.x_twitter import (
+    build_query,
+    clamp_max_results,
+    collect,
+    engagement_score,
+    to_item_dict,
+)
 
 # Not: Bu testler gerçek bir X API isteği göndermez, tweepy nesnelerini
 # taklit eden basit SimpleNamespace'ler kullanır (network yok, maliyet yok).
@@ -35,3 +42,62 @@ def test_to_item_dict_handles_long_text_and_missing_user():
     assert item["title"].endswith("...")
     assert item["author"] is None
     assert item["published_at"] is None
+
+
+def test_build_query_wraps_multi_word_topic_in_quotes():
+    """Birden fazla kelimeli konular tam öbek (phrase) olarak aranmalı."""
+    query = build_query("Meta Muse")
+
+    assert '"Meta Muse"' in query
+    assert "-is:reply" in query
+    assert "-is:retweet" in query
+    assert "-has:cashtags" in query
+
+
+def test_build_query_leaves_single_word_topic_unquoted():
+    """Tek kelimelik konularda tırnak gerekmez."""
+    query = build_query("LLM")
+    assert query.startswith("LLM ")
+    assert '"' not in query
+
+
+def test_clamp_max_results_enforces_x_api_bounds():
+    """X'in recent search uç noktası 10-100 aralığı dışındaki değerleri reddediyor."""
+    assert clamp_max_results(5) == 10
+    assert clamp_max_results(500) == 100
+    assert clamp_max_results(50) == 50
+
+
+def test_engagement_score_weights_retweets_double():
+    """Retweet, beğeni/yanıt/alıntıdan 2 kat ağırlıklı sayılmalı."""
+    tweet = SimpleNamespace(public_metrics={
+        "like_count": 10, "retweet_count": 3, "reply_count": 1, "quote_count": 0,
+    })
+    assert engagement_score(tweet) == 10 + 3 * 2 + 1 + 0
+
+
+def test_engagement_score_handles_missing_metrics():
+    tweet = SimpleNamespace(public_metrics=None)
+    assert engagement_score(tweet) == 0
+
+
+def test_collect_sorts_by_engagement_and_applies_min_threshold(monkeypatch):
+    """collect(), düşük etkileşimli tweetleri eleyip kalanları etkileşime göre sıralamalı."""
+    def make_tweet(id_, likes):
+        return SimpleNamespace(
+            id=id_, text=f"tweet-{id_}", author_id=1,
+            created_at=None,
+            public_metrics={"like_count": likes, "retweet_count": 0, "reply_count": 0, "quote_count": 0},
+        )
+
+    fake_response = SimpleNamespace(
+        data=[make_tweet(1, likes=2), make_tweet(2, likes=50), make_tweet(3, likes=20)],
+        includes={"users": [SimpleNamespace(id=1, username="birkullanici")]},
+    )
+
+    monkeypatch.setattr(x_twitter, "search_recent", lambda query, max_results: fake_response)
+
+    items = collect(topic="Fable 5", min_engagement=5)
+
+    # id=1 (2 begeni) esik altinda kaldigi icin elenmeli
+    assert [item["title"] for item in items] == ["tweet-2", "tweet-3"]
