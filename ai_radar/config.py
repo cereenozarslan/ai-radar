@@ -17,5 +17,8 @@ class Config:
 
     DATABASE_PATH: Path = BASE_DIR / os.getenv("DATABASE_PATH", "data/ai_radar.db")
 
+    # X (Twitter) API - okuma/arama için bearer token (app-only auth) yeterli
+    X_BEARER_TOKEN: str | None = os.getenv("X_BEARER_TOKEN")
+
 
 config = Config()
