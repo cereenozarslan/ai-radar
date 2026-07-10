@@ -35,6 +35,7 @@ def test_parse_trending_extracts_repo_fields():
     assert first["url"] == "https://github.com/anthropics/claude-code"
     assert first["author"] == "anthropics"
     assert "yapay zeka" in first["content"]
+    assert first["image_url"] == "https://github.com/anthropics.png"
 
 
 def test_parse_trending_handles_missing_description():

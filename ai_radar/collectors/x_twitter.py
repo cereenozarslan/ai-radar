@@ -92,7 +92,7 @@ def search_recent(query: str, max_results: int = 10, start_time: str | None = No
         sort_order="relevancy",
         tweet_fields=["created_at", "author_id", "public_metrics"],
         expansions=["author_id"],
-        user_fields=["username"],
+        user_fields=["username", "profile_image_url"],
         **kwargs,
     )
 
@@ -107,6 +107,11 @@ def to_item_dict(tweet, users_by_id: dict) -> dict:
     title = tweet.text if len(tweet.text) <= 80 else tweet.text[:77] + "..."
     user = users_by_id.get(tweet.author_id)
 
+    image_url = None
+    if user and user.profile_image_url:
+        # X, küçük "_normal" (48x48) boyutunda döner; daha net görünmesi için büyütüyoruz
+        image_url = user.profile_image_url.replace("_normal", "_400x400")
+
     return {
         "source": "x_twitter",
         "title": title,
@@ -114,6 +119,7 @@ def to_item_dict(tweet, users_by_id: dict) -> dict:
         "content": tweet.text,
         "author": user.username if user else None,
         "published_at": tweet.created_at.isoformat() if tweet.created_at else None,
+        "image_url": image_url,
     }
 
 

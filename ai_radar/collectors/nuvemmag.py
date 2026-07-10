@@ -56,6 +56,8 @@ def parse_articles(html: str) -> list[dict]:
         excerpt = article.select_one(".uck-card--content > p")
         date_tag = article.select_one("span.date")
         author_tag = article.select_one(".entry_author a")
+        # Görsel lazy-load ile yükleniyor; gerçek adres src'de değil data-src'de
+        image_tag = article.select_one(".uck-card--image img")
 
         items.append({
             "source": "nuvemmag",
@@ -64,6 +66,7 @@ def parse_articles(html: str) -> list[dict]:
             "content": excerpt.get_text(strip=True) if excerpt else None,
             "author": author_tag.get_text(strip=True) if author_tag else None,
             "published_at": parse_relative_time(date_tag.get_text(strip=True)) if date_tag else None,
+            "image_url": image_tag.get("data-src") if image_tag else None,
         })
 
     return items

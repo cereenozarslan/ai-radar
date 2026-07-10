@@ -4,37 +4,63 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>AI-Radar</title>
+<script>
+  // Tema tercihini CSS'den önce uygula ki sayfa yanlış temayla "yanıp sönmesin" (FOUC).
+  (function () {
+    var saved = localStorage.getItem("ai-radar-theme");
+    if (saved) document.documentElement.setAttribute("data-theme", saved);
+  })();
+</script>
 <style>
   :root {
-    --bg: #eef0ea;
+    --bg: #eef1f5;
     --surface: #ffffff;
-    --surface-2: #f5f6f1;
-    --border: #d8dbd2;
-    --text: #1c2024;
-    --text-muted: #5b6168;
-    --accent: #c97f1e;
+    --surface-2: #f2f4f8;
+    --border: #d9dfe6;
+    --text: #16202c;
+    --text-muted: #5c6b7a;
+    --accent: #1e3f7a;
+    --accent-ink: #ffffff;
     --danger: #b3402f;
-    --news: #b85c28;
-    --gh: #6b5aa8;
-    --x: #4d5860;
+    --nuvemmag: #6f9a2c;
+    --github: #181717;
+    --x: #0a0a0a;
+    --shadow-sm: 0 1px 2px rgba(15, 25, 40, 0.06);
+    --shadow-md: 0 6px 22px rgba(15, 25, 40, 0.08);
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #0f1417;
-      --surface: #161d21;
-      --surface-2: #1c2429;
-      --border: #2a333a;
-      --text: #eae7e0;
-      --text-muted: #8b959c;
-      --accent: #f2a541;
-      --danger: #e07a63;
-      --news: #e08a4f;
-      --gh: #a496e0;
-      --x: #9aa5ad;
+      --bg: #0a0f1a;
+      --surface: #121a29;
+      --surface-2: #16202f;
+      --border: #253347;
+      --text: #e7ecf3;
+      --text-muted: #8b96a8;
+      --accent: #5b8def;
+      --accent-ink: #051022;
+      --danger: #e2806a;
+      --nuvemmag: #a3d95c;
+      --github: #d9dbe1;
+      --x: #f2f3f5;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+      --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45);
     }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0a0f1a; --surface: #121a29; --surface-2: #16202f; --border: #253347;
+    --text: #e7ecf3; --text-muted: #8b96a8; --accent: #5b8def; --accent-ink: #051022;
+    --danger: #e2806a; --nuvemmag: #a3d95c; --github: #d9dbe1; --x: #f2f3f5;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4); --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45);
+  }
+  :root[data-theme="light"] {
+    --bg: #eef1f5; --surface: #ffffff; --surface-2: #f2f4f8; --border: #d9dfe6;
+    --text: #16202c; --text-muted: #5c6b7a; --accent: #1e3f7a; --accent-ink: #ffffff;
+    --danger: #b3402f; --nuvemmag: #6f9a2c; --github: #181717; --x: #0a0a0a;
+    --shadow-sm: 0 1px 2px rgba(15, 25, 40, 0.06); --shadow-md: 0 6px 22px rgba(15, 25, 40, 0.08);
   }
 
   * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
 
   body {
     margin: 0;
@@ -42,160 +68,254 @@
     background: var(--bg);
     color: var(--text);
     font-family: -apple-system, "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+    line-height: 1.45;
   }
 
-  .mono {
-    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
-  }
+  .mono { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; }
+  a { color: inherit; }
+  svg { display: block; }
 
-  .page {
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 2.5rem 1.5rem 4rem;
-  }
-
-  .eyebrow {
-    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
-    font-size: 0.72rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--accent);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
-  }
-  .eyebrow::before {
-    content: "";
-    width: 7px; height: 7px; border-radius: 50%;
-    background: var(--accent);
-  }
-
-  h1 { font-size: clamp(1.4rem, 2.6vw, 1.9rem); margin: 0 0 1.25rem; text-wrap: balance; }
-
-  /* --- Arama bölümü --- */
-  form.search { display: flex; gap: 0.5rem; }
-
-  input[type="text"] {
-    flex: 1;
-    padding: 0.85rem 1.1rem;
-    font-size: 1rem;
-    border-radius: 10px;
-    border: 1px solid var(--border);
+  /* ---------- Üst bar ---------- */
+  header.top {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.85rem 1.5rem;
     background: var(--surface);
-    color: var(--text);
+    border-bottom: 1px solid var(--border);
   }
-  input[type="text"]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-
-  button {
-    padding: 0.85rem 1.4rem;
-    font-size: 0.95rem;
-    font-weight: 600;
-    border-radius: 10px;
-    border: none;
-    background: var(--accent);
-    color: #1c1200;
-    cursor: pointer;
+  .wordmark { display: flex; align-items: center; gap: 0.55rem; font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; }
+  .pulse { position: relative; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); flex: none; }
+  .pulse::after {
+    content: ""; position: absolute; inset: -5px; border-radius: 50%;
+    border: 1.5px solid var(--accent); animation: pulse-ring 2.4s ease-out infinite;
   }
-  button:disabled { opacity: 0.6; cursor: default; }
+  @keyframes pulse-ring { 0% { transform: scale(0.55); opacity: 0.9; } 100% { transform: scale(1.6); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .pulse::after { animation: none; display: none; } }
 
-  .hint { color: var(--text-muted); font-size: 0.82rem; margin-top: 0.7rem; }
+  .top-right { display: flex; align-items: center; gap: 0.9rem; }
+  .top-meta { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.76rem; color: var(--text-muted); }
 
-  .interpreted { display: none; flex-wrap: wrap; gap: 0.5rem; margin: 1.25rem 0; }
-  .chip {
-    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
-    font-size: 0.75rem;
-    padding: 0.3rem 0.7rem;
-    border-radius: 20px;
-    border: 1px solid var(--border);
-    background: var(--surface-2);
-    color: var(--text-muted);
+  .theme-toggle {
+    display: flex; align-items: center; gap: 0.3rem;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 20px;
+    padding: 0.25rem; cursor: pointer;
   }
+  .theme-toggle button {
+    border: none; background: transparent; border-radius: 16px;
+    width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted); cursor: pointer;
+  }
+  .theme-toggle button.active { background: var(--surface); color: var(--accent); box-shadow: var(--shadow-sm); }
 
-  .status { color: var(--text-muted); margin: 1rem 0; font-size: 0.9rem; }
+  /* ---------- Genel yerleşim ---------- */
+  .layout { display: flex; max-width: 1260px; margin: 0 auto; }
+
+  nav.sidebar {
+    position: sticky; top: 57px; align-self: flex-start;
+    display: flex; flex-direction: column; gap: 0.5rem;
+    padding: 1.5rem 0.75rem;
+    height: calc(100vh - 57px);
+  }
+  nav.sidebar a {
+    display: flex; align-items: center; justify-content: center;
+    width: 42px; height: 42px; border-radius: 12px;
+    background: var(--surface); border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm); text-decoration: none;
+    transition: transform 0.12s ease;
+  }
+  nav.sidebar a:hover { transform: translateY(-1px); }
+  @media (max-width: 900px) { nav.sidebar { display: none; } }
+
+  .page { flex: 1; min-width: 0; padding: 0 1.5rem 4rem; }
+
+  /* ---------- Arama alanı (hero) ---------- */
+  .hero { margin-top: 2.25rem; padding: 2rem 2rem 1.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-md); }
+  .eyebrow { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.6rem; }
+  h1 { font-size: clamp(1.35rem, 2.4vw, 1.7rem); font-weight: 700; letter-spacing: -0.015em; margin: 0 0 1.1rem; text-wrap: balance; }
+
+  form.search { display: flex; gap: 0.55rem; }
+  input[type="text"] {
+    flex: 1; padding: 0.8rem 1.05rem; font-size: 0.98rem; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text); box-shadow: var(--shadow-sm);
+  }
+  input[type="text"]:focus { outline: 2px solid var(--accent); outline-offset: 1px; background: var(--surface); }
+
+  button.primary {
+    padding: 0.8rem 1.35rem; font-size: 0.92rem; font-weight: 600; border-radius: 10px;
+    border: none; background: var(--accent); color: var(--accent-ink); cursor: pointer;
+    box-shadow: var(--shadow-sm); transition: filter 0.15s ease;
+  }
+  button.primary:hover:not(:disabled) { filter: brightness(1.12); }
+  button.primary:disabled { opacity: 0.6; cursor: default; }
+
+  .hint { color: var(--text-muted); font-size: 0.81rem; margin: 0.85rem 0 0; }
+
+  .interpreted { display: none; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.1rem; }
+  .chip { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.74rem; padding: 0.32rem 0.7rem; border-radius: 20px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted); }
+
+  .status { color: var(--text-muted); margin-top: 0.9rem; font-size: 0.88rem; }
   .status.error { color: var(--danger); }
 
-  .search-results { display: flex; flex-direction: column; gap: 0.7rem; margin-top: 1rem; }
+  .search-results { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem; }
+  .search-results .item { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; }
 
-  /* --- Genel kayıt görünümü --- */
-  section.browse { margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--border); }
+  /* ---------- Genel kayıt görünümü ---------- */
+  section.browse { margin: 2.5rem 0 3.5rem; padding: 1.75rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 16px; }
+  .stat-row { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+  .stat-chip { display: flex; align-items: center; gap: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 0.45rem 0.75rem; box-shadow: var(--shadow-sm); }
+  .stat-chip .n { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-weight: 700; }
+  .stat-chip .lbl { font-size: 0.77rem; color: var(--text-muted); }
 
-  .stat-row { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 1.25rem; }
-  .stat-chip {
-    display: flex; align-items: baseline; gap: 0.4rem;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 7px; padding: 0.5rem 0.8rem;
+  .badge {
+    display: flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; border-radius: 6px; flex: none;
   }
-  .stat-chip .n { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-weight: 600; }
-  .stat-chip .lbl { font-size: 0.78rem; color: var(--text-muted); }
-  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .badge svg { width: 12px; height: 12px; }
+  .badge.sm { width: 16px; height: 16px; border-radius: 4px; }
+  .badge.sm svg { width: 9px; height: 9px; }
 
-  .columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.1rem; }
-  @media (max-width: 880px) { .columns { grid-template-columns: 1fr; } }
+  .columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 1.1rem; }
+  @media (max-width: 900px) { .columns { grid-template-columns: 1fr; } }
 
-  .col { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-  .col-head {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0.8rem 1rem; background: var(--surface-2); border-bottom: 1px solid var(--border);
+  .col { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm); scroll-margin-top: 72px; }
+  .col-head { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
+  .col-head .name { display: flex; align-items: center; gap: 0.55rem; font-weight: 700; font-size: 0.89rem; }
+  .col-head .count { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.76rem; color: var(--text-muted); }
+
+  .item-list { max-height: 560px; overflow-y: auto; }
+  .item {
+    padding: 0.65rem 1rem 0.65rem 0.85rem; border-bottom: 1px solid var(--border);
+    border-left: 3px solid transparent; display: flex; gap: 0.65rem; align-items: flex-start;
+    transition: background-color 0.12s ease, border-left-color 0.12s ease;
   }
-  .col-head .name { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.9rem; }
-  .col-head .count { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.78rem; color: var(--text-muted); }
-
-  .item-list { max-height: 520px; overflow-y: auto; }
-  .item { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 0.3rem; }
   .item:last-child { border-bottom: none; }
-  .item a { color: var(--text); text-decoration: none; font-size: 0.88rem; font-weight: 500; }
-  .item a:hover { text-decoration: underline; }
-  .item .meta { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.7rem; color: var(--text-muted); }
+  .item:hover { background: var(--surface-2); border-left-color: var(--item-accent, var(--border)); }
+
+  .item-media {
+    width: 40px; height: 40px; border-radius: 8px; flex: none; overflow: hidden;
+    background: var(--surface-2); display: flex; align-items: center; justify-content: center;
+  }
+  .item-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .item-media .badge { width: 100%; height: 100%; border-radius: 8px; }
+  .item-media .badge svg { width: 16px; height: 16px; }
+
+  .item-body { min-width: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+  .item-body a { text-decoration: none; font-size: 0.87rem; font-weight: 500; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .item-body a:hover { text-decoration: underline; }
+  .item-body a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  .item-body .meta { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.7rem; color: var(--text-muted); }
+
+  .empty-note { padding: 1.2rem 1rem; color: var(--text-muted); font-size: 0.83rem; }
 </style>
 </head>
 <body>
-<div class="page">
 
-  <div class="eyebrow">AI-Radar</div>
-  <h1>X'te ne öğrenmek istiyorsun?</h1>
+<header class="top">
+  <div class="wordmark"><span class="pulse"></span>AI-Radar</div>
+  <div class="top-right">
+    <span class="top-meta" id="top-meta">yükleniyor…</span>
+    <div class="theme-toggle" id="theme-toggle" role="group" aria-label="Tema seçimi">
+      <button type="button" data-theme-choice="light" title="Açık mod" aria-label="Açık mod">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7"/></svg>
+      </button>
+      <button type="button" data-theme-choice="dark" title="Koyu mod" aria-label="Koyu mod">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M20.5 14.7A8.5 8.5 0 0 1 9.3 3.5a8.8 8.8 0 1 0 11.2 11.2z"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
 
-  <form class="search" id="search-form">
-    <input
-      type="text"
-      id="q"
-      placeholder='örn. "Claude&#39;ın son gelişmesi hakkında etkileşimi yüksek son 24 saatteki tweetler"'
-      autocomplete="off"
-      autofocus
-    />
-    <button type="submit" id="submit-btn">Ara</button>
-  </form>
-  <p class="hint">Zaman aralığı ("son 24 saat") ve etkileşim ("yüksek etkileşim", "popüler") ifadelerini otomatik anlar. Her arama gerçek bir X API isteği gönderir.</p>
+<div class="layout">
+  <nav class="sidebar" aria-label="Kaynaklara git">
+    <a href="#col-nuvemmag" title="NuvemMag" style="color:var(--nuvemmag)">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6.5 19a4.5 4.5 0 0 1-.4-8.98A6 6 0 0 1 17.6 8.1 4.5 4.5 0 0 1 17 19H6.5z"/></svg>
+    </a>
+    <a href="#col-github_trending" title="GitHub Trending" style="color:var(--github)">
+      <svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="4" cy="3" r="1.6"/><circle cx="4" cy="13" r="1.6"/><circle cx="12" cy="8" r="1.6"/><path d="M4 4.6v6.8"/><path d="M4 6a6 6 0 0 0 6.4 2"/></svg>
+    </a>
+    <a href="#col-x_twitter" title="X" style="color:var(--x)">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 4l16 16M20 4L4 20"/></svg>
+    </a>
+  </nav>
 
-  <div class="interpreted" id="interpreted"></div>
-  <div class="status" id="status"></div>
-  <div class="search-results" id="search-results"></div>
+  <div class="page">
 
-  <section class="browse">
-    <div class="eyebrow">Tüm kaynaklar</div>
-    <div class="stat-row" id="stat-row"></div>
-    <div class="columns" id="columns"></div>
-  </section>
+    <div class="hero">
+      <div class="eyebrow">X araması</div>
+      <h1>X'te ne öğrenmek istiyorsun?</h1>
 
+      <form class="search" id="search-form">
+        <input
+          type="text"
+          id="q"
+          placeholder='örn. "Claude&#39;ın son gelişmesi hakkında etkileşimi yüksek son 24 saatteki tweetler"'
+          autocomplete="off"
+          autofocus
+        />
+        <button type="submit" class="primary" id="submit-btn">Ara</button>
+      </form>
+      <p class="hint">Zaman aralığı ("son 24 saat") ve etkileşim ("yüksek etkileşim", "popüler") ifadelerini otomatik anlar. Her arama gerçek bir X API isteği gönderir.</p>
+
+      <div class="interpreted" id="interpreted"></div>
+      <div class="status" id="status"></div>
+      <div class="search-results" id="search-results"></div>
+    </div>
+
+    <section class="browse">
+      <div class="eyebrow" style="margin:0 0 1.1rem;">Tüm kaynaklar</div>
+      <div class="stat-row" id="stat-row"></div>
+      <div class="columns" id="columns"></div>
+    </section>
+
+  </div>
 </div>
 
 <script>
+  const ICONS = {
+    news: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.5 19a4.5 4.5 0 0 1-.4-8.98A6 6 0 0 1 17.6 8.1 4.5 4.5 0 0 1 17 19H6.5z"/></svg>',
+    gh:   '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="4" cy="3" r="1.6"/><circle cx="4" cy="13" r="1.6"/><circle cx="12" cy="8" r="1.6"/><path d="M4 4.6v6.8"/><path d="M4 6a6 6 0 0 0 6.4 2"/></svg>',
+    x:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 4l16 16M20 4L4 20"/></svg>',
+  };
+
   const SOURCE_META = {
-    nuvemmag:         { label: "NuvemMag",         varName: "news" },
-    github_trending:  { label: "GitHub Trending",  varName: "gh" },
-    x_twitter:        { label: "X",                 varName: "x" },
+    nuvemmag:         { label: "NuvemMag",         varName: "nuvemmag", icon: ICONS.news, badgeText: "#0a0a0a" },
+    github_trending:  { label: "GitHub Trending",  varName: "github",   icon: ICONS.gh,   badgeText: "#ffffff" },
+    x_twitter:        { label: "X",                 varName: "x",        icon: ICONS.x,    badgeText: "#ffffff" },
   };
   const SOURCE_ORDER = ["nuvemmag", "github_trending", "x_twitter"];
 
   function fmtDate(iso) {
     if (!iso) return "tarih yok";
     try {
-      return new Intl.DateTimeFormat("tr-TR", {
-        day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
-      }).format(new Date(iso));
+      return new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
     } catch (e) {
       return iso;
     }
+  }
+
+  function badge(meta, size) {
+    const cls = size === "sm" ? "badge sm" : "badge";
+    return `<span class="${cls}" style="background:var(--${meta.varName});color:${meta.badgeText}">${meta.icon}</span>`;
+  }
+
+  function itemRow(it, meta) {
+    // Görsel yüklenemezse (404 vb.) img'i gizleyip yanındaki hazır rozete geç.
+    // outerHTML ile HTML'i yeniden inşa etmiyoruz ki tırnak iç içe girmesin.
+    const media = it.image_url
+      ? `<img src="${it.image_url}" alt="" loading="lazy"
+           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+         <span class="badge" style="display:none;background:var(--${meta.varName});color:${meta.badgeText}">${meta.icon}</span>`
+      : badge(meta);
+
+    return `
+      <div class="item" style="--item-accent:var(--${meta.varName})">
+        <div class="item-media">${media}</div>
+        <div class="item-body">
+          <a href="${it.url}" target="_blank" rel="noopener noreferrer">${it.title}</a>
+          <div class="meta">${it.author ? "@" + it.author : "yazar yok"} · ${fmtDate(it.published_at)}</div>
+        </div>
+      </div>
+    `;
   }
 
   async function loadColumns() {
@@ -218,33 +338,49 @@
 
       const chip = document.createElement("div");
       chip.className = "stat-chip";
-      chip.innerHTML = `
-        <span class="dot" style="background:var(--${meta.varName})"></span>
-        <span class="n">${items.length}</span>
-        <span class="lbl">${meta.label}</span>
-      `;
+      chip.innerHTML = `${badge(meta, "sm")}<span class="n">${items.length}</span><span class="lbl">${meta.label}</span>`;
       statRow.appendChild(chip);
 
       const col = document.createElement("section");
       col.className = "col";
+      col.id = "col-" + src;
       col.innerHTML = `
         <div class="col-head">
-          <span class="name"><span class="dot" style="background:var(--${meta.varName})"></span>${meta.label}</span>
+          <span class="name">${badge(meta, "sm")}${meta.label}</span>
           <span class="count">${items.length} kayıt</span>
         </div>
         <div class="item-list">
-          ${items.map(it => `
-            <div class="item">
-              <a href="${it.url}" target="_blank" rel="noopener noreferrer">${it.title}</a>
-              <div class="meta">${it.author ? "@" + it.author : "yazar yok"} · ${fmtDate(it.published_at)}</div>
-            </div>
-          `).join("")}
+          ${items.length ? items.map(it => itemRow(it, meta)).join("") : `<div class="empty-note">Henüz kayıt yok.</div>`}
         </div>
       `;
       columns.appendChild(col);
     }
+
+    document.getElementById("top-meta").textContent =
+      `${allItems.length} kayıt · güncellendi: ` +
+      new Intl.DateTimeFormat("tr-TR", { hour: "2-digit", minute: "2-digit" }).format(new Date());
   }
 
+  // --- Tema anahtarı ---
+  function applyThemeButtons() {
+    const current = document.documentElement.getAttribute("data-theme")
+      || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.querySelectorAll("#theme-toggle button").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.themeChoice === current);
+    });
+  }
+
+  document.querySelectorAll("#theme-toggle button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const choice = btn.dataset.themeChoice;
+      document.documentElement.setAttribute("data-theme", choice);
+      localStorage.setItem("ai-radar-theme", choice);
+      applyThemeButtons();
+    });
+  });
+  applyThemeButtons();
+
+  // --- Arama ---
   const form = document.getElementById("search-form");
   const input = document.getElementById("q");
   const submitBtn = document.getElementById("submit-btn");
@@ -282,12 +418,8 @@
 
       statusEl.textContent = `${data.result_count} sonuç bulundu, ${data.added_count} yeni kayıt veritabanına eklendi.`;
 
-      resultsEl.innerHTML = data.items.map(it => `
-        <div class="item" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.75rem 1rem;">
-          <a href="${it.url}" target="_blank" rel="noopener noreferrer">${it.title}</a>
-          <div class="meta">${it.author ? "@" + it.author : "yazar yok"} · ${fmtDate(it.published_at)}</div>
-        </div>
-      `).join("") || `<p class="status">Bu kritere uyan sonuç bulunamadı.</p>`;
+      resultsEl.innerHTML = data.items.map(it => itemRow(it, SOURCE_META.x_twitter)).join("")
+        || `<p class="status">Bu kritere uyan sonuç bulunamadı.</p>`;
 
       if (data.added_count > 0) {
         await loadColumns();

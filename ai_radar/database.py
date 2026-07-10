@@ -16,11 +16,20 @@ def get_connection(db_path: Path | None = None) -> sqlite3.Connection:
 
 
 def init_db(db_path: Path | None = None) -> None:
-    """schema.sql dosyasını çalıştırarak tabloları (yoksa) oluşturur."""
+    """schema.sql dosyasını çalıştırarak tabloları (yoksa) oluşturur.
+
+    Ayrıca, daha önce oluşturulmuş (CREATE TABLE IF NOT EXISTS'in dokunmadığı)
+    eski veritabanlarına sonradan eklenen sütunları (ör. image_url) da ekler.
+    """
     schema_sql = SCHEMA_PATH.read_text(encoding="utf-8")
     conn = get_connection(db_path)
     try:
         conn.executescript(schema_sql)
+
+        existing_columns = {row[1] for row in conn.execute("PRAGMA table_info(items)")}
+        if "image_url" not in existing_columns:
+            conn.execute("ALTER TABLE items ADD COLUMN image_url TEXT")
+
         conn.commit()
     finally:
         conn.close()

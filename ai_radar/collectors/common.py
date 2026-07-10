@@ -18,8 +18,8 @@ def save_items(items: list[dict], db_path: Path | None = None) -> int:
         for item in items:
             cursor = conn.execute(
                 """
-                INSERT OR IGNORE INTO items (source, title, url, content, author, published_at)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT OR IGNORE INTO items (source, title, url, content, author, published_at, image_url)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     item["source"],
@@ -28,6 +28,7 @@ def save_items(items: list[dict], db_path: Path | None = None) -> int:
                     item.get("content"),
                     item.get("author"),
                     item.get("published_at"),
+                    item.get("image_url"),
                 ),
             )
             if cursor.rowcount > 0:

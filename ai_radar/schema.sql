@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS items (
     content TEXT,
     author TEXT,
     published_at TEXT,
+    image_url TEXT,                     -- haber görseli / repo sahibi avatarı / tweet yazarının profil fotoğrafı
     signal_score INTEGER,              -- 1-10 arası önem puanı; LLM puanlamadan önce NULL
     signal_reason TEXT,                 -- LLM'in verdiği tek cümlelik gerekçe
     fetched_at TEXT NOT NULL DEFAULT (datetime('now'))

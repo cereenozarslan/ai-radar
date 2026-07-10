@@ -38,12 +38,12 @@ def list_items():
     """Veritabanındaki tüm kayıtları (kaynak bazında) döner — tek sayfalık görünüm için."""
     conn = get_connection()
     rows = conn.execute(
-        "SELECT source, title, url, author, published_at, fetched_at "
+        "SELECT source, title, url, author, published_at, image_url, fetched_at "
         "FROM items ORDER BY source, fetched_at DESC"
     ).fetchall()
     conn.close()
 
-    cols = ["source", "title", "url", "author", "published_at", "fetched_at"]
+    cols = ["source", "title", "url", "author", "published_at", "image_url", "fetched_at"]
     return [dict(zip(cols, row)) for row in rows]
 
 

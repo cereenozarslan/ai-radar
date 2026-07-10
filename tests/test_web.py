@@ -63,8 +63,8 @@ def test_list_items_returns_database_contents(tmp_path, monkeypatch):
     init_db(db_path)
     conn = get_connection(db_path)
     conn.execute(
-        "INSERT INTO items (source, title, url) VALUES (?, ?, ?)",
-        ("nuvemmag", "test haber", "https://example.com/1"),
+        "INSERT INTO items (source, title, url, image_url) VALUES (?, ?, ?, ?)",
+        ("nuvemmag", "test haber", "https://example.com/1", "https://example.com/foto.jpg"),
     )
     conn.commit()
     conn.close()
@@ -79,3 +79,4 @@ def test_list_items_returns_database_contents(tmp_path, monkeypatch):
     assert len(data) == 1
     assert data[0]["title"] == "test haber"
     assert data[0]["source"] == "nuvemmag"
+    assert data[0]["image_url"] == "https://example.com/foto.jpg"

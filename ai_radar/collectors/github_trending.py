@@ -37,13 +37,17 @@ def parse_trending(html: str) -> list[dict]:
         description_tag = article.select_one("p")
         description = description_tag.get_text(strip=True) if description_tag else None
 
+        owner = full_name.split("/")[0]
+
         items.append({
             "source": "github_trending",
             "title": full_name,
             "url": f"https://github.com/{full_name}",
             "content": description,
-            "author": full_name.split("/")[0],
+            "author": owner,
             "published_at": None,
+            # GitHub'ın belgelenmiş kısayolu: kullanıcı adı + ".png" avatar görselini döner
+            "image_url": f"https://github.com/{owner}.png",
         })
 
     return items

@@ -22,7 +22,10 @@ def test_to_item_dict_converts_tweet_correctly():
         author_id=42,
         created_at=datetime(2026, 7, 9, tzinfo=timezone.utc),
     )
-    users_by_id = {42: SimpleNamespace(id=42, username="birkullanici")}
+    users_by_id = {42: SimpleNamespace(
+        id=42, username="birkullanici",
+        profile_image_url="https://pbs.twimg.com/profile_images/1/foo_normal.jpg",
+    )}
 
     item = to_item_dict(tweet, users_by_id)
 
@@ -31,6 +34,8 @@ def test_to_item_dict_converts_tweet_correctly():
     assert item["author"] == "birkullanici"
     assert item["content"] == tweet.text
     assert item["published_at"] is not None
+    # X'in kucuk "_normal" gorseli, daha net gorunmesi icin buyutulmus olmali
+    assert item["image_url"] == "https://pbs.twimg.com/profile_images/1/foo_400x400.jpg"
 
 
 def test_to_item_dict_handles_long_text_and_missing_user():
@@ -43,6 +48,7 @@ def test_to_item_dict_handles_long_text_and_missing_user():
     assert item["title"].endswith("...")
     assert item["author"] is None
     assert item["published_at"] is None
+    assert item["image_url"] is None
 
 
 def test_build_query_wraps_multi_word_topic_in_quotes():
@@ -93,7 +99,7 @@ def test_collect_sorts_by_engagement_and_applies_min_threshold(monkeypatch):
 
     fake_response = SimpleNamespace(
         data=[make_tweet(1, likes=2), make_tweet(2, likes=50), make_tweet(3, likes=20)],
-        includes={"users": [SimpleNamespace(id=1, username="birkullanici")]},
+        includes={"users": [SimpleNamespace(id=1, username="birkullanici", profile_image_url=None)]},
     )
 
     monkeypatch.setattr(
