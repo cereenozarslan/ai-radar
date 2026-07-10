@@ -18,13 +18,13 @@ def test_init_db_creates_items_table(tmp_path):
     assert columns == {
         "id", "source", "title", "url", "content",
         "author", "published_at", "image_url", "signal_score",
-        "signal_reason", "fetched_at",
+        "signal_reason", "is_read", "is_saved", "fetched_at",
     }
 
 
-def test_init_db_migrates_old_database_missing_image_url(tmp_path):
-    """image_url sütunu eklenmeden önce oluşturulmuş bir veritabanı, tekrar
-    init_db() çağrıldığında bu sütunu sonradan kazanmalı (veri kaybı olmadan)."""
+def test_init_db_migrates_old_database_missing_new_columns(tmp_path):
+    """image_url/is_read/is_saved eklenmeden önce oluşturulmuş bir veritabanı,
+    tekrar init_db() çağrıldığında bu sütunları sonradan kazanmalı (veri kaybı olmadan)."""
     db_path = tmp_path / "old.db"
     conn = sqlite3.connect(db_path)
     conn.execute("""
@@ -52,11 +52,14 @@ def test_init_db_migrates_old_database_missing_image_url(tmp_path):
 
     conn = get_connection(db_path)
     columns = {row[1] for row in conn.execute("PRAGMA table_info(items)")}
-    row = conn.execute("SELECT title, image_url FROM items WHERE url = ?", ("https://example.com/eski",)).fetchone()
+    row = conn.execute(
+        "SELECT title, image_url, is_read, is_saved FROM items WHERE url = ?",
+        ("https://example.com/eski",),
+    ).fetchone()
     conn.close()
 
-    assert "image_url" in columns
-    assert row == ("eski kayıt", None)
+    assert {"image_url", "is_read", "is_saved"} <= columns
+    assert row == ("eski kayıt", None, 0, 0)
 
 
 def test_url_unique_constraint_enforced(tmp_path):

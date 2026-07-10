@@ -150,7 +150,23 @@
   .page { flex: 1; min-width: 0; padding: 0 1.5rem 4rem; }
 
   /* ---------- Arama alanı (hero) ---------- */
-  .hero { margin-top: 2.25rem; padding: 2rem 2rem 1.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-md); }
+  .hero {
+    margin-top: 2.25rem; padding: 2rem 2rem 1.75rem; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-md);
+    display: grid; grid-template-columns: 1fr 250px; gap: 1.75rem;
+  }
+  @media (max-width: 780px) { .hero { grid-template-columns: 1fr; } }
+  .hero-side { border-left: 1px solid var(--border); padding-left: 1.5rem; }
+  @media (max-width: 780px) {
+    .hero-side { border-left: none; border-top: 1px solid var(--border); padding-left: 0; padding-top: 1.25rem; margin-top: 0.5rem; }
+  }
+  .word-cloud { display: flex; flex-wrap: wrap; gap: 0.35rem 0.55rem; align-items: baseline; }
+  .word-cloud-item { font-weight: 700; color: var(--accent); }
+  .daily-chart { display: flex; align-items: flex-end; gap: 0.4rem; height: 64px; }
+  .daily-bar { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 0.25rem; }
+  .daily-bar-fill { width: 100%; background: var(--accent); border-radius: 3px 3px 0 0; min-height: 3px; }
+  .daily-bar-label { font-size: 0.6rem; color: var(--text-muted); }
+
   .eyebrow { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.6rem; }
   h1 { font-size: clamp(1.35rem, 2.4vw, 1.7rem); font-weight: 700; letter-spacing: -0.015em; margin: 0 0 1.1rem; text-wrap: balance; }
   h2.section-title { font-size: 1rem; font-weight: 700; margin: 0; }
@@ -325,6 +341,29 @@
     font-size: 0.68rem; color: var(--text-muted); align-self: center;
   }
 
+  /* ---------- Okundu/yeni + kaydet ---------- */
+  .new-badge {
+    display: inline-block; font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+    font-size: 0.6rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--accent-ink); background: var(--accent); border-radius: 10px; padding: 0.05rem 0.4rem; margin-left: 0.35rem;
+  }
+  .item.is-read { opacity: 0.55; }
+  .item.is-read:hover { opacity: 0.85; }
+
+  .save-btn {
+    flex: none; align-self: center; border: none; background: transparent; cursor: pointer;
+    font-size: 1.05rem; color: var(--text-muted); line-height: 1; padding: 0.2rem;
+  }
+  .save-btn:hover, .save-btn.active { color: var(--accent); }
+
+  .photo-card.is-read { filter: grayscale(0.35) brightness(0.78); }
+  .photo-card-save { position: absolute; top: 0.45rem; right: 0.45rem; z-index: 2; }
+  .photo-card-save .save-btn {
+    color: rgba(255,255,255,0.85); background: rgba(0,0,0,0.4); border-radius: 50%;
+    width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 0.95rem;
+  }
+  .photo-card-save .save-btn.active { color: #ffd76b; }
+
   .empty-note { padding: 1.2rem 1rem; color: var(--text-muted); font-size: 0.83rem; }
 </style>
 </head>
@@ -361,29 +400,41 @@
     <button data-tab="x_twitter" title="X" style="--icon-color:var(--x)">
       <span style="color:var(--x)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 4l16 16M20 4L4 20"/></svg></span>
     </button>
+    <button data-tab="saved" title="Kaydedilenler" style="--icon-color:var(--accent)">
+      <span style="color:var(--accent);font-size:16px;">★</span>
+    </button>
   </nav>
 
   <div class="page">
 
     <div class="hero">
-      <div class="eyebrow">X araması</div>
-      <h1>X'te ne öğrenmek istiyorsun?</h1>
+      <div class="hero-main">
+        <div class="eyebrow">X araması</div>
+        <h1>X'te ne öğrenmek istiyorsun?</h1>
 
-      <form class="search" id="search-form">
-        <input
-          type="text"
-          id="q"
-          placeholder='örn. "Claude&#39;ın son gelişmesi hakkında etkileşimi yüksek son 24 saatteki tweetler"'
-          autocomplete="off"
-          autofocus
-        />
-        <button type="submit" class="primary" id="submit-btn">Ara</button>
-      </form>
-      <p class="hint">Zaman aralığı ("son 24 saat") ve etkileşim ("yüksek etkileşim", "popüler") ifadelerini otomatik anlar. Her arama gerçek bir X API isteği gönderir.</p>
+        <form class="search" id="search-form">
+          <input
+            type="text"
+            id="q"
+            placeholder='örn. "Claude&#39;ın son gelişmesi hakkında etkileşimi yüksek son 24 saatteki tweetler"'
+            autocomplete="off"
+            autofocus
+          />
+          <button type="submit" class="primary" id="submit-btn">Ara</button>
+        </form>
+        <p class="hint">Zaman aralığı ("son 24 saat") ve etkileşim ("yüksek etkileşim", "popüler") ifadelerini otomatik anlar. Her arama gerçek bir X API isteği gönderir.</p>
 
-      <div class="interpreted" id="interpreted"></div>
-      <div class="status" id="status"></div>
-      <div class="search-results" id="search-results"></div>
+        <div class="interpreted" id="interpreted"></div>
+        <div class="status" id="status"></div>
+        <div class="search-results" id="search-results"></div>
+      </div>
+
+      <div class="hero-side">
+        <div class="eyebrow" style="margin-bottom:0.5rem;">Bu haftanın trend kelimeleri</div>
+        <div class="word-cloud" id="word-cloud"></div>
+        <div class="eyebrow" style="margin:1.1rem 0 0.5rem;">Günlük kayıt sayısı</div>
+        <div class="daily-chart" id="daily-chart"></div>
+      </div>
     </div>
 
     <section class="following-digest">
@@ -434,14 +485,17 @@
     nuvemmag: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.5 19a4.5 4.5 0 0 1-.4-8.98A6 6 0 0 1 17.6 8.1 4.5 4.5 0 0 1 17 19H6.5z"/></svg>',
     github:   '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="4" cy="3" r="1.6"/><circle cx="4" cy="13" r="1.6"/><circle cx="12" cy="8" r="1.6"/><path d="M4 4.6v6.8"/><path d="M4 6a6 6 0 0 0 6.4 2"/></svg>',
     x:        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 4l16 16M20 4L4 20"/></svg>',
+    saved:    '<span style="font-size:11px;line-height:1;">★</span>',
   };
 
   const SOURCE_META = {
     nuvemmag:         { label: "NuvemMag",         varName: "nuvemmag", icon: ICONS.nuvemmag, badgeText: "#0a0a0a" },
     github_trending:  { label: "GitHub Trending",  varName: "github",   icon: ICONS.github,   badgeText: "#ffffff" },
     x_twitter:        { label: "X",                 varName: "x",        icon: ICONS.x,        badgeText: "#ffffff" },
+    saved:            { label: "Kaydedilenler",     varName: "accent",   icon: ICONS.saved,    badgeText: "var(--accent-ink)" },
   };
   const SOURCE_ORDER = ["nuvemmag", "github_trending", "x_twitter"];
+  const TAB_ORDER = [...SOURCE_ORDER, "saved"];
 
   const STOPWORDS = new Set([
     "the","a","an","of","to","in","on","for","and","is","are","with","this","that",
@@ -471,6 +525,46 @@
     return `<span class="score-ring" title="Sinyal skoru — Faz 3'te LLM ile puanlanacak">—</span>`;
   }
 
+  // Canlı arama/gündem sonuçları henüz veritabanına yazılmadan gösterildiği
+  // için bir DB id'si taşımaz; okundu/kaydet sadece id'si olan kayıtlarda çalışır.
+  function hasId(it) {
+    return it.id !== undefined && it.id !== null;
+  }
+
+  function newBadge(it) {
+    if (!hasId(it) || it.is_read) return "";
+    return `<span class="new-badge">yeni</span>`;
+  }
+
+  function saveButton(it) {
+    if (!hasId(it)) return "";
+    const active = it.is_saved ? "active" : "";
+    const label = it.is_saved ? "Kaydedildi" : "Kaydet";
+    return `<button type="button" class="save-btn ${active}" onclick="toggleSave(event, ${it.id}, this)" title="${label}" aria-label="${label}">${it.is_saved ? "★" : "☆"}</button>`;
+  }
+
+  function markRead(id) {
+    if (id === undefined || id === null) return;
+    fetch(`/api/items/${id}/mark-read`, { method: "POST" }).catch(() => {});
+    const it = ALL_ITEMS.find(x => x.id === id);
+    if (it) it.is_read = 1;
+  }
+
+  async function toggleSave(event, id, btn) {
+    event.preventDefault();
+    event.stopPropagation();
+    try {
+      const resp = await fetch(`/api/items/${id}/toggle-save`, { method: "POST" });
+      const data = await resp.json();
+      btn.classList.toggle("active", data.is_saved);
+      btn.textContent = data.is_saved ? "★" : "☆";
+      const it = ALL_ITEMS.find(x => x.id === id);
+      if (it) it.is_saved = data.is_saved;
+    } catch (e) {
+      // sessiz başarısızlık: buton eski haliyle kalır
+    }
+  }
+
   function itemRow(it, meta) {
     // Görsel yüklenemezse (404 vb.) img'i gizleyip yanındaki hazır rozete geç.
     // outerHTML ile HTML'i yeniden inşa etmiyoruz ki tırnak iç içe girmesin.
@@ -479,14 +573,16 @@
            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
          <span class="badge" style="display:none;background:var(--${meta.varName});color:${meta.badgeText}">${meta.icon}</span>`
       : badge(meta);
+    const readClass = hasId(it) && it.is_read ? " is-read" : "";
 
     return `
-      <div class="item" style="--item-accent:var(--${meta.varName})">
+      <div class="item${readClass}" style="--item-accent:var(--${meta.varName})">
         <div class="item-media">${media}</div>
         <div class="item-body">
-          <a href="${it.url}" target="_blank" rel="noopener noreferrer">${it.title}</a>
-          <div class="meta">${it.author ? "@" + it.author : "yazar yok"} · ${fmtDate(it.published_at)}</div>
+          <a href="${it.url}" target="_blank" rel="noopener noreferrer" onclick="markRead(${it.id})">${it.title}</a>
+          <div class="meta">${it.author ? "@" + it.author : "yazar yok"} · ${fmtDate(it.published_at)}${newBadge(it)}</div>
         </div>
+        ${saveButton(it)}
         ${scoreRing()}
       </div>
     `;
@@ -498,12 +594,16 @@
     const img = it.image_url
       ? `<img src="${it.image_url}" alt="" loading="lazy" onerror="this.remove();">`
       : "";
+    const readClass = hasId(it) && it.is_read ? " is-read" : "";
+    const save = saveButton(it);
+
     return `
-      <a class="photo-card ${variant}" href="${it.url}" target="_blank" rel="noopener noreferrer" style="--item-accent:var(--${meta.varName})">
+      <a class="photo-card ${variant}${readClass}" href="${it.url}" target="_blank" rel="noopener noreferrer" style="--item-accent:var(--${meta.varName})" onclick="markRead(${it.id})">
         ${img}
         <span class="photo-card-badge">${badge(meta, "sm")}</span>
+        ${save ? `<span class="photo-card-save">${save}</span>` : ""}
         <div class="photo-card-overlay">
-          <div class="photo-card-meta">${it.author ? "@" + it.author : "yazar yok"} · ${fmtDate(it.published_at)}</div>
+          <div class="photo-card-meta">${it.author ? "@" + it.author : "yazar yok"} · ${fmtDate(it.published_at)}${newBadge(it)}</div>
           <div class="photo-card-title">${it.title}</div>
         </div>
       </a>
@@ -542,7 +642,7 @@
     return (it.title + " " + (it.content || "")).toLowerCase().includes(text);
   }
 
-  function topWords(items, n) {
+  function wordFrequencies(items, n) {
     const freq = {};
     for (const it of items) {
       const words = (it.title || "").toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/);
@@ -551,7 +651,11 @@
         freq[w] = (freq[w] || 0) + 1;
       }
     }
-    return Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, n).map(([w]) => w);
+    return Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, n);
+  }
+
+  function topWords(items, n) {
+    return wordFrequencies(items, n).map(([w]) => w);
   }
 
   function renderTicker(items) {
@@ -561,12 +665,55 @@
     document.getElementById("ticker-track").textContent = text + "     " + text;
   }
 
+  function renderWordCloud(items) {
+    const el = document.getElementById("word-cloud");
+    const freqs = wordFrequencies(items, 14);
+    if (!freqs.length) {
+      el.innerHTML = `<span style="color:var(--text-muted);font-size:0.82rem;">Henüz yeterli veri yok.</span>`;
+      return;
+    }
+    const counts = freqs.map(f => f[1]);
+    const max = Math.max(...counts), min = Math.min(...counts);
+    el.innerHTML = freqs.map(([w, c]) => {
+      const t = max === min ? 1 : (c - min) / (max - min);
+      const size = (0.72 + t * 0.85).toFixed(2);
+      const opacity = (0.55 + t * 0.45).toFixed(2);
+      return `<span class="word-cloud-item" style="font-size:${size}rem;opacity:${opacity}" title="${c} kez geçti">${w}</span>`;
+    }).join("");
+  }
+
+  function renderDailyChart(items) {
+    const el = document.getElementById("daily-chart");
+    const counts = {};
+    const days = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 86400000);
+      const key = d.toISOString().slice(0, 10);
+      days.push(key);
+      counts[key] = 0;
+    }
+    for (const it of items) {
+      const key = (it.fetched_at || "").slice(0, 10);
+      if (key in counts) counts[key]++;
+    }
+    const max = Math.max(1, ...Object.values(counts));
+    el.innerHTML = days.map(d => {
+      const c = counts[d];
+      const h = Math.max(4, Math.round((c / max) * 100));
+      const label = new Intl.DateTimeFormat("tr-TR", { weekday: "narrow" }).format(new Date(d + "T00:00:00"));
+      return `<div class="daily-bar" title="${d}: ${c} kayıt"><div class="daily-bar-fill" style="height:${h}%"></div><span class="daily-bar-label">${label}</span></div>`;
+    }).join("");
+  }
+
   function renderExplorer() {
     const filterText = document.getElementById("explorer-filter").value.trim().toLowerCase();
     const bySource = groupBySource(ALL_ITEMS);
+    const isSavedTab = currentTab === "saved";
 
     const meta = SOURCE_META[currentTab];
-    const focusItems = (bySource[currentTab] || []).filter(it => matchesFilter(it, filterText));
+    const focusItems = (isSavedTab ? ALL_ITEMS.filter(it => it.is_saved) : (bySource[currentTab] || []))
+      .filter(it => matchesFilter(it, filterText));
 
     const focusEl = document.getElementById("explorer-focus");
     if (currentView === "card") {
@@ -582,7 +729,7 @@
     }
 
     const othersEl = document.getElementById("explorer-others");
-    othersEl.innerHTML = SOURCE_ORDER.filter(src => src !== currentTab).map(src => {
+    othersEl.innerHTML = isSavedTab ? "" : SOURCE_ORDER.filter(src => src !== currentTab).map(src => {
       const m = SOURCE_META[src];
       const items = (bySource[src] || []).filter(it => matchesFilter(it, filterText));
       const shown = items.slice(0, 5);
@@ -641,6 +788,8 @@
     ALL_ITEMS = await resp.json();
 
     renderTicker(ALL_ITEMS);
+    renderWordCloud(ALL_ITEMS);
+    renderDailyChart(ALL_ITEMS);
     renderExplorer();
     renderBrowseOverview();
 
@@ -649,9 +798,9 @@
       new Intl.DateTimeFormat("tr-TR", { hour: "2-digit", minute: "2-digit" }).format(new Date());
   }
 
-  // --- Kaynak sekmeleri ---
+  // --- Kaynak sekmeleri (+ Kaydedilenler) ---
   const tabsEl = document.getElementById("explorer-tabs");
-  tabsEl.innerHTML = SOURCE_ORDER.map(src => {
+  tabsEl.innerHTML = TAB_ORDER.map(src => {
     const m = SOURCE_META[src];
     return `<button type="button" class="tab" data-tab="${src}" style="--tab-color:var(--${m.varName});--tab-ink:${m.badgeText}">${badge(m, "sm")}${m.label}</button>`;
   }).join("");

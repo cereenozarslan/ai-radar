@@ -39,13 +39,39 @@ def list_items():
     """Veritabanındaki tüm kayıtları (kaynak bazında) döner — tek sayfalık görünüm için."""
     conn = get_connection()
     rows = conn.execute(
-        "SELECT source, title, url, author, published_at, image_url, fetched_at "
+        "SELECT id, source, title, url, author, published_at, image_url, is_read, is_saved, fetched_at "
         "FROM items ORDER BY source, fetched_at DESC"
     ).fetchall()
     conn.close()
 
-    cols = ["source", "title", "url", "author", "published_at", "image_url", "fetched_at"]
+    cols = ["id", "source", "title", "url", "author", "published_at", "image_url", "is_read", "is_saved", "fetched_at"]
     return [dict(zip(cols, row)) for row in rows]
+
+
+@app.post("/api/items/{item_id}/mark-read")
+def mark_read(item_id: int):
+    """Bir kaydı 'okundu' işaretler (bağlantıya tıklandığında çağrılır)."""
+    conn = get_connection()
+    conn.execute("UPDATE items SET is_read = 1 WHERE id = ?", (item_id,))
+    conn.commit()
+    conn.close()
+    return {"id": item_id, "is_read": True}
+
+
+@app.post("/api/items/{item_id}/toggle-save")
+def toggle_save(item_id: int):
+    """Bir kaydın 'kaydedildi' (yıldızlandı) durumunu tersine çevirir."""
+    conn = get_connection()
+    row = conn.execute("SELECT is_saved FROM items WHERE id = ?", (item_id,)).fetchone()
+    if row is None:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Kayıt bulunamadı.")
+
+    new_value = 0 if row[0] else 1
+    conn.execute("UPDATE items SET is_saved = ? WHERE id = ?", (new_value, item_id))
+    conn.commit()
+    conn.close()
+    return {"id": item_id, "is_saved": bool(new_value)}
 
 
 @app.get("/api/search")

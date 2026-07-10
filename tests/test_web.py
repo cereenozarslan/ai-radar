@@ -126,3 +126,64 @@ def test_following_digest_returns_502_on_x_api_error(monkeypatch):
     resp = client.get("/api/following-digest")
 
     assert resp.status_code == 502
+
+
+def _make_test_db(tmp_path):
+    from ai_radar.database import get_connection, init_db
+
+    db_path = tmp_path / "test.db"
+    init_db(db_path)
+    conn = get_connection(db_path)
+    conn.execute(
+        "INSERT INTO items (source, title, url) VALUES (?, ?, ?)",
+        ("nuvemmag", "test haber", "https://example.com/1"),
+    )
+    conn.commit()
+    item_id = conn.execute("SELECT id FROM items WHERE url = ?", ("https://example.com/1",)).fetchone()[0]
+    conn.close()
+    return db_path, item_id
+
+
+def test_mark_read_sets_is_read(tmp_path, monkeypatch):
+    from ai_radar.database import get_connection
+
+    db_path, item_id = _make_test_db(tmp_path)
+    monkeypatch.setattr(web, "get_connection", lambda: get_connection(db_path))
+
+    client = TestClient(web.app)
+    resp = client.post(f"/api/items/{item_id}/mark-read")
+
+    assert resp.status_code == 200
+    assert resp.json() == {"id": item_id, "is_read": True}
+
+    conn = get_connection(db_path)
+    row = conn.execute("SELECT is_read FROM items WHERE id = ?", (item_id,)).fetchone()
+    conn.close()
+    assert row[0] == 1
+
+
+def test_toggle_save_flips_state_each_call(tmp_path, monkeypatch):
+    from ai_radar.database import get_connection
+
+    db_path, item_id = _make_test_db(tmp_path)
+    monkeypatch.setattr(web, "get_connection", lambda: get_connection(db_path))
+
+    client = TestClient(web.app)
+
+    resp1 = client.post(f"/api/items/{item_id}/toggle-save")
+    assert resp1.json() == {"id": item_id, "is_saved": True}
+
+    resp2 = client.post(f"/api/items/{item_id}/toggle-save")
+    assert resp2.json() == {"id": item_id, "is_saved": False}
+
+
+def test_toggle_save_returns_404_for_unknown_item(tmp_path, monkeypatch):
+    from ai_radar.database import get_connection
+
+    db_path, _ = _make_test_db(tmp_path)
+    monkeypatch.setattr(web, "get_connection", lambda: get_connection(db_path))
+
+    client = TestClient(web.app)
+    resp = client.post("/api/items/999999/toggle-save")
+
+    assert resp.status_code == 404

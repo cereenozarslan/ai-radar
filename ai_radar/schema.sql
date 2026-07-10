@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS items (
     image_url TEXT,                     -- haber görseli / repo sahibi avatarı / tweet yazarının profil fotoğrafı
     signal_score INTEGER,              -- 1-10 arası önem puanı; LLM puanlamadan önce NULL
     signal_reason TEXT,                 -- LLM'in verdiği tek cümlelik gerekçe
+    is_read INTEGER NOT NULL DEFAULT 0,  -- 0/1: kullanıcı bu kaydı açtı mı ("yeni" rozeti için)
+    is_saved INTEGER NOT NULL DEFAULT 0, -- 0/1: kullanıcı yıldızlayıp kaydetti mi
     fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
