@@ -217,18 +217,50 @@
 
   .explorer-focus { margin-top: 1.1rem; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
   .explorer-focus.as-list .item-list { max-height: 460px; overflow-y: auto; }
-  .explorer-focus.as-cards .item-list {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem;
-    padding: 0.85rem; max-height: 520px; overflow-y: auto;
+  .explorer-focus.as-cards { border: none; }
+
+  /* ---------- Fotoğraf üstü başlık kartları (dergi/manşet tarzı) ---------- */
+  .photo-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 0.75rem;
+    padding: 0.2rem; max-height: 520px; overflow-y: auto;
   }
-  .explorer-focus.as-cards .item {
-    flex-direction: column; align-items: stretch; border: 1px solid var(--border); border-radius: 10px;
-    border-left: 1px solid var(--border); padding: 0;
+  .photo-card {
+    position: relative; display: block; aspect-ratio: 4 / 3; border-radius: 10px; overflow: hidden;
+    background: var(--item-accent, var(--surface-2)); text-decoration: none; color: #fff;
+    box-shadow: var(--shadow-sm);
   }
-  .explorer-focus.as-cards .item:hover { border-left-color: var(--border); }
-  .explorer-focus.as-cards .item-media { width: 100%; height: 100px; border-radius: 0; }
-  .explorer-focus.as-cards .item-media .badge { border-radius: 0; }
-  .explorer-focus.as-cards .item-body { padding: 0.6rem 0.7rem; }
+  .photo-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .photo-card-badge { position: absolute; top: 0.5rem; left: 0.5rem; z-index: 1; }
+  .photo-card-overlay {
+    position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 0.7rem; background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0) 100%);
+  }
+  .photo-card-meta { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.65rem; color: rgba(255,255,255,0.8); margin-bottom: 0.25rem; }
+  .photo-card-title {
+    font-weight: 700; font-size: 0.85rem; line-height: 1.3;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .photo-card.hero .photo-card-title { font-size: 1.15rem; -webkit-line-clamp: 3; }
+  .photo-card.hero .photo-card-meta { font-size: 0.72rem; }
+
+  /* Öne çıkan (manşet + ızgara) düzeni: solda büyük, sağda 2x2 küçük */
+  .magazine {
+    display: grid; grid-template-columns: 1.3fr 1fr 1fr; grid-template-rows: repeat(2, 1fr);
+    gap: 0.75rem; height: 360px;
+  }
+  .magazine .photo-card.hero { grid-column: 1; grid-row: 1 / span 2; aspect-ratio: auto; }
+  .magazine .photo-card.grid { aspect-ratio: auto; }
+  .magazine .photo-card.grid:nth-of-type(2) { grid-column: 2; grid-row: 1; }
+  .magazine .photo-card.grid:nth-of-type(3) { grid-column: 3; grid-row: 1; }
+  .magazine .photo-card.grid:nth-of-type(4) { grid-column: 2; grid-row: 2; }
+  .magazine .photo-card.grid:nth-of-type(5) { grid-column: 3; grid-row: 2; }
+  @media (max-width: 720px) {
+    .magazine { grid-template-columns: 1fr 1fr; height: auto; }
+    .magazine .photo-card.hero { grid-column: 1 / -1; grid-row: auto; aspect-ratio: 16 / 9; }
+    .magazine .photo-card.grid { grid-column: auto !important; grid-row: auto !important; aspect-ratio: 4 / 3; }
+  }
+
+  .mag-more { margin-top: 0.85rem; max-height: 320px; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; }
 
   .explorer-others { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.85rem; margin-top: 0.85rem; }
   @media (max-width: 640px) { .explorer-others { grid-template-columns: 1fr; } }
@@ -460,6 +492,45 @@
     `;
   }
 
+  function photoCard(it, meta, variant) {
+    // Görsel yüklenemezse (404 vb.) img'i gizleyip kartın kendisini kaynak
+    // rengiyle boyanmış düz bir arka plana düşürüyoruz (badge + başlık yine görünür kalır).
+    const img = it.image_url
+      ? `<img src="${it.image_url}" alt="" loading="lazy" onerror="this.remove();">`
+      : "";
+    return `
+      <a class="photo-card ${variant}" href="${it.url}" target="_blank" rel="noopener noreferrer" style="--item-accent:var(--${meta.varName})">
+        ${img}
+        <span class="photo-card-badge">${badge(meta, "sm")}</span>
+        <div class="photo-card-overlay">
+          <div class="photo-card-meta">${it.author ? "@" + it.author : "yazar yok"} · ${fmtDate(it.published_at)}</div>
+          <div class="photo-card-title">${it.title}</div>
+        </div>
+      </a>
+    `;
+  }
+
+  function renderMagazine(items, meta) {
+    // En önemli (etkileşimi en yüksek) ilk 5 kayıt: 1 manşet + 2x2 ızgara.
+    // Gerisi, kendi alanı içinde kaydırılabilen sade bir liste olarak kalır.
+    const HERO_COUNT = 5;
+    const top = items.slice(0, HERO_COUNT);
+    const rest = items.slice(HERO_COUNT);
+
+    const magazineHtml = top.length
+      ? `<div class="magazine">
+          ${photoCard(top[0], meta, "hero")}
+          ${top.slice(1).map(it => photoCard(it, meta, "grid")).join("")}
+        </div>`
+      : `<div class="empty-note">Henüz kayıt yok.</div>`;
+
+    const restHtml = rest.length
+      ? `<div class="mag-more item-list">${rest.map(it => itemRow(it, meta)).join("")}</div>`
+      : "";
+
+    return magazineHtml + restHtml;
+  }
+
   function groupBySource(items) {
     const map = {};
     for (const it of items) (map[it.source] ||= []).push(it);
@@ -498,10 +569,17 @@
     const focusItems = (bySource[currentTab] || []).filter(it => matchesFilter(it, filterText));
 
     const focusEl = document.getElementById("explorer-focus");
-    focusEl.className = "explorer-focus " + (currentView === "card" ? "as-cards" : "as-list");
-    focusEl.innerHTML = `<div class="item-list">${
-      focusItems.length ? focusItems.map(it => itemRow(it, meta)).join("") : `<div class="empty-note">Bu filtreyle sonuç yok.</div>`
-    }</div>`;
+    if (currentView === "card") {
+      focusEl.className = "explorer-focus as-cards";
+      focusEl.innerHTML = `<div class="photo-grid">${
+        focusItems.length ? focusItems.map(it => photoCard(it, meta, "grid")).join("") : `<div class="empty-note">Bu filtreyle sonuç yok.</div>`
+      }</div>`;
+    } else {
+      focusEl.className = "explorer-focus as-list";
+      focusEl.innerHTML = `<div class="item-list">${
+        focusItems.length ? focusItems.map(it => itemRow(it, meta)).join("") : `<div class="empty-note">Bu filtreyle sonuç yok.</div>`
+      }</div>`;
+    }
 
     const othersEl = document.getElementById("explorer-others");
     othersEl.innerHTML = SOURCE_ORDER.filter(src => src !== currentTab).map(src => {
@@ -705,8 +783,9 @@
 
       digestStatus.textContent = `${data.result_count} gönderi bulundu, ${data.added_count} yeni kayıt veritabanına eklendi.`;
 
-      digestResults.innerHTML = data.items.map(it => itemRow(it, SOURCE_META.x_twitter)).join("")
-        || `<p class="status">Son 36 saatte takip ettiklerinden gönderi bulunamadı.</p>`;
+      digestResults.innerHTML = data.items.length
+        ? renderMagazine(data.items, SOURCE_META.x_twitter)
+        : `<p class="status">Son 36 saatte takip ettiklerinden gönderi bulunamadı.</p>`;
 
       if (data.added_count > 0) {
         await loadEverything();

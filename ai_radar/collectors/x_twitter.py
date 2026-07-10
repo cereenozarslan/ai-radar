@@ -162,28 +162,49 @@ def search_recent(query: str, max_results: int = 10, start_time: str | None = No
         query=query,
         max_results=clamp_max_results(max_results),
         sort_order="relevancy",
-        tweet_fields=["created_at", "author_id", "public_metrics"],
-        expansions=["author_id"],
+        tweet_fields=["created_at", "author_id", "public_metrics", "attachments"],
+        expansions=["author_id", "attachments.media_keys"],
         user_fields=["username", "profile_image_url"],
+        media_fields=["url", "preview_image_url", "type"],
         **kwargs,
     )
 
 
-def to_item_dict(tweet, users_by_id: dict, source: str = "x_twitter") -> dict:
+def _tweet_media_url(tweet, media_by_key: dict) -> str | None:
+    """Bir tweete eklenmiş gerçek fotoğraf/video önizlemesinin adresini bulur.
+
+    Fotoğraflarda 'url', video/gif'lerde ise 'preview_image_url' doluyor.
+    """
+    media_keys = (getattr(tweet, "attachments", None) or {}).get("media_keys", [])
+    for key in media_keys:
+        media = media_by_key.get(key)
+        if not media:
+            continue
+        url = getattr(media, "url", None) or getattr(media, "preview_image_url", None)
+        if url:
+            return url
+    return None
+
+
+def to_item_dict(tweet, users_by_id: dict, media_by_key: dict | None = None, source: str = "x_twitter") -> dict:
     """Tek bir tweet nesnesini items tablosu şemasına çevirir.
 
     users_by_id: {author_id: user_nesnesi} eşlemesi (search_recent'in
     'includes.users' listesinden oluşturulur), tweet.author_id'den
     kullanıcı adına ulaşmak için kullanılır.
+    media_by_key: {media_key: media_nesnesi} eşlemesi; tweete eklenmiş gerçek
+    bir fotoğraf/video varsa (profil fotoğrafından daha anlamlı olduğu için)
+    onu image_url olarak öncelikli kullanır.
     source: 'x_twitter' (konu araması) veya 'x_following' (takip edilenler
     gündemi) gibi farklı X kaynaklarını ayırt etmek için.
     """
     title = tweet.text if len(tweet.text) <= 80 else tweet.text[:77] + "..."
     user = users_by_id.get(tweet.author_id)
 
-    image_url = None
-    if user and user.profile_image_url:
-        # X, küçük "_normal" (48x48) boyutunda döner; daha net görünmesi için büyütüyoruz
+    image_url = _tweet_media_url(tweet, media_by_key or {})
+    if not image_url and user and user.profile_image_url:
+        # Gerçek tweet görseli yoksa profil fotoğrafına düş; X küçük "_normal"
+        # (48x48) boyutunda döner, daha net görünmesi için büyütüyoruz
         image_url = user.profile_image_url.replace("_normal", "_400x400")
 
     return {
@@ -230,7 +251,8 @@ def collect(
     tweets.sort(key=engagement_score, reverse=True)
 
     users_by_id = {user.id: user for user in (response.includes.get("users") or [])}
-    return [to_item_dict(tweet, users_by_id) for tweet in tweets]
+    media_by_key = {m.media_key: m for m in (response.includes.get("media") or [])}
+    return [to_item_dict(tweet, users_by_id, media_by_key) for tweet in tweets]
 
 
 def collect_following_digest(
@@ -253,6 +275,7 @@ def collect_following_digest(
     seen_ids = set()
     all_tweets = []
     users_by_id = {}
+    media_by_key = {}
 
     for query in queries:
         response = search_recent(query, max_results=max_results_per_batch, start_time=start_time)
@@ -265,9 +288,11 @@ def collect_following_digest(
             all_tweets.append(tweet)
         for user in (response.includes.get("users") or []):
             users_by_id[user.id] = user
+        for media in (response.includes.get("media") or []):
+            media_by_key[media.media_key] = media
 
     all_tweets.sort(key=engagement_score, reverse=True)
-    return [to_item_dict(tweet, users_by_id, source="x_following") for tweet in all_tweets]
+    return [to_item_dict(tweet, users_by_id, media_by_key, source="x_following") for tweet in all_tweets]
 
 
 if __name__ == "__main__":

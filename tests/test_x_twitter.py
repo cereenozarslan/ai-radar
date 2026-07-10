@@ -40,6 +40,49 @@ def test_to_item_dict_converts_tweet_correctly():
     assert item["image_url"] == "https://pbs.twimg.com/profile_images/1/foo_400x400.jpg"
 
 
+def test_to_item_dict_prefers_real_tweet_photo_over_profile_picture():
+    """Tweete eklenmiş gerçek bir fotoğraf varsa, profil fotoğrafından öncelikli olmalı."""
+    tweet = SimpleNamespace(
+        id=1, text="bir foto paylaşımı", author_id=42, created_at=None,
+        attachments={"media_keys": ["3_abc"]},
+    )
+    users_by_id = {42: SimpleNamespace(
+        id=42, username="birkullanici",
+        profile_image_url="https://pbs.twimg.com/profile_images/1/foo_normal.jpg",
+    )}
+    media_by_key = {"3_abc": SimpleNamespace(media_key="3_abc", type="photo", url="https://pbs.twimg.com/media/gercek_foto.jpg", preview_image_url=None)}
+
+    item = to_item_dict(tweet, users_by_id, media_by_key)
+
+    assert item["image_url"] == "https://pbs.twimg.com/media/gercek_foto.jpg"
+
+
+def test_to_item_dict_falls_back_to_preview_image_for_video():
+    """Fotoğrafta 'url' yok ama video/gif'te 'preview_image_url' olabilir."""
+    tweet = SimpleNamespace(
+        id=1, text="bir video paylaşımı", author_id=42, created_at=None,
+        attachments={"media_keys": ["7_vid"]},
+    )
+    media_by_key = {"7_vid": SimpleNamespace(media_key="7_vid", type="video", url=None, preview_image_url="https://pbs.twimg.com/ext_tw_video_thumb/onizleme.jpg")}
+
+    item = to_item_dict(tweet, users_by_id={}, media_by_key=media_by_key)
+
+    assert item["image_url"] == "https://pbs.twimg.com/ext_tw_video_thumb/onizleme.jpg"
+
+
+def test_to_item_dict_falls_back_to_profile_picture_without_media():
+    """attachments yoksa (veya media_by_key boşsa) profil fotoğrafına düşülmeli."""
+    tweet = SimpleNamespace(id=1, text="metin", author_id=42, created_at=None)
+    users_by_id = {42: SimpleNamespace(
+        id=42, username="biri",
+        profile_image_url="https://pbs.twimg.com/profile_images/1/foo_normal.jpg",
+    )}
+
+    item = to_item_dict(tweet, users_by_id, media_by_key={})
+
+    assert item["image_url"] == "https://pbs.twimg.com/profile_images/1/foo_400x400.jpg"
+
+
 def test_to_item_dict_handles_long_text_and_missing_user():
     long_text = "a" * 100
     tweet = SimpleNamespace(id=1, text=long_text, author_id=99, created_at=None)
