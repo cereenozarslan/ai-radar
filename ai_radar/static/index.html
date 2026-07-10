@@ -181,6 +181,15 @@
   .search-results { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem; }
   .search-results .item { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; }
 
+  /* ---------- Takip ettiklerinin gündemi ---------- */
+  section.following-digest { margin-top: 1.75rem; padding: 1.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-md); }
+  .digest-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .digest-ticker {
+    margin-top: 0.9rem; font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+    font-size: 0.8rem; color: var(--text-muted); background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 0.55rem 0.8rem; display: none;
+  }
+
   /* ---------- Kaynakları keşfet (odak + diğerleri) ---------- */
   section.explorer { margin-top: 1.75rem; padding: 1.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-md); }
 
@@ -345,6 +354,20 @@
       <div class="search-results" id="search-results"></div>
     </div>
 
+    <section class="following-digest">
+      <div class="digest-head">
+        <div>
+          <div class="eyebrow" style="margin-bottom:0.3rem;">X · takip ettiklerin</div>
+          <h2 class="section-title">Takip ettiklerinin gündemi</h2>
+        </div>
+        <button type="button" class="primary" id="digest-refresh-btn">Yenile</button>
+      </div>
+      <p class="hint">X'te takip ettiğin hesapların son 36 saatte paylaştıklarına bakar. Üstteki genel gündem şeridini etkilemez, ayrı bir alan. Her yenileme gerçek X API istekleri gönderir (kredi harcar) — bu yüzden otomatik açılmaz, sadece "Yenile"ye bastığınızda çalışır.</p>
+      <div class="status" id="digest-status"></div>
+      <div class="digest-ticker" id="digest-ticker"></div>
+      <div class="search-results" id="digest-results"></div>
+    </section>
+
     <section class="explorer">
       <h2 class="section-title">Kaynakları keşfet</h2>
       <div class="explorer-toolbar">
@@ -448,7 +471,7 @@
     return (it.title + " " + (it.content || "")).toLowerCase().includes(text);
   }
 
-  function renderTicker(items) {
+  function topWords(items, n) {
     const freq = {};
     for (const it of items) {
       const words = (it.title || "").toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/);
@@ -457,7 +480,11 @@
         freq[w] = (freq[w] || 0) + 1;
       }
     }
-    const top = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([w]) => w);
+    return Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, n).map(([w]) => w);
+  }
+
+  function renderTicker(items) {
+    const top = topWords(items, 8);
     const text = top.length ? top.join("   ·   ") : "henüz yeterli veri yok";
     // Kusursuz döngü için metni iki kez yerleştirip %50 kaydırıyoruz
     document.getElementById("ticker-track").textContent = text + "     " + text;
@@ -645,6 +672,52 @@
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = "Ara";
+    }
+  });
+
+  // --- Takip ettiklerinin gündemi ---
+  const digestBtn = document.getElementById("digest-refresh-btn");
+  const digestStatus = document.getElementById("digest-status");
+  const digestTicker = document.getElementById("digest-ticker");
+  const digestResults = document.getElementById("digest-results");
+
+  digestBtn.addEventListener("click", async () => {
+    digestBtn.disabled = true;
+    digestBtn.textContent = "Yükleniyor…";
+    digestStatus.className = "status";
+    digestStatus.textContent = "Takip ettiğin hesaplar taranıyor, gerçek X API istekleri gönderiliyor (birden fazla olabilir)…";
+    digestTicker.style.display = "none";
+    digestResults.innerHTML = "";
+
+    try {
+      const resp = await fetch("/api/following-digest?hours=36");
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        throw new Error(data.detail || "Bilinmeyen hata");
+      }
+
+      const words = topWords(data.items, 8);
+      if (words.length) {
+        digestTicker.textContent = "Öne çıkanlar: " + words.join("   ·   ");
+        digestTicker.style.display = "block";
+      }
+
+      digestStatus.textContent = `${data.result_count} gönderi bulundu, ${data.added_count} yeni kayıt veritabanına eklendi.`;
+
+      digestResults.innerHTML = data.items.map(it => itemRow(it, SOURCE_META.x_twitter)).join("")
+        || `<p class="status">Son 36 saatte takip ettiklerinden gönderi bulunamadı.</p>`;
+
+      if (data.added_count > 0) {
+        await loadEverything();
+      }
+
+    } catch (err) {
+      digestStatus.className = "status error";
+      digestStatus.textContent = "Hata: " + err.message;
+    } finally {
+      digestBtn.disabled = false;
+      digestBtn.textContent = "Yenile";
     }
   });
 

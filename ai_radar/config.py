@@ -20,5 +20,8 @@ class Config:
     # X (Twitter) API - okuma/arama için bearer token (app-only auth) yeterli
     X_BEARER_TOKEN: str | None = os.getenv("X_BEARER_TOKEN")
 
+    # "Takip ettiklerinin gündemi" özelliği için kullanıcının kendi X kullanıcı adı
+    X_FOLLOW_USERNAME: str | None = os.getenv("X_FOLLOW_USERNAME")
+
 
 config = Config()

@@ -20,6 +20,7 @@ from fastapi.responses import HTMLResponse
 
 from ai_radar.collectors import x_twitter
 from ai_radar.collectors.common import save_items
+from ai_radar.config import config
 from ai_radar.database import get_connection
 from ai_radar.query_parser import parse_natural_query
 
@@ -68,6 +69,35 @@ def search(q: str):
     return {
         "query": q,
         "interpreted": parsed,
+        "result_count": len(items),
+        "added_count": added,
+        "items": items,
+    }
+
+
+@app.get("/api/following-digest")
+def following_digest(hours: float = 36):
+    """Kullanıcının X'te takip ettiği hesapların son `hours` saatteki gönderilerini toplar.
+
+    X_FOLLOW_USERNAME .env'de tanımlı olmalı. Manuel olarak (bir 'yenile' butonuyla)
+    tetiklenmesi amaçlanır — takip listesi büyükse birden fazla gerçek X API isteği
+    gönderir (kredi harcar), bu yüzden sayfa her açıldığında otomatik çağrılmaz.
+    """
+    if not config.X_FOLLOW_USERNAME:
+        raise HTTPException(
+            status_code=400,
+            detail="X_FOLLOW_USERNAME .env dosyasında tanımlı değil.",
+        )
+
+    try:
+        items = x_twitter.collect_following_digest(config.X_FOLLOW_USERNAME, hours=hours)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"X API hatası: {exc}") from exc
+
+    added = save_items(items)
+
+    return {
+        "hours": hours,
         "result_count": len(items),
         "added_count": added,
         "items": items,

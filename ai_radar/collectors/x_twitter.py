@@ -74,6 +74,78 @@ def _get_client() -> tweepy.Client:
     return tweepy.Client(bearer_token=config.X_BEARER_TOKEN)
 
 
+def get_user_id(username: str) -> str:
+    """Kullanıcı adından X'in dahili kullanıcı id'sini çözer. Gerçek bir API isteği gönderir."""
+    client = _get_client()
+    resp = client.get_user(username=username.lstrip("@"))
+    if not resp.data:
+        raise ValueError(f"'{username}' adında bir X kullanıcısı bulunamadı.")
+    return resp.data.id
+
+
+def get_following_usernames(username: str, max_accounts: int = 200) -> list[str]:
+    """Verilen kullanıcının takip ettiği hesapların kullanıcı adlarını döner.
+
+    Yeni takip edilen hesaplar otomatik dahil olur (her çağrıda anlık çekilir,
+    ayrıca bir listede saklanmaz). Gerçek bir X API isteği gönderir (kredi harcar).
+    """
+    client = _get_client()
+    user_id = get_user_id(username)
+
+    usernames: list[str] = []
+    pagination_token = None
+    while len(usernames) < max_accounts:
+        resp = client.get_users_following(
+            id=user_id,
+            max_results=min(1000, max_accounts - len(usernames)),
+            user_fields=["username"],
+            pagination_token=pagination_token,
+        )
+        if not resp.data:
+            break
+        usernames.extend(u.username for u in resp.data)
+        pagination_token = (resp.meta or {}).get("next_token")
+        if not pagination_token:
+            break
+
+    return usernames
+
+
+# Takip edilen kişilerin gönderileri için gürültü filtresi: NOISE_FILTERS'tan farklı
+# olarak "lang:en" YOK, çünkü kullanıcı farklı dillerde hesaplar takip ediyor olabilir.
+FOLLOWING_NOISE_FILTERS = "-is:retweet -is:reply"
+
+
+def build_following_queries(usernames: list[str], max_query_length: int = 480) -> list[str]:
+    """Takip edilen hesap listesini X'in sorgu uzunluğu sınırına (512 karakter)
+    uyacak şekilde birden fazla '(from:a OR from:b OR ...)' sorgusuna böler.
+
+    Çok sayıda hesap takip ediliyorsa tek bir istekte hepsini soramayız;
+    bu yüzden birden fazla arama isteği gerekebilir (her biri kredi harcar).
+    """
+    if not usernames:
+        return []
+
+    def make_query(names: list[str]) -> str:
+        body = " OR ".join(f"from:{n}" for n in names)
+        return f"({body}) {FOLLOWING_NOISE_FILTERS}"
+
+    queries = []
+    current: list[str] = []
+    for uname in usernames:
+        candidate = current + [uname]
+        if len(make_query(candidate)) > max_query_length and current:
+            queries.append(make_query(current))
+            current = [uname]
+        else:
+            current = candidate
+
+    if current:
+        queries.append(make_query(current))
+
+    return queries
+
+
 def search_recent(query: str, max_results: int = 10, start_time: str | None = None) -> tweepy.Response:
     """Son 7 gündeki gönderilerde arama yapar (X'in 'recent search' uç noktası).
 
@@ -97,12 +169,14 @@ def search_recent(query: str, max_results: int = 10, start_time: str | None = No
     )
 
 
-def to_item_dict(tweet, users_by_id: dict) -> dict:
+def to_item_dict(tweet, users_by_id: dict, source: str = "x_twitter") -> dict:
     """Tek bir tweet nesnesini items tablosu şemasına çevirir.
 
     users_by_id: {author_id: user_nesnesi} eşlemesi (search_recent'in
     'includes.users' listesinden oluşturulur), tweet.author_id'den
     kullanıcı adına ulaşmak için kullanılır.
+    source: 'x_twitter' (konu araması) veya 'x_following' (takip edilenler
+    gündemi) gibi farklı X kaynaklarını ayırt etmek için.
     """
     title = tweet.text if len(tweet.text) <= 80 else tweet.text[:77] + "..."
     user = users_by_id.get(tweet.author_id)
@@ -113,7 +187,7 @@ def to_item_dict(tweet, users_by_id: dict) -> dict:
         image_url = user.profile_image_url.replace("_normal", "_400x400")
 
     return {
-        "source": "x_twitter",
+        "source": source,
         "title": title,
         "url": f"https://x.com/i/web/status/{tweet.id}",
         "content": tweet.text,
@@ -157,6 +231,43 @@ def collect(
 
     users_by_id = {user.id: user for user in (response.includes.get("users") or [])}
     return [to_item_dict(tweet, users_by_id) for tweet in tweets]
+
+
+def collect_following_digest(
+    username: str,
+    hours: float = 36,
+    max_results_per_batch: int = 100,
+    max_accounts: int = 200,
+) -> list[dict]:
+    """Kullanıcının takip ettiği hesapların son `hours` saatteki gönderilerini toplar.
+
+    Takip listesi her çağrıda anlık çekilir (yeni takip edilenler otomatik dahil
+    olur). Takip edilen hesap sayısına bağlı olarak BİRDEN FAZLA gerçek X API
+    isteği gönderebilir (takip listesini çekmek için 1+, her sorgu grubu için 1) —
+    her biri kredi harcar.
+    """
+    usernames = get_following_usernames(username, max_accounts=max_accounts)
+    queries = build_following_queries(usernames)
+
+    start_time = compute_start_time(hours)
+    seen_ids = set()
+    all_tweets = []
+    users_by_id = {}
+
+    for query in queries:
+        response = search_recent(query, max_results=max_results_per_batch, start_time=start_time)
+        if not response.data:
+            continue
+        for tweet in response.data:
+            if tweet.id in seen_ids:
+                continue
+            seen_ids.add(tweet.id)
+            all_tweets.append(tweet)
+        for user in (response.includes.get("users") or []):
+            users_by_id[user.id] = user
+
+    all_tweets.sort(key=engagement_score, reverse=True)
+    return [to_item_dict(tweet, users_by_id, source="x_following") for tweet in all_tweets]
 
 
 if __name__ == "__main__":

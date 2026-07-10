@@ -80,3 +80,49 @@ def test_list_items_returns_database_contents(tmp_path, monkeypatch):
     assert data[0]["title"] == "test haber"
     assert data[0]["source"] == "nuvemmag"
     assert data[0]["image_url"] == "https://example.com/foto.jpg"
+
+
+def test_following_digest_returns_items(monkeypatch):
+    def fake_digest(username, hours=36):
+        assert username == "birkullanici"
+        assert hours == 36
+        return [{
+            "source": "x_following", "title": "örnek", "url": "https://x.com/i/web/status/1",
+            "content": "örnek", "author": "biri", "published_at": None,
+        }]
+
+    monkeypatch.setattr(web.config, "X_FOLLOW_USERNAME", "birkullanici")
+    monkeypatch.setattr(web.x_twitter, "collect_following_digest", fake_digest)
+    monkeypatch.setattr(web, "save_items", lambda items: len(items))
+
+    client = TestClient(web.app)
+    resp = client.get("/api/following-digest")
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["result_count"] == 1
+    assert data["added_count"] == 1
+    assert data["items"][0]["source"] == "x_following"
+
+
+def test_following_digest_requires_configured_username(monkeypatch):
+    monkeypatch.setattr(web.config, "X_FOLLOW_USERNAME", None)
+
+    client = TestClient(web.app)
+    resp = client.get("/api/following-digest")
+
+    assert resp.status_code == 400
+
+
+def test_following_digest_returns_502_on_x_api_error(monkeypatch):
+    monkeypatch.setattr(web.config, "X_FOLLOW_USERNAME", "birkullanici")
+
+    def failing_digest(username, hours=36):
+        raise RuntimeError("X API kota doldu")
+
+    monkeypatch.setattr(web.x_twitter, "collect_following_digest", failing_digest)
+
+    client = TestClient(web.app)
+    resp = client.get("/api/following-digest")
+
+    assert resp.status_code == 502

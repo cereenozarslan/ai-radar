@@ -3,9 +3,11 @@ from types import SimpleNamespace
 
 import ai_radar.collectors.x_twitter as x_twitter
 from ai_radar.collectors.x_twitter import (
+    build_following_queries,
     build_query,
     clamp_max_results,
     collect,
+    collect_following_digest,
     compute_start_time,
     engagement_score,
     to_item_dict,
@@ -142,3 +144,60 @@ def test_collect_passes_computed_start_time_to_search_recent(monkeypatch):
 
     assert captured["start_time"] is not None
     assert captured["start_time"].endswith("Z")
+
+
+def test_build_following_queries_splits_long_lists_into_batches():
+    """Sorgu 480 karakteri aşmamalı; aşan hesaplar yeni bir gruba (ikinci sorguya) taşınmalı."""
+    # Her biri ~15 karakterlik "from:kullaniciXXX" ifadeleri; 480 karakter sınırını
+    # tek sorguda aşacak kadar çok kullanıcı adı üretelim.
+    usernames = [f"kullanici{i:03d}" for i in range(60)]
+    queries = build_following_queries(usernames)
+
+    assert len(queries) >= 2
+    for q in queries:
+        assert len(q) <= 480 + 20  # NOISE_FILTERS eklentisi icin biraz pay
+        assert "-is:retweet" in q
+        assert "-is:reply" in q
+        assert "lang:en" not in q  # takip edilenler farkli dillerde olabilir
+
+
+def test_build_following_queries_returns_empty_for_no_usernames():
+    assert build_following_queries([]) == []
+
+
+def test_collect_following_digest_aggregates_and_dedupes_across_batches(monkeypatch):
+    """Birden fazla sorgu grubundan gelen sonuçlar birleşmeli, aynı tweet iki kez sayılmamalı,
+    ve source alanı 'x_following' olmalı."""
+    def fake_get_following_usernames(username, max_accounts=200):
+        return ["a", "b"]
+
+    def make_tweet(id_, likes, author_id=1):
+        return SimpleNamespace(
+            id=id_, text=f"tweet-{id_}", author_id=author_id, created_at=None,
+            public_metrics={"like_count": likes, "retweet_count": 0, "reply_count": 0, "quote_count": 0},
+        )
+
+    responses = [
+        SimpleNamespace(
+            data=[make_tweet(1, likes=5), make_tweet(2, likes=50)],
+            includes={"users": [SimpleNamespace(id=1, username="a", profile_image_url=None)]},
+        ),
+        SimpleNamespace(
+            data=[make_tweet(2, likes=50)],  # 1. sorguda da gelen ayni tweet (dedup test)
+            includes={"users": [SimpleNamespace(id=1, username="a", profile_image_url=None)]},
+        ),
+    ]
+
+    monkeypatch.setattr(x_twitter, "get_following_usernames", fake_get_following_usernames)
+    monkeypatch.setattr(x_twitter, "build_following_queries", lambda usernames: ["sorgu1", "sorgu2"])
+    monkeypatch.setattr(
+        x_twitter, "search_recent",
+        lambda query, max_results=100, start_time=None: responses.pop(0),
+    )
+
+    items = collect_following_digest("birkullanici", hours=36)
+
+    assert len(items) == 2
+    assert all(item["source"] == "x_following" for item in items)
+    # etkilesime gore siralanmis olmali (id=2, 50 begeni, once gelmeli)
+    assert items[0]["title"] == "tweet-2"
