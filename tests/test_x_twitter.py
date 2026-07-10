@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import ai_radar.collectors.x_twitter as x_twitter
@@ -6,6 +6,7 @@ from ai_radar.collectors.x_twitter import (
     build_query,
     clamp_max_results,
     collect,
+    compute_start_time,
     engagement_score,
     to_item_dict,
 )
@@ -95,9 +96,43 @@ def test_collect_sorts_by_engagement_and_applies_min_threshold(monkeypatch):
         includes={"users": [SimpleNamespace(id=1, username="birkullanici")]},
     )
 
-    monkeypatch.setattr(x_twitter, "search_recent", lambda query, max_results: fake_response)
+    monkeypatch.setattr(
+        x_twitter, "search_recent",
+        lambda query, max_results, start_time=None: fake_response,
+    )
 
     items = collect(topic="Fable 5", min_engagement=5)
 
     # id=1 (2 begeni) esik altinda kaldigi icin elenmeli
     assert [item["title"] for item in items] == ["tweet-2", "tweet-3"]
+
+
+def test_compute_start_time_returns_x_api_compatible_format():
+    """X API 'YYYY-MM-DDTHH:MM:SSZ' formatinda bir zaman damgasi bekliyor."""
+    result = compute_start_time(24)
+    assert result.endswith("Z")
+    # Bicimin gecerli oldugunu (parse edilebildigini) dogrula
+    datetime.strptime(result, "%Y-%m-%dT%H:%M:%SZ")
+
+
+def test_compute_start_time_is_roughly_n_hours_ago():
+    result = compute_start_time(24)
+    parsed = datetime.strptime(result, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    expected = datetime.now(timezone.utc) - timedelta(hours=24)
+    assert abs((parsed - expected).total_seconds()) < 5
+
+
+def test_collect_passes_computed_start_time_to_search_recent(monkeypatch):
+    """collect(hours=...) verildiginde search_recent'e dogru start_time gitmeli."""
+    captured = {}
+
+    def fake_search_recent(query, max_results, start_time=None):
+        captured["start_time"] = start_time
+        return SimpleNamespace(data=[], includes={})
+
+    monkeypatch.setattr(x_twitter, "search_recent", fake_search_recent)
+
+    collect(topic="Claude", hours=24)
+
+    assert captured["start_time"] is not None
+    assert captured["start_time"].endswith("Z")

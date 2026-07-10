@@ -9,12 +9,13 @@ Bu modüldeki collect()/search_recent() fonksiyonlarını çağırmak GERÇEK
 bir API isteği gönderir ve hesap bakiyenizden kredi düşer.
 
 Kullanım (belirli bir konuyu anlık aramak için):
-    python -m ai_radar.collectors.x_twitter Fable 5
-    python -m ai_radar.collectors.x_twitter "Meta Muse"
+    python -m ai_radar.collectors.x_twitter Claude
+    python -m ai_radar.collectors.x_twitter "Meta Muse" --hours 24 --min-engagement 50
 Argüman verilmezse DEFAULT_QUERY (genel AI/LLM taraması) kullanılır.
 """
 
-import sys
+import argparse
+from datetime import datetime, timedelta, timezone
 
 import tweepy
 
@@ -44,6 +45,15 @@ def clamp_max_results(max_results: int) -> int:
     return max(10, min(max_results, 100))
 
 
+def compute_start_time(hours: float) -> str:
+    """'Son N saat' filtresi için X API'nin beklediği ISO 8601 UTC zaman damgasını üretir.
+
+    X'in recent search uç noktası en fazla son 7 günü (168 saat) destekliyor.
+    """
+    start = datetime.now(timezone.utc) - timedelta(hours=hours)
+    return start.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def engagement_score(tweet) -> int:
     """Bir tweet'in etkileşim ağırlığını hesaplar (yüksek etkileşimli içeriği öne çıkarmak için).
 
@@ -64,13 +74,18 @@ def _get_client() -> tweepy.Client:
     return tweepy.Client(bearer_token=config.X_BEARER_TOKEN)
 
 
-def search_recent(query: str, max_results: int = 10) -> tweepy.Response:
+def search_recent(query: str, max_results: int = 10, start_time: str | None = None) -> tweepy.Response:
     """Son 7 gündeki gönderilerde arama yapar (X'in 'recent search' uç noktası).
 
     sort_order="relevancy": X'in kendi alaka/etkileşim ağırlıklı sıralaması
     (salt kronolojik "recency" yerine), yüksek etkileşimli gönderileri öne çıkarır.
+    start_time verilirse, sadece bu zamandan sonraki gönderiler döner ("son N saat" filtresi).
     """
     client = _get_client()
+    kwargs = {}
+    if start_time is not None:
+        kwargs["start_time"] = start_time
+
     return client.search_recent_tweets(
         query=query,
         max_results=clamp_max_results(max_results),
@@ -78,6 +93,7 @@ def search_recent(query: str, max_results: int = 10) -> tweepy.Response:
         tweet_fields=["created_at", "author_id", "public_metrics"],
         expansions=["author_id"],
         user_fields=["username"],
+        **kwargs,
     )
 
 
@@ -106,6 +122,7 @@ def collect(
     query: str | None = None,
     max_results: int = 10,
     min_engagement: int = 0,
+    hours: float | None = None,
 ) -> list[dict]:
     """Bir konuyu (ör. 'Fable 5') veya ham bir sorguyu arayıp items şemasına çevirir.
 
@@ -116,13 +133,16 @@ def collect(
     - min_engagement > 0 verilirse, bu eşiğin altındaki düşük etkileşimli
       gönderiler tamamen elenir (niş/yeni konularda sonuç sayısını azaltabilir,
       bu yüzden varsayılan 0'dır).
+    - hours verilirse (ör. 24), sadece son o kadar saat içinde paylaşılmış
+      gönderiler döner ("son 24 saat" gibi filtreler için).
 
     Gerçek bir X API isteği gönderir (kredi harcar).
     """
     if query is None:
         query = build_query(topic) if topic else DEFAULT_QUERY
 
-    response = search_recent(query, max_results)
+    start_time = compute_start_time(hours) if hours else None
+    response = search_recent(query, max_results, start_time=start_time)
     if not response.data:
         return []
 
@@ -136,8 +156,34 @@ def collect(
 if __name__ == "__main__":
     from ai_radar.collectors.common import save_items
 
-    topic_arg = " ".join(sys.argv[1:]) or None
-    collected = collect(topic=topic_arg)
+    parser = argparse.ArgumentParser(
+        description="X (Twitter) üzerinde bir konuyu arar ve sonuçları veritabanına kaydeder."
+    )
+    parser.add_argument("topic", nargs="*", help="Aranacak konu, örn: Claude")
+    parser.add_argument(
+        "--hours", type=float, default=None,
+        help="Sadece son N saat içinde paylaşılmış gönderiler (örn: 24)",
+    )
+    parser.add_argument(
+        "--min-engagement", type=int, default=0,
+        help="Bu eşiğin altındaki düşük etkileşimli gönderileri ele",
+    )
+    parser.add_argument(
+        "--max-results", type=int, default=10,
+        help="En fazla kaç gönderi çekilsin (X'in kuralı: 10-100)",
+    )
+    args = parser.parse_args()
+
+    topic_arg = " ".join(args.topic) or None
+    collected = collect(
+        topic=topic_arg,
+        max_results=args.max_results,
+        min_engagement=args.min_engagement,
+        hours=args.hours,
+    )
     added = save_items(collected)
+
     label = topic_arg or "varsayılan AI/LLM sorgusu"
-    print(f"X (Twitter) [{label}]: {len(collected)} kayıt toplandı, {added} yeni kayıt eklendi.")
+    window = f", son {args.hours:g} saat" if args.hours else ""
+    engagement_note = f", min. etkileşim {args.min_engagement}" if args.min_engagement else ""
+    print(f"X (Twitter) [{label}{window}{engagement_note}]: {len(collected)} kayıt toplandı, {added} yeni kayıt eklendi.")
