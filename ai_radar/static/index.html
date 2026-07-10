@@ -75,7 +75,7 @@
   a { color: inherit; }
   svg { display: block; }
 
-  /* ---------- Üst bar ---------- */
+  /* ---------- Üst bar + gündem şeridi ---------- */
   header.top {
     position: sticky; top: 0; z-index: 20;
     display: flex; align-items: center; justify-content: space-between;
@@ -107,23 +107,44 @@
   }
   .theme-toggle button.active { background: var(--surface); color: var(--accent); box-shadow: var(--shadow-sm); }
 
+  .ticker {
+    position: sticky; top: 57px; z-index: 19;
+    overflow: hidden; white-space: nowrap;
+    background: var(--surface-2); border-bottom: 1px solid var(--border);
+    padding: 0.4rem 0;
+  }
+  .ticker-eyebrow {
+    position: absolute; left: 1.5rem; top: 50%; transform: translateY(-50%);
+    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+    font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--accent); background: var(--surface-2); padding-right: 0.6rem; z-index: 1;
+  }
+  .ticker-track {
+    display: inline-block; padding-left: 7rem;
+    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+    font-size: 0.76rem; color: var(--text-muted);
+    animation: ticker-scroll 26s linear infinite;
+  }
+  @keyframes ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) { .ticker-track { animation: none; } }
+
   /* ---------- Genel yerleşim ---------- */
   .layout { display: flex; max-width: 1260px; margin: 0 auto; }
 
   nav.sidebar {
-    position: sticky; top: 57px; align-self: flex-start;
+    position: sticky; top: 98px; align-self: flex-start;
     display: flex; flex-direction: column; gap: 0.5rem;
     padding: 1.5rem 0.75rem;
-    height: calc(100vh - 57px);
   }
-  nav.sidebar a {
+  nav.sidebar button {
     display: flex; align-items: center; justify-content: center;
     width: 42px; height: 42px; border-radius: 12px;
     background: var(--surface); border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm); text-decoration: none;
-    transition: transform 0.12s ease;
+    box-shadow: var(--shadow-sm); cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
   }
-  nav.sidebar a:hover { transform: translateY(-1px); }
+  nav.sidebar button:hover { transform: translateY(-1px); }
+  nav.sidebar button.active { box-shadow: 0 0 0 2px var(--icon-color, var(--accent)) inset; }
   @media (max-width: 900px) { nav.sidebar { display: none; } }
 
   .page { flex: 1; min-width: 0; padding: 0 1.5rem 4rem; }
@@ -132,6 +153,7 @@
   .hero { margin-top: 2.25rem; padding: 2rem 2rem 1.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-md); }
   .eyebrow { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.6rem; }
   h1 { font-size: clamp(1.35rem, 2.4vw, 1.7rem); font-weight: 700; letter-spacing: -0.015em; margin: 0 0 1.1rem; text-wrap: balance; }
+  h2.section-title { font-size: 1rem; font-weight: 700; margin: 0; }
 
   form.search { display: flex; gap: 0.55rem; }
   input[type="text"] {
@@ -159,17 +181,67 @@
   .search-results { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem; }
   .search-results .item { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; }
 
-  /* ---------- Genel kayıt görünümü ---------- */
-  section.browse { margin: 2.5rem 0 3.5rem; padding: 1.75rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 16px; }
+  /* ---------- Kaynakları keşfet (odak + diğerleri) ---------- */
+  section.explorer { margin-top: 1.75rem; padding: 1.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-md); }
+
+  .explorer-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-top: 1rem; }
+  .tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .tab {
+    display: flex; align-items: center; gap: 0.4rem;
+    padding: 0.45rem 0.85rem; border-radius: 20px;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted);
+    font-size: 0.83rem; font-weight: 600; cursor: pointer;
+  }
+  .tab.active { background: var(--tab-color, var(--accent)); color: var(--tab-ink, var(--accent-ink)); border-color: transparent; }
+
+  .toolbar-spacer { flex: 1; }
+  .filter-input {
+    padding: 0.5rem 0.85rem; font-size: 0.85rem; border-radius: 20px;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+    min-width: 200px;
+  }
+  .filter-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .view-toggle { display: flex; gap: 0.2rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 0.2rem; }
+  .view-toggle button { border: none; background: transparent; width: 30px; height: 28px; border-radius: 7px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .view-toggle button.active { background: var(--surface); color: var(--accent); box-shadow: var(--shadow-sm); }
+
+  .explorer-focus { margin-top: 1.1rem; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .explorer-focus.as-list .item-list { max-height: 460px; overflow-y: auto; }
+  .explorer-focus.as-cards .item-list {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem;
+    padding: 0.85rem; max-height: 520px; overflow-y: auto;
+  }
+  .explorer-focus.as-cards .item {
+    flex-direction: column; align-items: stretch; border: 1px solid var(--border); border-radius: 10px;
+    border-left: 1px solid var(--border); padding: 0;
+  }
+  .explorer-focus.as-cards .item:hover { border-left-color: var(--border); }
+  .explorer-focus.as-cards .item-media { width: 100%; height: 100px; border-radius: 0; }
+  .explorer-focus.as-cards .item-media .badge { border-radius: 0; }
+  .explorer-focus.as-cards .item-body { padding: 0.6rem 0.7rem; }
+
+  .explorer-others { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.85rem; margin-top: 0.85rem; }
+  @media (max-width: 640px) { .explorer-others { grid-template-columns: 1fr; } }
+  .mini-col { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 0.85rem; }
+  .mini-head { display: flex; align-items: center; gap: 0.45rem; font-weight: 600; font-size: 0.82rem; margin-bottom: 0.5rem; }
+  .mini-item {
+    display: block; font-size: 0.8rem; padding: 0.35rem 0; text-decoration: none;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mini-item:last-of-type { border-bottom: none; }
+  .mini-item:hover { text-decoration: underline; }
+  .mini-more { display: block; font-size: 0.74rem; color: var(--text-muted); padding-top: 0.4rem; }
+
+  /* ---------- Tüm kaynaklar (özet, en altta) ---------- */
+  section.browse { margin: 1.75rem 0 3.5rem; padding: 1.75rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 16px; }
   .stat-row { display: flex; flex-wrap: wrap; gap: 0.6rem; }
   .stat-chip { display: flex; align-items: center; gap: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 0.45rem 0.75rem; box-shadow: var(--shadow-sm); }
   .stat-chip .n { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-weight: 700; }
   .stat-chip .lbl { font-size: 0.77rem; color: var(--text-muted); }
 
-  .badge {
-    display: flex; align-items: center; justify-content: center;
-    width: 20px; height: 20px; border-radius: 6px; flex: none;
-  }
+  .badge { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 6px; flex: none; }
   .badge svg { width: 12px; height: 12px; }
   .badge.sm { width: 16px; height: 16px; border-radius: 4px; }
   .badge.sm svg { width: 9px; height: 9px; }
@@ -177,12 +249,12 @@
   .columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 1.1rem; }
   @media (max-width: 900px) { .columns { grid-template-columns: 1fr; } }
 
-  .col { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm); scroll-margin-top: 72px; }
+  .col { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm); }
   .col-head { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
   .col-head .name { display: flex; align-items: center; gap: 0.55rem; font-weight: 700; font-size: 0.89rem; }
   .col-head .count { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.76rem; color: var(--text-muted); }
 
-  .item-list { max-height: 560px; overflow-y: auto; }
+  .item-list { max-height: 420px; overflow-y: auto; }
   .item {
     padding: 0.65rem 1rem 0.65rem 0.85rem; border-bottom: 1px solid var(--border);
     border-left: 3px solid transparent; display: flex; gap: 0.65rem; align-items: flex-start;
@@ -199,11 +271,18 @@
   .item-media .badge { width: 100%; height: 100%; border-radius: 8px; }
   .item-media .badge svg { width: 16px; height: 16px; }
 
-  .item-body { min-width: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+  .item-body { min-width: 0; display: flex; flex-direction: column; gap: 0.25rem; flex: 1; }
   .item-body a { text-decoration: none; font-size: 0.87rem; font-weight: 500; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .item-body a:hover { text-decoration: underline; }
   .item-body a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
   .item-body .meta { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.7rem; color: var(--text-muted); }
+
+  .score-ring {
+    flex: none; width: 26px; height: 26px; border-radius: 50%;
+    border: 1.5px dashed var(--border); display: flex; align-items: center; justify-content: center;
+    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+    font-size: 0.68rem; color: var(--text-muted); align-self: center;
+  }
 
   .empty-note { padding: 1.2rem 1rem; color: var(--text-muted); font-size: 0.83rem; }
 </style>
@@ -225,17 +304,22 @@
   </div>
 </header>
 
+<div class="ticker">
+  <span class="ticker-eyebrow">Gündem</span>
+  <span class="ticker-track" id="ticker-track">yükleniyor…</span>
+</div>
+
 <div class="layout">
-  <nav class="sidebar" aria-label="Kaynaklara git">
-    <a href="#col-nuvemmag" title="NuvemMag" style="color:var(--nuvemmag)">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6.5 19a4.5 4.5 0 0 1-.4-8.98A6 6 0 0 1 17.6 8.1 4.5 4.5 0 0 1 17 19H6.5z"/></svg>
-    </a>
-    <a href="#col-github_trending" title="GitHub Trending" style="color:var(--github)">
-      <svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="4" cy="3" r="1.6"/><circle cx="4" cy="13" r="1.6"/><circle cx="12" cy="8" r="1.6"/><path d="M4 4.6v6.8"/><path d="M4 6a6 6 0 0 0 6.4 2"/></svg>
-    </a>
-    <a href="#col-x_twitter" title="X" style="color:var(--x)">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 4l16 16M20 4L4 20"/></svg>
-    </a>
+  <nav class="sidebar" aria-label="Kaynak seç" id="sidebar-nav">
+    <button data-tab="nuvemmag" title="NuvemMag" style="--icon-color:var(--nuvemmag)">
+      <span style="color:var(--nuvemmag)"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6.5 19a4.5 4.5 0 0 1-.4-8.98A6 6 0 0 1 17.6 8.1 4.5 4.5 0 0 1 17 19H6.5z"/></svg></span>
+    </button>
+    <button data-tab="github_trending" title="GitHub Trending" style="--icon-color:var(--github)">
+      <span style="color:var(--github)"><svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="4" cy="3" r="1.6"/><circle cx="4" cy="13" r="1.6"/><circle cx="12" cy="8" r="1.6"/><path d="M4 4.6v6.8"/><path d="M4 6a6 6 0 0 0 6.4 2"/></svg></span>
+    </button>
+    <button data-tab="x_twitter" title="X" style="--icon-color:var(--x)">
+      <span style="color:var(--x)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 4l16 16M20 4L4 20"/></svg></span>
+    </button>
   </nav>
 
   <div class="page">
@@ -261,6 +345,26 @@
       <div class="search-results" id="search-results"></div>
     </div>
 
+    <section class="explorer">
+      <h2 class="section-title">Kaynakları keşfet</h2>
+      <div class="explorer-toolbar">
+        <div class="tabs" id="explorer-tabs"></div>
+        <div class="toolbar-spacer"></div>
+        <input type="text" class="filter-input" id="explorer-filter" placeholder="İçinde ara…" />
+        <div class="view-toggle" id="view-toggle">
+          <button type="button" data-view="list" title="Liste görünümü" aria-label="Liste görünümü">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+          </button>
+          <button type="button" data-view="card" title="Kart görünümü" aria-label="Kart görünümü">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="explorer-focus as-list" id="explorer-focus"></div>
+      <div class="explorer-others" id="explorer-others"></div>
+    </section>
+
     <section class="browse">
       <div class="eyebrow" style="margin:0 0 1.1rem;">Tüm kaynaklar</div>
       <div class="stat-row" id="stat-row"></div>
@@ -272,17 +376,27 @@
 
 <script>
   const ICONS = {
-    news: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.5 19a4.5 4.5 0 0 1-.4-8.98A6 6 0 0 1 17.6 8.1 4.5 4.5 0 0 1 17 19H6.5z"/></svg>',
-    gh:   '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="4" cy="3" r="1.6"/><circle cx="4" cy="13" r="1.6"/><circle cx="12" cy="8" r="1.6"/><path d="M4 4.6v6.8"/><path d="M4 6a6 6 0 0 0 6.4 2"/></svg>',
-    x:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 4l16 16M20 4L4 20"/></svg>',
+    nuvemmag: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.5 19a4.5 4.5 0 0 1-.4-8.98A6 6 0 0 1 17.6 8.1 4.5 4.5 0 0 1 17 19H6.5z"/></svg>',
+    github:   '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="4" cy="3" r="1.6"/><circle cx="4" cy="13" r="1.6"/><circle cx="12" cy="8" r="1.6"/><path d="M4 4.6v6.8"/><path d="M4 6a6 6 0 0 0 6.4 2"/></svg>',
+    x:        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 4l16 16M20 4L4 20"/></svg>',
   };
 
   const SOURCE_META = {
-    nuvemmag:         { label: "NuvemMag",         varName: "nuvemmag", icon: ICONS.news, badgeText: "#0a0a0a" },
-    github_trending:  { label: "GitHub Trending",  varName: "github",   icon: ICONS.gh,   badgeText: "#ffffff" },
-    x_twitter:        { label: "X",                 varName: "x",        icon: ICONS.x,    badgeText: "#ffffff" },
+    nuvemmag:         { label: "NuvemMag",         varName: "nuvemmag", icon: ICONS.nuvemmag, badgeText: "#0a0a0a" },
+    github_trending:  { label: "GitHub Trending",  varName: "github",   icon: ICONS.github,   badgeText: "#ffffff" },
+    x_twitter:        { label: "X",                 varName: "x",        icon: ICONS.x,        badgeText: "#ffffff" },
   };
   const SOURCE_ORDER = ["nuvemmag", "github_trending", "x_twitter"];
+
+  const STOPWORDS = new Set([
+    "the","a","an","of","to","in","on","for","and","is","are","with","this","that",
+    "ve","ile","bir","bu","şu","gibi","için","olan","son","yeni","den","dan","de","da",
+    "ki","mi","mı","mu","var","yok","daha","çok","her","ama","ya","ne","how","what",
+  ]);
+
+  let ALL_ITEMS = [];
+  let currentTab = "nuvemmag";
+  let currentView = "list";
 
   function fmtDate(iso) {
     if (!iso) return "tarih yok";
@@ -296,6 +410,10 @@
   function badge(meta, size) {
     const cls = size === "sm" ? "badge sm" : "badge";
     return `<span class="${cls}" style="background:var(--${meta.varName});color:${meta.badgeText}">${meta.icon}</span>`;
+  }
+
+  function scoreRing() {
+    return `<span class="score-ring" title="Sinyal skoru — Faz 3'te LLM ile puanlanacak">—</span>`;
   }
 
   function itemRow(it, meta) {
@@ -314,19 +432,76 @@
           <a href="${it.url}" target="_blank" rel="noopener noreferrer">${it.title}</a>
           <div class="meta">${it.author ? "@" + it.author : "yazar yok"} · ${fmtDate(it.published_at)}</div>
         </div>
+        ${scoreRing()}
       </div>
     `;
   }
 
-  async function loadColumns() {
-    const resp = await fetch("/api/items");
-    const allItems = await resp.json();
+  function groupBySource(items) {
+    const map = {};
+    for (const it of items) (map[it.source] ||= []).push(it);
+    return map;
+  }
 
-    const bySource = {};
-    for (const it of allItems) {
-      (bySource[it.source] ||= []).push(it);
+  function matchesFilter(it, text) {
+    if (!text) return true;
+    return (it.title + " " + (it.content || "")).toLowerCase().includes(text);
+  }
+
+  function renderTicker(items) {
+    const freq = {};
+    for (const it of items) {
+      const words = (it.title || "").toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/);
+      for (const w of words) {
+        if (w.length < 3 || STOPWORDS.has(w)) continue;
+        freq[w] = (freq[w] || 0) + 1;
+      }
     }
+    const top = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([w]) => w);
+    const text = top.length ? top.join("   ·   ") : "henüz yeterli veri yok";
+    // Kusursuz döngü için metni iki kez yerleştirip %50 kaydırıyoruz
+    document.getElementById("ticker-track").textContent = text + "     " + text;
+  }
 
+  function renderExplorer() {
+    const filterText = document.getElementById("explorer-filter").value.trim().toLowerCase();
+    const bySource = groupBySource(ALL_ITEMS);
+
+    const meta = SOURCE_META[currentTab];
+    const focusItems = (bySource[currentTab] || []).filter(it => matchesFilter(it, filterText));
+
+    const focusEl = document.getElementById("explorer-focus");
+    focusEl.className = "explorer-focus " + (currentView === "card" ? "as-cards" : "as-list");
+    focusEl.innerHTML = `<div class="item-list">${
+      focusItems.length ? focusItems.map(it => itemRow(it, meta)).join("") : `<div class="empty-note">Bu filtreyle sonuç yok.</div>`
+    }</div>`;
+
+    const othersEl = document.getElementById("explorer-others");
+    othersEl.innerHTML = SOURCE_ORDER.filter(src => src !== currentTab).map(src => {
+      const m = SOURCE_META[src];
+      const items = (bySource[src] || []).filter(it => matchesFilter(it, filterText));
+      const shown = items.slice(0, 5);
+      return `
+        <div class="mini-col">
+          <div class="mini-head">${badge(m, "sm")}${m.label}</div>
+          ${shown.map(it => `<a class="mini-item" href="${it.url}" target="_blank" rel="noopener noreferrer" title="${it.title}">${it.title}</a>`).join("")
+            || `<span class="mini-item" style="border:none;color:var(--text-muted)">Kayıt yok</span>`}
+          ${items.length > shown.length ? `<span class="mini-more">+${items.length - shown.length} daha</span>` : ""}
+        </div>
+      `;
+    }).join("");
+
+    document.querySelectorAll("#explorer-tabs .tab").forEach(btn => {
+      const active = btn.dataset.tab === currentTab;
+      btn.classList.toggle("active", active);
+    });
+    document.querySelectorAll("#sidebar-nav button").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.tab === currentTab);
+    });
+  }
+
+  function renderBrowseOverview() {
+    const bySource = groupBySource(ALL_ITEMS);
     const statRow = document.getElementById("stat-row");
     const columns = document.getElementById("columns");
     statRow.innerHTML = "";
@@ -343,7 +518,6 @@
 
       const col = document.createElement("section");
       col.className = "col";
-      col.id = "col-" + src;
       col.innerHTML = `
         <div class="col-head">
           <span class="name">${badge(meta, "sm")}${meta.label}</span>
@@ -355,11 +529,52 @@
       `;
       columns.appendChild(col);
     }
+  }
+
+  async function loadEverything() {
+    const resp = await fetch("/api/items");
+    ALL_ITEMS = await resp.json();
+
+    renderTicker(ALL_ITEMS);
+    renderExplorer();
+    renderBrowseOverview();
 
     document.getElementById("top-meta").textContent =
-      `${allItems.length} kayıt · güncellendi: ` +
+      `${ALL_ITEMS.length} kayıt · güncellendi: ` +
       new Intl.DateTimeFormat("tr-TR", { hour: "2-digit", minute: "2-digit" }).format(new Date());
   }
+
+  // --- Kaynak sekmeleri ---
+  const tabsEl = document.getElementById("explorer-tabs");
+  tabsEl.innerHTML = SOURCE_ORDER.map(src => {
+    const m = SOURCE_META[src];
+    return `<button type="button" class="tab" data-tab="${src}" style="--tab-color:var(--${m.varName});--tab-ink:${m.badgeText}">${badge(m, "sm")}${m.label}</button>`;
+  }).join("");
+
+  function selectTab(tab) {
+    currentTab = tab;
+    renderExplorer();
+  }
+
+  tabsEl.addEventListener("click", (e) => {
+    const btn = e.target.closest(".tab");
+    if (btn) selectTab(btn.dataset.tab);
+  });
+  document.getElementById("sidebar-nav").addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (btn) selectTab(btn.dataset.tab);
+  });
+
+  document.getElementById("explorer-filter").addEventListener("input", renderExplorer);
+
+  document.getElementById("view-toggle").addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    currentView = btn.dataset.view;
+    document.querySelectorAll("#view-toggle button").forEach(b => b.classList.toggle("active", b === btn));
+    renderExplorer();
+  });
+  document.querySelector('#view-toggle button[data-view="list"]').classList.add("active");
 
   // --- Tema anahtarı ---
   function applyThemeButtons() {
@@ -369,7 +584,6 @@
       btn.classList.toggle("active", btn.dataset.themeChoice === current);
     });
   }
-
   document.querySelectorAll("#theme-toggle button").forEach(btn => {
     btn.addEventListener("click", () => {
       const choice = btn.dataset.themeChoice;
@@ -380,7 +594,7 @@
   });
   applyThemeButtons();
 
-  // --- Arama ---
+  // --- X araması ---
   const form = document.getElementById("search-form");
   const input = document.getElementById("q");
   const submitBtn = document.getElementById("submit-btn");
@@ -422,7 +636,7 @@
         || `<p class="status">Bu kritere uyan sonuç bulunamadı.</p>`;
 
       if (data.added_count > 0) {
-        await loadColumns();
+        await loadEverything();
       }
 
     } catch (err) {
@@ -434,7 +648,7 @@
     }
   });
 
-  loadColumns();
+  loadEverything();
 </script>
 </body>
 </html>
