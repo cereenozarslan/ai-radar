@@ -23,6 +23,7 @@ def test_to_item_dict_converts_tweet_correctly():
         text="Yeni bir LLM modeli duyuruldu, detaylar burada",
         author_id=42,
         created_at=datetime(2026, 7, 9, tzinfo=timezone.utc),
+        public_metrics={"like_count": 5, "retweet_count": 1, "reply_count": 0, "quote_count": 0},
     )
     users_by_id = {42: SimpleNamespace(
         id=42, username="birkullanici",
@@ -38,13 +39,15 @@ def test_to_item_dict_converts_tweet_correctly():
     assert item["published_at"] is not None
     # X'in kucuk "_normal" gorseli, daha net gorunmesi icin buyutulmus olmali
     assert item["image_url"] == "https://pbs.twimg.com/profile_images/1/foo_400x400.jpg"
+    # popularity, engagement_score ile ayni hesabi kullanmali (5 + 1*2 = 7)
+    assert item["popularity"] == 7
 
 
 def test_to_item_dict_prefers_real_tweet_photo_over_profile_picture():
     """Tweete eklenmiş gerçek bir fotoğraf varsa, profil fotoğrafından öncelikli olmalı."""
     tweet = SimpleNamespace(
         id=1, text="bir foto paylaşımı", author_id=42, created_at=None,
-        attachments={"media_keys": ["3_abc"]},
+        attachments={"media_keys": ["3_abc"]}, public_metrics=None,
     )
     users_by_id = {42: SimpleNamespace(
         id=42, username="birkullanici",
@@ -61,7 +64,7 @@ def test_to_item_dict_falls_back_to_preview_image_for_video():
     """Fotoğrafta 'url' yok ama video/gif'te 'preview_image_url' olabilir."""
     tweet = SimpleNamespace(
         id=1, text="bir video paylaşımı", author_id=42, created_at=None,
-        attachments={"media_keys": ["7_vid"]},
+        attachments={"media_keys": ["7_vid"]}, public_metrics=None,
     )
     media_by_key = {"7_vid": SimpleNamespace(media_key="7_vid", type="video", url=None, preview_image_url="https://pbs.twimg.com/ext_tw_video_thumb/onizleme.jpg")}
 
@@ -72,7 +75,7 @@ def test_to_item_dict_falls_back_to_preview_image_for_video():
 
 def test_to_item_dict_falls_back_to_profile_picture_without_media():
     """attachments yoksa (veya media_by_key boşsa) profil fotoğrafına düşülmeli."""
-    tweet = SimpleNamespace(id=1, text="metin", author_id=42, created_at=None)
+    tweet = SimpleNamespace(id=1, text="metin", author_id=42, created_at=None, public_metrics=None)
     users_by_id = {42: SimpleNamespace(
         id=42, username="biri",
         profile_image_url="https://pbs.twimg.com/profile_images/1/foo_normal.jpg",
@@ -85,7 +88,7 @@ def test_to_item_dict_falls_back_to_profile_picture_without_media():
 
 def test_to_item_dict_handles_long_text_and_missing_user():
     long_text = "a" * 100
-    tweet = SimpleNamespace(id=1, text=long_text, author_id=99, created_at=None)
+    tweet = SimpleNamespace(id=1, text=long_text, author_id=99, created_at=None, public_metrics=None)
 
     item = to_item_dict(tweet, users_by_id={})
 
@@ -94,6 +97,7 @@ def test_to_item_dict_handles_long_text_and_missing_user():
     assert item["author"] is None
     assert item["published_at"] is None
     assert item["image_url"] is None
+    assert item["popularity"] == 0
 
 
 def test_build_query_wraps_multi_word_topic_in_quotes():

@@ -18,7 +18,7 @@ def test_init_db_creates_items_table(tmp_path):
     assert columns == {
         "id", "source", "title", "url", "content",
         "author", "published_at", "image_url", "signal_score",
-        "signal_reason", "is_read", "is_saved", "fetched_at",
+        "signal_reason", "is_read", "is_saved", "popularity", "fetched_at",
     }
 
 
@@ -53,13 +53,13 @@ def test_init_db_migrates_old_database_missing_new_columns(tmp_path):
     conn = get_connection(db_path)
     columns = {row[1] for row in conn.execute("PRAGMA table_info(items)")}
     row = conn.execute(
-        "SELECT title, image_url, is_read, is_saved FROM items WHERE url = ?",
+        "SELECT title, image_url, is_read, is_saved, popularity FROM items WHERE url = ?",
         ("https://example.com/eski",),
     ).fetchone()
     conn.close()
 
-    assert {"image_url", "is_read", "is_saved"} <= columns
-    assert row == ("eski kayıt", None, 0, 0)
+    assert {"image_url", "is_read", "is_saved", "popularity"} <= columns
+    assert row == ("eski kayıt", None, 0, 0, None)
 
 
 def test_url_unique_constraint_enforced(tmp_path):

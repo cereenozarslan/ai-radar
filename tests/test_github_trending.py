@@ -11,6 +11,8 @@ SAMPLE_HTML = """
         </a>
     </h2>
     <p class="col-9 color-fg-muted my-1 pr-4">Bir yapay zeka destekli komut satırı aracı</p>
+    <a href="/anthropics/claude-code/stargazers" class="Link Link--muted d-inline-block">6,776</a>
+    <a href="/anthropics/claude-code/forks" class="Link Link--muted d-inline-block">882</a>
 </article>
 <article class="Box-row">
     <h2 class="h3 lh-condensed">
@@ -36,6 +38,7 @@ def test_parse_trending_extracts_repo_fields():
     assert first["author"] == "anthropics"
     assert "yapay zeka" in first["content"]
     assert first["image_url"] == "https://github.com/anthropics.png"
+    assert first["popularity"] == 6776
 
 
 def test_parse_trending_handles_missing_description():
@@ -44,3 +47,4 @@ def test_parse_trending_handles_missing_description():
     second = items[1]
     assert second["title"] == "someone/no-description"
     assert second["content"] is None
+    assert second["popularity"] is None

@@ -10,6 +10,8 @@ from datetime import datetime, timedelta, timezone
 import requests
 from bs4 import BeautifulSoup
 
+from ai_radar.collectors.parsing import parse_count
+
 BASE_URL = "https://nuvemmag.com/"
 HEADERS = {"User-Agent": "ai-radar-bot/0.1 (+https://github.com)"}
 
@@ -58,6 +60,7 @@ def parse_articles(html: str) -> list[dict]:
         author_tag = article.select_one(".entry_author a")
         # Görsel lazy-load ile yükleniyor; gerçek adres src'de değil data-src'de
         image_tag = article.select_one(".uck-card--image img")
+        views_tag = article.select_one(".post-views")
 
         items.append({
             "source": "nuvemmag",
@@ -67,6 +70,8 @@ def parse_articles(html: str) -> list[dict]:
             "author": author_tag.get_text(strip=True) if author_tag else None,
             "published_at": parse_relative_time(date_tag.get_text(strip=True)) if date_tag else None,
             "image_url": image_tag.get("data-src") if image_tag else None,
+            # Sitenin kendi "görüntülenme" sayısı; "en popüler" sıralaması için kullanılıyor
+            "popularity": parse_count(views_tag.get_text(strip=True)) if views_tag else None,
         })
 
     return items

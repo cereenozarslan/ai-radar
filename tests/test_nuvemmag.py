@@ -11,6 +11,7 @@ SAMPLE_HTML = """
     <div class="uck-card--content">
         <div class="uck-card-top">
             <span class="date"><i class="gi gi-clock-o"></i> 14 saat&nbsp;önce</span>
+            <span class="post-views"><i class="gi gi-bolt"></i> 73</span>
         </div>
         <h3 class="headline"><a href="https://nuvemmag.com/ornek-haber/" rel="bookmark">Örnek Haber Başlığı</a></h3>
         <p>Bu haberin kısa özeti burada yer alıyor.</p>
@@ -44,6 +45,7 @@ def test_parse_articles_extracts_fields_correctly():
     assert first["author"] == "Nuvem"
     assert first["published_at"] is not None
     assert first["image_url"] == "https://nuvemmag.com/wp-content/uploads/2026/07/ornek-640x372.jpeg"
+    assert first["popularity"] == 73
 
 
 def test_parse_articles_handles_missing_excerpt_and_author():
@@ -54,6 +56,7 @@ def test_parse_articles_handles_missing_excerpt_and_author():
     assert second["content"] is None
     assert second["author"] is None
     assert second["image_url"] is None
+    assert second["popularity"] is None
 
 
 def test_parse_relative_time_converts_hours_and_days():

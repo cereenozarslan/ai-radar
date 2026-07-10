@@ -215,6 +215,8 @@ def to_item_dict(tweet, users_by_id: dict, media_by_key: dict | None = None, sou
         "author": user.username if user else None,
         "published_at": tweet.created_at.isoformat() if tweet.created_at else None,
         "image_url": image_url,
+        # Etkileşim skoru; "en popüler" sıralaması için diğer kaynaklarla ortak alan
+        "popularity": engagement_score(tweet),
     }
 
 

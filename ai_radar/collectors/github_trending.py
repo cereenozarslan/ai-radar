@@ -7,6 +7,8 @@ sayfası HTML olarak çekilip ayrıştırılıyor. Anahtar/kimlik doğrulama ger
 import requests
 from bs4 import BeautifulSoup
 
+from ai_radar.collectors.parsing import parse_count
+
 TRENDING_URL = "https://github.com/trending"
 # GitHub, User-Agent olmayan isteklere bazen farklı davranabiliyor
 HEADERS = {"User-Agent": "ai-radar-bot/0.1 (+https://github.com)"}
@@ -39,6 +41,10 @@ def parse_trending(html: str) -> list[dict]:
 
         owner = full_name.split("/")[0]
 
+        # Yıldız (star) sayısı linki: href her zaman ".../stargazers" ile bitiyor;
+        # fork linkiyle aynı CSS sınıflarını taşıdığı için href'e göre ayırt ediyoruz
+        star_tag = article.select_one('a[href$="/stargazers"]')
+
         items.append({
             "source": "github_trending",
             "title": full_name,
@@ -48,6 +54,8 @@ def parse_trending(html: str) -> list[dict]:
             "published_at": None,
             # GitHub'ın belgelenmiş kısayolu: kullanıcı adı + ".png" avatar görselini döner
             "image_url": f"https://github.com/{owner}.png",
+            # Toplam yıldız sayısı; "en popüler" sıralaması için kullanılıyor
+            "popularity": parse_count(star_tag.get_text(strip=True)) if star_tag else None,
         })
 
     return items

@@ -217,7 +217,11 @@
   }
 
   /* ---------- Kaynakları keşfet (odak + diğerleri) ---------- */
-  section.explorer { margin-top: 1.75rem; padding: 1.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-md); }
+  section.explorer {
+    margin-top: 1.75rem; padding: 1.75rem; border: 1px solid var(--border); border-radius: 16px;
+    box-shadow: var(--shadow-md); background: var(--surface);
+    transition: background-color 0.3s ease;
+  }
 
   .explorer-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-top: 1rem; }
   .tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; }
@@ -241,9 +245,20 @@
   .view-toggle button { border: none; background: transparent; width: 30px; height: 28px; border-radius: 7px; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; }
   .view-toggle button.active { background: var(--surface); color: var(--accent); box-shadow: var(--shadow-sm); }
 
-  .explorer-focus { margin-top: 1.1rem; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .view-toggle.text-toggle button { width: auto; padding: 0 0.65rem; font-size: 0.78rem; font-weight: 600; font-family: inherit; }
+
+  .explorer-focus { margin-top: 1.1rem; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: background-color 0.25s ease; }
   .explorer-focus.as-list .item-list { max-height: 460px; overflow-y: auto; }
-  .explorer-focus.as-cards { border: none; }
+  .explorer-focus.as-cards { border: none; padding: 0.9rem; }
+
+  .rest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.7rem; margin-top: 0.85rem; }
+  .pager { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1rem; }
+  .pager-btn {
+    padding: 0.4rem 0.85rem; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text); font-size: 0.8rem; cursor: pointer;
+  }
+  .pager-btn:disabled { opacity: 0.4; cursor: default; }
+  .pager-info { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.78rem; color: var(--text-muted); }
 
   /* ---------- Fotoğraf üstü başlık kartları (dergi/manşet tarzı) ---------- */
   .photo-grid {
@@ -459,11 +474,15 @@
       <div class="search-results" id="digest-results"></div>
     </section>
 
-    <section class="explorer">
+    <section class="explorer" id="explorer-panel">
       <h2 class="section-title">Kaynakları keşfet</h2>
       <div class="explorer-toolbar">
         <div class="tabs" id="explorer-tabs"></div>
         <div class="toolbar-spacer"></div>
+        <div class="view-toggle text-toggle" id="sort-toggle">
+          <button type="button" data-sort="recent" title="En yeni">Yeni</button>
+          <button type="button" data-sort="popular" title="En popüler">Popüler</button>
+        </div>
         <input type="text" class="filter-input" id="explorer-filter" placeholder="İçinde ara…" />
         <div class="view-toggle" id="view-toggle">
           <button type="button" data-view="list" title="Liste görünümü" aria-label="Liste görünümü">
@@ -514,6 +533,9 @@
   let ALL_ITEMS = [];
   let currentTab = "nuvemmag";
   let currentView = "list";
+  let currentSort = "recent";
+  let restPage = 1;
+  const REST_PAGE_SIZE = 6;
 
   function fmtDate(iso) {
     if (!iso) return "tarih yok";
@@ -639,6 +661,37 @@
     return magazineHtml + restHtml;
   }
 
+  // Keşif panelindeki kart görünümü için: manşet + ızgara aynı, ama gerisi
+  // kaydırma yerine "Önceki/Sonraki" ile sayfalanabilir (1-2-3-4-5, sonra 6-7-8...).
+  function renderMagazinePaginated(items, meta, page) {
+    const HERO_COUNT = 5;
+    const top = items.slice(0, HERO_COUNT);
+    const rest = items.slice(HERO_COUNT);
+    const totalPages = Math.max(1, Math.ceil(rest.length / REST_PAGE_SIZE));
+    const clampedPage = Math.min(Math.max(1, page), totalPages);
+    const pageItems = rest.slice((clampedPage - 1) * REST_PAGE_SIZE, clampedPage * REST_PAGE_SIZE);
+
+    const magazineHtml = top.length
+      ? `<div class="magazine">
+          ${photoCard(top[0], meta, "hero")}
+          ${top.slice(1).map(it => photoCard(it, meta, "grid")).join("")}
+        </div>`
+      : `<div class="empty-note">Henüz kayıt yok.</div>`;
+
+    const pagedHtml = rest.length
+      ? `
+        <div class="rest-grid">${pageItems.map(it => photoCard(it, meta, "grid")).join("")}</div>
+        <div class="pager">
+          <button type="button" class="pager-btn" data-page="${clampedPage - 1}" ${clampedPage <= 1 ? "disabled" : ""}>◀ Önceki</button>
+          <span class="pager-info">Sayfa ${clampedPage} / ${totalPages}</span>
+          <button type="button" class="pager-btn" data-page="${clampedPage + 1}" ${clampedPage >= totalPages ? "disabled" : ""}>Sonraki ▶</button>
+        </div>
+      `
+      : "";
+
+    return magazineHtml + pagedHtml;
+  }
+
   function groupBySource(items) {
     const map = {};
     for (const it of items) (map[it.source] ||= []).push(it);
@@ -714,12 +767,22 @@
     const focusItems = (isSavedTab ? ALL_ITEMS.filter(it => it.is_saved) : (bySource[currentTab] || []))
       .filter(it => matchesFilter(it, filterText));
 
+    if (currentSort === "popular") {
+      focusItems.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+    } else {
+      focusItems.sort((a, b) => (b.fetched_at || "").localeCompare(a.fetched_at || ""));
+    }
+
+    // Seçili kaynağın marka rengiyle panele hafif bir vurgu (renk yıkaması) uygula
+    document.getElementById("explorer-panel").style.backgroundColor = `color-mix(in srgb, var(--${meta.varName}) 4%, var(--surface))`;
+
     const focusEl = document.getElementById("explorer-focus");
+    focusEl.style.backgroundColor = `color-mix(in srgb, var(--${meta.varName}) 9%, var(--surface))`;
     if (currentView === "card") {
       focusEl.className = "explorer-focus as-cards";
-      focusEl.innerHTML = `<div class="photo-grid">${
-        focusItems.length ? focusItems.map(it => photoCard(it, meta, "grid")).join("") : `<div class="empty-note">Bu filtreyle sonuç yok.</div>`
-      }</div>`;
+      focusEl.innerHTML = focusItems.length
+        ? renderMagazinePaginated(focusItems, meta, restPage)
+        : `<div class="empty-note">Bu filtreyle sonuç yok.</div>`;
     } else {
       focusEl.className = "explorer-focus as-list";
       focusEl.innerHTML = `<div class="item-list">${
@@ -748,6 +811,9 @@
     });
     document.querySelectorAll("#sidebar-nav button").forEach(btn => {
       btn.classList.toggle("active", btn.dataset.tab === currentTab);
+    });
+    document.querySelectorAll("#sort-toggle button").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.sort === currentSort);
     });
   }
 
@@ -805,6 +871,7 @@
 
   function selectTab(tab) {
     currentTab = tab;
+    restPage = 1;
     renderExplorer();
   }
 
@@ -817,16 +884,38 @@
     if (btn) selectTab(btn.dataset.tab);
   });
 
-  document.getElementById("explorer-filter").addEventListener("input", renderExplorer);
+  document.getElementById("explorer-filter").addEventListener("input", () => {
+    restPage = 1;
+    renderExplorer();
+  });
 
   document.getElementById("view-toggle").addEventListener("click", (e) => {
     const btn = e.target.closest("button");
     if (!btn) return;
     currentView = btn.dataset.view;
+    restPage = 1;
     document.querySelectorAll("#view-toggle button").forEach(b => b.classList.toggle("active", b === btn));
     renderExplorer();
   });
   document.querySelector('#view-toggle button[data-view="list"]').classList.add("active");
+
+  document.getElementById("sort-toggle").addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    currentSort = btn.dataset.sort;
+    restPage = 1;
+    renderExplorer();
+  });
+  document.querySelector('#sort-toggle button[data-sort="recent"]').classList.add("active");
+
+  // Sayfalama butonları içerik her renderExplorer()'da yeniden oluştuğu için
+  // olay delegasyonu kullanıyoruz (sabit üst kapsayıcıya tek seferlik dinleyici).
+  document.getElementById("explorer-focus").addEventListener("click", (e) => {
+    const btn = e.target.closest(".pager-btn");
+    if (!btn || btn.disabled) return;
+    restPage = parseInt(btn.dataset.page, 10);
+    renderExplorer();
+  });
 
   // --- Tema anahtarı ---
   function applyThemeButtons() {
