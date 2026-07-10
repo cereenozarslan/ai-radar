@@ -160,12 +160,22 @@
   @media (max-width: 780px) {
     .hero-side { border-left: none; border-top: 1px solid var(--border); padding-left: 0; padding-top: 1.25rem; margin-top: 0.5rem; }
   }
-  .word-cloud { display: flex; flex-wrap: wrap; gap: 0.35rem 0.55rem; align-items: baseline; }
-  .word-cloud-item { font-weight: 700; color: var(--accent); }
-  .daily-chart { display: flex; align-items: flex-end; gap: 0.4rem; height: 64px; }
-  .daily-bar { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 0.25rem; }
-  .daily-bar-fill { width: 100%; background: var(--accent); border-radius: 3px 3px 0 0; min-height: 3px; }
-  .daily-bar-label { font-size: 0.6rem; color: var(--text-muted); }
+  .trend-rank { display: flex; flex-direction: column; gap: 0.5rem; }
+  .trend-rank-row { display: flex; align-items: center; gap: 0.55rem; }
+  .trend-rank-num {
+    flex: none; width: 30px; height: 30px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+    font-weight: 700; font-size: 0.82rem; color: var(--text-muted);
+  }
+  .trend-rank-track { flex: 1; min-width: 0; }
+  .trend-rank-bar {
+    height: 30px; border-radius: 8px; border: 1px solid; display: flex; align-items: center;
+    padding: 0 0.65rem; font-size: 0.83rem; font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: width 0.3s ease;
+  }
 
   .eyebrow { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.6rem; }
   h1 { font-size: clamp(1.35rem, 2.4vw, 1.7rem); font-weight: 700; letter-spacing: -0.015em; margin: 0 0 1.1rem; text-wrap: balance; }
@@ -430,10 +440,8 @@
       </div>
 
       <div class="hero-side">
-        <div class="eyebrow" style="margin-bottom:0.5rem;">Bu haftanın trend kelimeleri</div>
-        <div class="word-cloud" id="word-cloud"></div>
-        <div class="eyebrow" style="margin:1.1rem 0 0.5rem;">Günlük kayıt sayısı</div>
-        <div class="daily-chart" id="daily-chart"></div>
+        <div class="eyebrow" style="margin-bottom:0.7rem;">Bu haftanın trend kelimeleri</div>
+        <div class="trend-rank" id="trend-rank"></div>
       </div>
     </div>
 
@@ -665,44 +673,35 @@
     document.getElementById("ticker-track").textContent = text + "     " + text;
   }
 
-  function renderWordCloud(items) {
-    const el = document.getElementById("word-cloud");
-    const freqs = wordFrequencies(items, 14);
+  // Sırayla döngüye giren renk paleti: en sık kelime en üstte, en dolgun bar
+  const TREND_PALETTE = [
+    { bg: "rgba(224, 90, 110, 0.14)",  border: "#e05a6e" },
+    { bg: "rgba(212, 160, 44, 0.16)",  border: "#c99a1e" },
+    { bg: "rgba(90, 168, 110, 0.16)",  border: "#4f9c68" },
+    { bg: "rgba(110, 130, 224, 0.16)", border: "#6e82e0" },
+    { bg: "rgba(180, 110, 200, 0.16)", border: "#b46ec8" },
+    { bg: "rgba(90, 180, 190, 0.16)",  border: "#4fa8b2" },
+  ];
+
+  function renderTrendRank(items) {
+    const el = document.getElementById("trend-rank");
+    const freqs = wordFrequencies(items, 6);
     if (!freqs.length) {
       el.innerHTML = `<span style="color:var(--text-muted);font-size:0.82rem;">Henüz yeterli veri yok.</span>`;
       return;
     }
-    const counts = freqs.map(f => f[1]);
-    const max = Math.max(...counts), min = Math.min(...counts);
-    el.innerHTML = freqs.map(([w, c]) => {
-      const t = max === min ? 1 : (c - min) / (max - min);
-      const size = (0.72 + t * 0.85).toFixed(2);
-      const opacity = (0.55 + t * 0.45).toFixed(2);
-      return `<span class="word-cloud-item" style="font-size:${size}rem;opacity:${opacity}" title="${c} kez geçti">${w}</span>`;
-    }).join("");
-  }
-
-  function renderDailyChart(items) {
-    const el = document.getElementById("daily-chart");
-    const counts = {};
-    const days = [];
-    const now = new Date();
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now.getTime() - i * 86400000);
-      const key = d.toISOString().slice(0, 10);
-      days.push(key);
-      counts[key] = 0;
-    }
-    for (const it of items) {
-      const key = (it.fetched_at || "").slice(0, 10);
-      if (key in counts) counts[key]++;
-    }
-    const max = Math.max(1, ...Object.values(counts));
-    el.innerHTML = days.map(d => {
-      const c = counts[d];
-      const h = Math.max(4, Math.round((c / max) * 100));
-      const label = new Intl.DateTimeFormat("tr-TR", { weekday: "narrow" }).format(new Date(d + "T00:00:00"));
-      return `<div class="daily-bar" title="${d}: ${c} kayıt"><div class="daily-bar-fill" style="height:${h}%"></div><span class="daily-bar-label">${label}</span></div>`;
+    const max = freqs[0][1];
+    el.innerHTML = freqs.map(([w, c], i) => {
+      const pct = Math.max(35, Math.round((c / max) * 100));
+      const color = TREND_PALETTE[i % TREND_PALETTE.length];
+      return `
+        <div class="trend-rank-row">
+          <div class="trend-rank-num">${i + 1}</div>
+          <div class="trend-rank-track">
+            <div class="trend-rank-bar" style="width:${pct}%;background:${color.bg};border-color:${color.border};color:${color.border}" title="${c} kez geçti">${w}</div>
+          </div>
+        </div>
+      `;
     }).join("");
   }
 
@@ -788,8 +787,7 @@
     ALL_ITEMS = await resp.json();
 
     renderTicker(ALL_ITEMS);
-    renderWordCloud(ALL_ITEMS);
-    renderDailyChart(ALL_ITEMS);
+    renderTrendRank(ALL_ITEMS);
     renderExplorer();
     renderBrowseOverview();
 
