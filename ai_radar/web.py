@@ -1,9 +1,10 @@
-"""Faz 4'ün öne çekilmiş, sadece X araması için kurulan minimal parçası.
+"""Faz 4'ün öne çekilmiş, tek sayfalık minimal parçası.
 
-Kullanıcının kendi kendine, sitenin içinden doğal dilde arama yapıp
-filtreleri (zaman aralığı, etkileşim eşiği) değiştirebileceği bir arayüz.
-Anthropic API kullanmıyor — query_parser.py'deki ücretsiz, kural tabanlı
-ayrıştırıcıyı kullanıyor.
+Tek bir sayfada: (1) tüm kaynaklardan (NuvemMag, GitHub Trending, X)
+toplanan kayıtların canlı görünümü, (2) X için doğal dilde arama yapıp
+filtreleri (zaman aralığı, etkileşim eşiği) kendi kendine değiştirebileceğiniz
+bir arama kutusu. Anthropic API kullanmıyor — query_parser.py'deki ücretsiz,
+kural tabanlı ayrıştırıcıyı kullanıyor.
 
 DİKKAT: Her arama, GERÇEK bir X API isteği gönderir (kredi harcar).
 
@@ -19,6 +20,7 @@ from fastapi.responses import HTMLResponse
 
 from ai_radar.collectors import x_twitter
 from ai_radar.collectors.common import save_items
+from ai_radar.database import get_connection
 from ai_radar.query_parser import parse_natural_query
 
 app = FastAPI(title="AI-Radar — X Arama")
@@ -29,6 +31,20 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 @app.get("/", response_class=HTMLResponse)
 def index() -> str:
     return (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+
+
+@app.get("/api/items")
+def list_items():
+    """Veritabanındaki tüm kayıtları (kaynak bazında) döner — tek sayfalık görünüm için."""
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT source, title, url, author, published_at, fetched_at "
+        "FROM items ORDER BY source, fetched_at DESC"
+    ).fetchall()
+    conn.close()
+
+    cols = ["source", "title", "url", "author", "published_at", "fetched_at"]
+    return [dict(zip(cols, row)) for row in rows]
 
 
 @app.get("/api/search")

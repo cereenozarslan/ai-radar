@@ -54,3 +54,28 @@ def test_index_serves_html():
     resp = client.get("/")
     assert resp.status_code == 200
     assert "text/html" in resp.headers["content-type"]
+
+
+def test_list_items_returns_database_contents(tmp_path, monkeypatch):
+    from ai_radar.database import get_connection, init_db
+
+    db_path = tmp_path / "test.db"
+    init_db(db_path)
+    conn = get_connection(db_path)
+    conn.execute(
+        "INSERT INTO items (source, title, url) VALUES (?, ?, ?)",
+        ("nuvemmag", "test haber", "https://example.com/1"),
+    )
+    conn.commit()
+    conn.close()
+
+    monkeypatch.setattr(web, "get_connection", lambda: get_connection(db_path))
+
+    client = TestClient(web.app)
+    resp = client.get("/api/items")
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    assert data[0]["title"] == "test haber"
+    assert data[0]["source"] == "nuvemmag"

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AI-Radar — X Arama</title>
+<title>AI-Radar</title>
 <style>
   :root {
     --bg: #eef0ea;
@@ -14,6 +14,9 @@
     --text-muted: #5b6168;
     --accent: #c97f1e;
     --danger: #b3402f;
+    --news: #b85c28;
+    --gh: #6b5aa8;
+    --x: #4d5860;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -25,6 +28,9 @@
       --text-muted: #8b959c;
       --accent: #f2a541;
       --danger: #e07a63;
+      --news: #e08a4f;
+      --gh: #a496e0;
+      --x: #9aa5ad;
     }
   }
 
@@ -43,9 +49,9 @@
   }
 
   .page {
-    max-width: 760px;
+    max-width: 1180px;
     margin: 0 auto;
-    padding: 4rem 1.5rem 4rem;
+    padding: 2.5rem 1.5rem 4rem;
   }
 
   .eyebrow {
@@ -57,7 +63,6 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    justify-content: center;
     margin-bottom: 0.75rem;
   }
   .eyebrow::before {
@@ -66,17 +71,10 @@
     background: var(--accent);
   }
 
-  h1 {
-    text-align: center;
-    font-size: clamp(1.5rem, 3vw, 2rem);
-    margin: 0 0 2rem;
-    text-wrap: balance;
-  }
+  h1 { font-size: clamp(1.4rem, 2.6vw, 1.9rem); margin: 0 0 1.25rem; text-wrap: balance; }
 
-  form.search {
-    display: flex;
-    gap: 0.5rem;
-  }
+  /* --- Arama bölümü --- */
+  form.search { display: flex; gap: 0.5rem; }
 
   input[type="text"] {
     flex: 1;
@@ -87,10 +85,7 @@
     background: var(--surface);
     color: var(--text);
   }
-  input[type="text"]:focus {
-    outline: 2px solid var(--accent);
-    outline-offset: 1px;
-  }
+  input[type="text"]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 
   button {
     padding: 0.85rem 1.4rem;
@@ -104,19 +99,9 @@
   }
   button:disabled { opacity: 0.6; cursor: default; }
 
-  .hint {
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 0.82rem;
-    margin-top: 0.8rem;
-  }
+  .hint { color: var(--text-muted); font-size: 0.82rem; margin-top: 0.7rem; }
 
-  .interpreted {
-    display: none;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin: 1.5rem 0;
-  }
+  .interpreted { display: none; flex-wrap: wrap; gap: 0.5rem; margin: 1.25rem 0; }
   .chip {
     font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
     font-size: 0.75rem;
@@ -127,35 +112,48 @@
     color: var(--text-muted);
   }
 
-  .status { text-align: center; color: var(--text-muted); margin: 1.5rem 0; font-size: 0.9rem; }
+  .status { color: var(--text-muted); margin: 1rem 0; font-size: 0.9rem; }
   .status.error { color: var(--danger); }
 
-  .results { display: flex; flex-direction: column; gap: 0.9rem; margin-top: 1.5rem; }
+  .search-results { display: flex; flex-direction: column; gap: 0.7rem; margin-top: 1rem; }
 
-  .item {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 0.9rem 1.1rem;
+  /* --- Genel kayıt görünümü --- */
+  section.browse { margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--border); }
+
+  .stat-row { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 1.25rem; }
+  .stat-chip {
+    display: flex; align-items: baseline; gap: 0.4rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 7px; padding: 0.5rem 0.8rem;
   }
-  .item a {
-    color: var(--text);
-    text-decoration: none;
-    font-weight: 500;
+  .stat-chip .n { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-weight: 600; }
+  .stat-chip .lbl { font-size: 0.78rem; color: var(--text-muted); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+
+  .columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.1rem; }
+  @media (max-width: 880px) { .columns { grid-template-columns: 1fr; } }
+
+  .col { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .col-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.8rem 1rem; background: var(--surface-2); border-bottom: 1px solid var(--border);
   }
+  .col-head .name { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.9rem; }
+  .col-head .count { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.78rem; color: var(--text-muted); }
+
+  .item-list { max-height: 520px; overflow-y: auto; }
+  .item { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 0.3rem; }
+  .item:last-child { border-bottom: none; }
+  .item a { color: var(--text); text-decoration: none; font-size: 0.88rem; font-weight: 500; }
   .item a:hover { text-decoration: underline; }
-  .item .meta {
-    margin-top: 0.35rem;
-    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
-    font-size: 0.72rem;
-    color: var(--text-muted);
-  }
+  .item .meta { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.7rem; color: var(--text-muted); }
 </style>
 </head>
 <body>
 <div class="page">
-  <div class="eyebrow">AI-Radar · X arama</div>
-  <h1>Ne öğrenmek istiyorsun?</h1>
+
+  <div class="eyebrow">AI-Radar</div>
+  <h1>X'te ne öğrenmek istiyorsun?</h1>
 
   <form class="search" id="search-form">
     <input
@@ -171,16 +169,23 @@
 
   <div class="interpreted" id="interpreted"></div>
   <div class="status" id="status"></div>
-  <div class="results" id="results"></div>
+  <div class="search-results" id="search-results"></div>
+
+  <section class="browse">
+    <div class="eyebrow">Tüm kaynaklar</div>
+    <div class="stat-row" id="stat-row"></div>
+    <div class="columns" id="columns"></div>
+  </section>
+
 </div>
 
 <script>
-  const form = document.getElementById("search-form");
-  const input = document.getElementById("q");
-  const submitBtn = document.getElementById("submit-btn");
-  const interpretedEl = document.getElementById("interpreted");
-  const statusEl = document.getElementById("status");
-  const resultsEl = document.getElementById("results");
+  const SOURCE_META = {
+    nuvemmag:         { label: "NuvemMag",         varName: "news" },
+    github_trending:  { label: "GitHub Trending",  varName: "gh" },
+    x_twitter:        { label: "X",                 varName: "x" },
+  };
+  const SOURCE_ORDER = ["nuvemmag", "github_trending", "x_twitter"];
 
   function fmtDate(iso) {
     if (!iso) return "tarih yok";
@@ -192,6 +197,60 @@
       return iso;
     }
   }
+
+  async function loadColumns() {
+    const resp = await fetch("/api/items");
+    const allItems = await resp.json();
+
+    const bySource = {};
+    for (const it of allItems) {
+      (bySource[it.source] ||= []).push(it);
+    }
+
+    const statRow = document.getElementById("stat-row");
+    const columns = document.getElementById("columns");
+    statRow.innerHTML = "";
+    columns.innerHTML = "";
+
+    for (const src of SOURCE_ORDER) {
+      const items = bySource[src] || [];
+      const meta = SOURCE_META[src];
+
+      const chip = document.createElement("div");
+      chip.className = "stat-chip";
+      chip.innerHTML = `
+        <span class="dot" style="background:var(--${meta.varName})"></span>
+        <span class="n">${items.length}</span>
+        <span class="lbl">${meta.label}</span>
+      `;
+      statRow.appendChild(chip);
+
+      const col = document.createElement("section");
+      col.className = "col";
+      col.innerHTML = `
+        <div class="col-head">
+          <span class="name"><span class="dot" style="background:var(--${meta.varName})"></span>${meta.label}</span>
+          <span class="count">${items.length} kayıt</span>
+        </div>
+        <div class="item-list">
+          ${items.map(it => `
+            <div class="item">
+              <a href="${it.url}" target="_blank" rel="noopener noreferrer">${it.title}</a>
+              <div class="meta">${it.author ? "@" + it.author : "yazar yok"} · ${fmtDate(it.published_at)}</div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+      columns.appendChild(col);
+    }
+  }
+
+  const form = document.getElementById("search-form");
+  const input = document.getElementById("q");
+  const submitBtn = document.getElementById("submit-btn");
+  const interpretedEl = document.getElementById("interpreted");
+  const statusEl = document.getElementById("status");
+  const resultsEl = document.getElementById("search-results");
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -224,11 +283,15 @@
       statusEl.textContent = `${data.result_count} sonuç bulundu, ${data.added_count} yeni kayıt veritabanına eklendi.`;
 
       resultsEl.innerHTML = data.items.map(it => `
-        <div class="item">
+        <div class="item" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.75rem 1rem;">
           <a href="${it.url}" target="_blank" rel="noopener noreferrer">${it.title}</a>
           <div class="meta">${it.author ? "@" + it.author : "yazar yok"} · ${fmtDate(it.published_at)}</div>
         </div>
       `).join("") || `<p class="status">Bu kritere uyan sonuç bulunamadı.</p>`;
+
+      if (data.added_count > 0) {
+        await loadColumns();
+      }
 
     } catch (err) {
       statusEl.className = "status error";
@@ -238,6 +301,8 @@
       submitBtn.textContent = "Ara";
     }
   });
+
+  loadColumns();
 </script>
 </body>
 </html>

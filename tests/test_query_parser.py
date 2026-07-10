@@ -2,14 +2,24 @@ from ai_radar.query_parser import parse_natural_query
 
 
 def test_parses_users_original_example_sentence():
-    """Kullanıcının verdiği örnek cümle doğru şekilde ayrıştırılmalı."""
+    """Kullanıcının verdiği örnek cümle doğru şekilde ayrıştırılmalı.
+
+    "gelişmesi" gibi betimleyici kelimeler ve iyelik eki ("Claude'ın")
+    temizlenerek geriye asıl aranacak terim ("Claude") kalmalı — aksi halde
+    X araması bu Türkçe ifadeyi tam öbek olarak arar ve hiçbir sonuç bulamaz.
+    """
     result = parse_natural_query(
         "Claude'ın son gelişmesi hakkında etkileşimi yüksek son 24 saatte "
         "paylaşılmış tweetleri getir"
     )
-    assert result["topic"] == "Claude'ın son gelişmesi"
+    assert result["topic"] == "Claude"
     assert result["hours"] == 24
     assert result["min_engagement"] == 20
+
+
+def test_strips_turkish_possessive_suffix_from_proper_nouns():
+    result = parse_natural_query("OpenAI'nin yeni duyurusu hakkında tweetler")
+    assert result["topic"] == "OpenAI"
 
 
 def test_parses_days_and_popular_keyword():

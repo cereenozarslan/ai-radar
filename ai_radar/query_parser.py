@@ -30,15 +30,23 @@ _ENGAGEMENT_KEYWORDS = re.compile(
 )
 
 # Ayrıştırıldıktan sonra konu metninde kalabilecek, anlamı olmayan bağlaç/dolgu kelimeler.
-# "son" kasıtlı olarak burada yok: zaman kalıpları ("son N saat") kendi "son"unu zaten
-# ayrı tüketiyor, kalan tek başına "son" genelde "Claude'ın son gelişmesi" gibi konunun
-# kendisine ait bir sıfat oluyor.
+# "gelişme(si)/haber(i)/güncelleme(si)/duyuru(su)" gibi kelimeler asıl arama terimi
+# DEĞİL, kullanıcının "ne tür içerik istediğinin" açıklaması (örn. "Claude'ın son
+# gelişmesi" -> asıl aranması gereken kelime sadece "Claude"). Bu yüzden "son" da
+# dahil buraya eklendi; artık zaman kalıpları ("son N saat") kendi "son"unu ayrı
+# tükettiği için geriye kalan "son" hep bu tür betimleyici kullanımlardan geliyor.
 _FILLER_WORDS = re.compile(
     r"\b(hakk[ıi]nda|ile\s+ilgili|paylaş[ıi]lm[ıi][şs]\w*|paylaşılan|"
     r"tweet(?:leri|ler)?|twetleri|getir|bul|ara(?:t)?|bana|olan|i[çc]indeki|"
-    r"sadece|yaln[ıi]zca)\b",
+    r"sadece|yaln[ıi]zca|son|yeni|"
+    r"geli[şs]me(?:si|leri|siyle|leriyle)?|haber(?:i|leri)?|"
+    r"g[üu]ncelleme(?:si|leri)?|duyuru(?:su|lar[ıi])?|yenilik(?:leri|leriyle)?)\b",
     re.IGNORECASE,
 )
+
+# Türkçe iyelik eki temizleme: "Claude'ın" -> "Claude", "OpenAI'nin" -> "OpenAI".
+# Bu olmadan özel isimler tam öbek aramada hiçbir sonuçla eşleşmiyor.
+_POSSESSIVE_SUFFIX = re.compile(r"(\w+)'(?:n?[iıuü]n)\b", re.IGNORECASE)
 
 DEFAULT_MIN_ENGAGEMENT_WHEN_REQUESTED = 20
 
@@ -48,7 +56,7 @@ def parse_natural_query(text: str) -> dict:
 
     Örnek: "Claude'ın son gelişmesi hakkında etkileşimi yüksek son 24 saatte
     paylaşılmış tweetleri getir" ->
-        {"topic": "Claude'ın son gelişmesi", "hours": 24, "min_engagement": 20}
+        {"topic": "Claude", "hours": 24, "min_engagement": 20}
     """
     remaining = text
 
@@ -66,6 +74,7 @@ def parse_natural_query(text: str) -> dict:
         min_engagement = DEFAULT_MIN_ENGAGEMENT_WHEN_REQUESTED
         remaining = _ENGAGEMENT_KEYWORDS.sub("", remaining)
 
+    remaining = _POSSESSIVE_SUFFIX.sub(r"\1", remaining)
     topic = _FILLER_WORDS.sub("", remaining)
     topic = re.sub(r"\s+", " ", topic).strip(" ,.-")
 
