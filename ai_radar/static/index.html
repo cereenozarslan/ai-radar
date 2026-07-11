@@ -255,6 +255,35 @@
   .widget-card .hint { font-size: 0.78rem; margin: 0.7rem 0 0; }
   .widget-card button.primary { padding: 0.5rem 0.9rem; font-size: 0.8rem; flex: none; }
 
+  /* Takip listesi yönetimi: eklenen hesaplar chip olarak, altında ekleme formu */
+  .followed-accounts { margin-top: 0.9rem; }
+  .followed-accounts-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.6rem; }
+  .followed-chip {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.25rem 0.3rem 0.25rem 0.65rem; border-radius: 20px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    font-size: 0.78rem; font-weight: 600; color: var(--text);
+  }
+  .followed-chip-remove {
+    border: none; background: transparent; color: var(--text-muted); cursor: pointer;
+    width: 18px; height: 18px; border-radius: 50%; font-size: 0.9rem; line-height: 1; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: background-color 0.15s var(--ease), color 0.15s var(--ease);
+  }
+  .followed-chip-remove:hover { background: var(--danger); color: #fff; }
+  .followed-empty { font-size: 0.78rem; color: var(--text-muted); }
+
+  .followed-accounts-form { display: flex; gap: 0.4rem; }
+  .followed-accounts-form input {
+    flex: 1; min-width: 0; padding: 0.4rem 0.6rem; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-size: 0.78rem;
+  }
+  .followed-accounts-form input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .followed-accounts-form button {
+    flex: none; padding: 0.4rem 0.7rem; border-radius: 8px; border: none;
+    background: var(--accent); color: var(--accent-ink); font-size: 0.78rem; font-weight: 600; cursor: pointer;
+  }
+
   .mini-post-list { max-height: 460px; overflow-y: auto; margin-top: 0.7rem; }
   .mini-post {
     display: flex; align-items: center; gap: 0.65rem; padding: 0.6rem 0;
@@ -626,6 +655,15 @@
         </div>
         <button type="button" class="primary" id="digest-refresh-btn">Yenile</button>
       </div>
+
+      <div class="followed-accounts">
+        <div class="followed-accounts-list" id="followed-accounts-list"></div>
+        <form class="followed-accounts-form" id="followed-accounts-form">
+          <input type="text" id="followed-accounts-input" placeholder="kullanıcı adı ekle…" autocomplete="off" />
+          <button type="submit">Ekle</button>
+        </form>
+      </div>
+
       <p class="hint">Takip ettiğin hesapların son 36 saatte paylaştıklarına bakar, gerçek X API istekleri gönderir (kredi harcar) — bu yüzden otomatik açılmaz, sadece "Yenile"ye bastığında çalışır.</p>
       <div class="status" id="digest-status"></div>
       <div class="mini-post-list" id="digest-results"></div>
@@ -1235,6 +1273,46 @@
     }
   });
 
+  // --- Takip listesi yönetimi (arayüzden ekle/kaldır) ---
+  let FOLLOWED_ACCOUNTS = [];
+  const followedListEl = document.getElementById("followed-accounts-list");
+  const followedForm = document.getElementById("followed-accounts-form");
+  const followedInput = document.getElementById("followed-accounts-input");
+
+  function renderFollowedAccounts() {
+    followedListEl.innerHTML = FOLLOWED_ACCOUNTS.length
+      ? FOLLOWED_ACCOUNTS.map(a => `
+          <span class="followed-chip">
+            @${a.username}
+            <button type="button" class="followed-chip-remove" data-id="${a.id}" title="Takipten kaldır">×</button>
+          </span>
+        `).join("")
+      : `<span class="followed-empty">Henüz kimse eklenmedi — aşağıya kullanıcı adı yaz.</span>`;
+  }
+
+  async function loadFollowedAccounts() {
+    const resp = await fetch("/api/followed-accounts");
+    FOLLOWED_ACCOUNTS = await resp.json();
+    renderFollowedAccounts();
+  }
+
+  followedForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const username = followedInput.value.trim();
+    if (!username) return;
+    followedInput.value = "";
+    await fetch("/api/followed-accounts?" + new URLSearchParams({ username }), { method: "POST" });
+    await loadFollowedAccounts();
+  });
+
+  followedListEl.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".followed-chip-remove");
+    if (!btn) return;
+    await fetch(`/api/followed-accounts/${btn.dataset.id}`, { method: "DELETE" });
+    await loadFollowedAccounts();
+  });
+
+  loadFollowedAccounts();
   loadEverything();
 </script>
 </body>

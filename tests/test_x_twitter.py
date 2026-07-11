@@ -8,6 +8,7 @@ from ai_radar.collectors.x_twitter import (
     clamp_max_results,
     collect,
     collect_following_digest,
+    collect_following_digest_for_usernames,
     compute_start_time,
     engagement_score,
     to_item_dict,
@@ -248,3 +249,35 @@ def test_collect_following_digest_aggregates_and_dedupes_across_batches(monkeypa
     assert all(item["source"] == "x_following" for item in items)
     # etkilesime gore siralanmis olmali (id=2, 50 begeni, once gelmeli)
     assert items[0]["title"] == "tweet-2"
+
+
+def test_collect_following_digest_for_usernames_does_not_call_get_following_usernames(monkeypatch):
+    """Yerel (arayüzden yönetilen) kullanıcı adı listesi kullanılırken X'in kendi
+    'following' uç noktasına HİÇ istek atılmamalı (ekstra kredi harcamamak için)."""
+    def make_tweet(id_, likes):
+        return SimpleNamespace(
+            id=id_, text=f"tweet-{id_}", author_id=1, created_at=None,
+            public_metrics={"like_count": likes, "retweet_count": 0, "reply_count": 0, "quote_count": 0},
+        )
+
+    def boom(*args, **kwargs):
+        raise AssertionError("get_following_usernames çağrılmamalıydı")
+
+    monkeypatch.setattr(x_twitter, "get_following_usernames", boom)
+    monkeypatch.setattr(
+        x_twitter, "search_recent",
+        lambda query, max_results=100, start_time=None: SimpleNamespace(
+            data=[make_tweet(1, likes=10)],
+            includes={"users": [SimpleNamespace(id=1, username="sam", profile_image_url=None)]},
+        ),
+    )
+
+    items = collect_following_digest_for_usernames(["sam", "ayse"], hours=36)
+
+    assert len(items) == 1
+    assert items[0]["source"] == "x_following"
+
+
+def test_collect_following_digest_for_usernames_returns_empty_for_no_usernames():
+    """Boş liste verilirse (henüz kimse eklenmemiş), hiç API isteği atmadan boş dönmeli."""
+    assert collect_following_digest_for_usernames([], hours=36) == []

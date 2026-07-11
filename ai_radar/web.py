@@ -15,6 +15,7 @@ Sonra tarayıcıda http://127.0.0.1:8000 açın.
 
 import asyncio
 import contextlib
+import sqlite3
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -138,22 +139,81 @@ def search(q: str):
     }
 
 
+@app.get("/api/followed-accounts")
+def list_followed_accounts():
+    """Arayüzden eklenmiş, takip edilen X hesaplarını döner."""
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT id, username, added_at FROM followed_accounts ORDER BY username"
+    ).fetchall()
+    conn.close()
+    return [{"id": r[0], "username": r[1], "added_at": r[2]} for r in rows]
+
+
+@app.post("/api/followed-accounts")
+def add_followed_account(username: str):
+    """Takip listesine bir X kullanıcı adı ekler (baştaki @ varsa temizlenir)."""
+    username = username.strip().lstrip("@")
+    if not username:
+        raise HTTPException(status_code=400, detail="Kullanıcı adı boş olamaz.")
+
+    conn = get_connection()
+    try:
+        conn.execute("INSERT INTO followed_accounts (username) VALUES (?)", (username,))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        pass  # zaten listede var, sessizce yoksay
+    finally:
+        conn.close()
+
+    return {"username": username}
+
+
+@app.delete("/api/followed-accounts/{account_id}")
+def remove_followed_account(account_id: int):
+    """Takip listesinden bir hesabı kaldırır."""
+    conn = get_connection()
+    cursor = conn.execute("DELETE FROM followed_accounts WHERE id = ?", (account_id,))
+    conn.commit()
+    conn.close()
+
+    if cursor.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Kayıt bulunamadı.")
+    return {"id": account_id}
+
+
 @app.get("/api/following-digest")
 def following_digest(hours: float = 36):
-    """Kullanıcının X'te takip ettiği hesapların son `hours` saatteki gönderilerini toplar.
+    """Takip edilen hesapların son `hours` saatteki gönderilerini toplar.
 
-    X_FOLLOW_USERNAME .env'de tanımlı olmalı. Manuel olarak (bir 'yenile' butonuyla)
-    tetiklenmesi amaçlanır — takip listesi büyükse birden fazla gerçek X API isteği
-    gönderir (kredi harcar), bu yüzden sayfa her açıldığında otomatik çağrılmaz.
+    İki kaynak birleştirilir: (1) X_FOLLOW_USERNAME .env'de tanımlıysa, o X
+    hesabının GERÇEKTEN takip ettiği herkes (X'in "following" uç noktasından
+    anlık çekilir), (2) arayüzden manuel eklenen yerel liste. İkisi de aynı
+    anda kullanılabilir; sadece biri tanımlıysa sorun olmaz. Manuel olarak
+    (bir 'yenile' butonuyla) tetiklenmesi amaçlanır — hesap sayısına bağlı
+    olarak birden fazla gerçek X API isteği gönderir (kredi harcar), bu
+    yüzden sayfa her açıldığında otomatik çağrılmaz.
     """
-    if not config.X_FOLLOW_USERNAME:
+    conn = get_connection()
+    rows = conn.execute("SELECT username FROM followed_accounts").fetchall()
+    conn.close()
+    usernames = {r[0] for r in rows}
+
+    if config.X_FOLLOW_USERNAME:
+        try:
+            usernames.update(x_twitter.get_following_usernames(config.X_FOLLOW_USERNAME))
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"X API hatası: {exc}") from exc
+
+    if not usernames:
         raise HTTPException(
             status_code=400,
-            detail="X_FOLLOW_USERNAME .env dosyasında tanımlı değil.",
+            detail="Henüz takip edilecek kimse yok — takip listesine bir hesap ekle "
+            "(veya .env'de X_FOLLOW_USERNAME tanımla).",
         )
 
     try:
-        items = x_twitter.collect_following_digest(config.X_FOLLOW_USERNAME, hours=hours)
+        items = x_twitter.collect_following_digest_for_usernames(sorted(usernames), hours=hours)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"X API hatası: {exc}") from exc
 
@@ -161,6 +221,7 @@ def following_digest(hours: float = 36):
 
     return {
         "hours": hours,
+        "usernames": sorted(usernames),
         "result_count": len(items),
         "added_count": added,
         "items": items,

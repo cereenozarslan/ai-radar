@@ -257,20 +257,18 @@ def collect(
     return [to_item_dict(tweet, users_by_id, media_by_key) for tweet in tweets]
 
 
-def collect_following_digest(
-    username: str,
+def collect_following_digest_for_usernames(
+    usernames: list[str],
     hours: float = 36,
     max_results_per_batch: int = 100,
-    max_accounts: int = 200,
 ) -> list[dict]:
-    """Kullanıcının takip ettiği hesapların son `hours` saatteki gönderilerini toplar.
+    """Verilen kullanıcı adı listesinin son `hours` saatteki gönderilerini toplar.
 
-    Takip listesi her çağrıda anlık çekilir (yeni takip edilenler otomatik dahil
-    olur). Takip edilen hesap sayısına bağlı olarak BİRDEN FAZLA gerçek X API
-    isteği gönderebilir (takip listesini çekmek için 1+, her sorgu grubu için 1) —
-    her biri kredi harcar.
+    usernames genelde uygulamanın kendi (yerel, arayüzden yönetilen) takip
+    listesinden gelir — X'in "following" uç noktasına hiç istek atılmaz.
+    Kullanıcı adı sayısına bağlı olarak BİRDEN FAZLA gerçek X API isteği
+    gönderebilir (her sorgu grubu için 1) — her biri kredi harcar.
     """
-    usernames = get_following_usernames(username, max_accounts=max_accounts)
     queries = build_following_queries(usernames)
 
     start_time = compute_start_time(hours)
@@ -295,6 +293,30 @@ def collect_following_digest(
 
     all_tweets.sort(key=engagement_score, reverse=True)
     return [to_item_dict(tweet, users_by_id, media_by_key, source="x_following") for tweet in all_tweets]
+
+
+def collect_following_digest(
+    username: str,
+    hours: float = 36,
+    max_results_per_batch: int = 100,
+    max_accounts: int = 200,
+) -> list[dict]:
+    """Bir X hesabının GERÇEKTEN takip ettiği hesapların son `hours` saatteki
+    gönderilerini toplar (X'in kendi "following" listesini çeker).
+
+    Takip listesi her çağrıda anlık çekilir. Takip edilen hesap sayısına bağlı
+    olarak BİRDEN FAZLA gerçek X API isteği gönderebilir (takip listesini
+    çekmek için 1+, her sorgu grubu için 1) — her biri kredi harcar.
+
+    Not: Uygulama arayüzü artık bunun yerine, kullanıcının kendi yönettiği
+    yerel bir listeyle collect_following_digest_for_usernames()'i kullanıyor
+    (bir ekstra API isteğinden tasarruf için). Bu fonksiyon geriye dönük
+    uyumluluk ve X'in gerçek takip grafiğini kullanmak isteyenler için duruyor.
+    """
+    usernames = get_following_usernames(username, max_accounts=max_accounts)
+    return collect_following_digest_for_usernames(
+        usernames, hours=hours, max_results_per_batch=max_results_per_batch
+    )
 
 
 if __name__ == "__main__":

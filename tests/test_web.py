@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 import ai_radar.web as web
+from ai_radar.database import get_connection as web_get_connection
 
 # Not: Bu testler gerçek X API isteği göndermez; x_twitter.collect() mock'lanır.
 
@@ -82,17 +83,34 @@ def test_list_items_returns_database_contents(tmp_path, monkeypatch):
     assert data[0]["image_url"] == "https://example.com/foto.jpg"
 
 
-def test_following_digest_returns_items(monkeypatch):
-    def fake_digest(username, hours=36):
-        assert username == "birkullanici"
+def _make_followed_accounts_db(tmp_path, usernames):
+    from ai_radar.database import get_connection, init_db
+
+    db_path = tmp_path / "test.db"
+    init_db(db_path)
+    conn = get_connection(db_path)
+    for username in usernames:
+        conn.execute("INSERT INTO followed_accounts (username) VALUES (?)", (username,))
+    conn.commit()
+    conn.close()
+    return db_path
+
+
+def test_following_digest_uses_local_followed_accounts_list(tmp_path, monkeypatch):
+    """X_FOLLOW_USERNAME tanımlı değilse, sadece arayüzden eklenen yerel liste kullanılmalı."""
+    db_path = _make_followed_accounts_db(tmp_path, ["birkullanici"])
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+    monkeypatch.setattr(web.config, "X_FOLLOW_USERNAME", None)
+
+    def fake_digest(usernames, hours=36):
+        assert usernames == ["birkullanici"]
         assert hours == 36
         return [{
             "source": "x_following", "title": "örnek", "url": "https://x.com/i/web/status/1",
             "content": "örnek", "author": "biri", "published_at": None,
         }]
 
-    monkeypatch.setattr(web.config, "X_FOLLOW_USERNAME", "birkullanici")
-    monkeypatch.setattr(web.x_twitter, "collect_following_digest", fake_digest)
+    monkeypatch.setattr(web.x_twitter, "collect_following_digest_for_usernames", fake_digest)
     monkeypatch.setattr(web, "save_items", lambda items: len(items))
 
     client = TestClient(web.app)
@@ -105,7 +123,57 @@ def test_following_digest_returns_items(monkeypatch):
     assert data["items"][0]["source"] == "x_following"
 
 
-def test_following_digest_requires_configured_username(monkeypatch):
+def test_following_digest_uses_real_x_following_list_when_configured(tmp_path, monkeypatch):
+    """Yerel liste boş olsa bile, X_FOLLOW_USERNAME tanımlıysa X'in gerçek takip
+    listesi kullanılmalı (eski davranış korunmalı)."""
+    db_path = _make_followed_accounts_db(tmp_path, [])
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+    monkeypatch.setattr(web.config, "X_FOLLOW_USERNAME", "gercekhesabim")
+    monkeypatch.setattr(web.x_twitter, "get_following_usernames", lambda username: ["takipedilen1"])
+
+    def fake_digest(usernames, hours=36):
+        assert usernames == ["takipedilen1"]
+        return [{
+            "source": "x_following", "title": "örnek", "url": "https://x.com/i/web/status/2",
+            "content": "örnek", "author": "biri", "published_at": None,
+        }]
+
+    monkeypatch.setattr(web.x_twitter, "collect_following_digest_for_usernames", fake_digest)
+    monkeypatch.setattr(web, "save_items", lambda items: len(items))
+
+    client = TestClient(web.app)
+    resp = client.get("/api/following-digest")
+
+    assert resp.status_code == 200
+    assert resp.json()["result_count"] == 1
+
+
+def test_following_digest_combines_local_list_and_real_x_following(tmp_path, monkeypatch):
+    """Her ikisi de tanımlıysa, iki kaynaktaki kullanıcı adları birleşip
+    (tekrarsız) tek listede toplanmalı."""
+    db_path = _make_followed_accounts_db(tmp_path, ["manuel_eklenen", "ortak"])
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+    monkeypatch.setattr(web.config, "X_FOLLOW_USERNAME", "gercekhesabim")
+    monkeypatch.setattr(web.x_twitter, "get_following_usernames", lambda username: ["gercek_takip", "ortak"])
+
+    captured = {}
+
+    def fake_digest(usernames, hours=36):
+        captured["usernames"] = usernames
+        return []
+
+    monkeypatch.setattr(web.x_twitter, "collect_following_digest_for_usernames", fake_digest)
+
+    client = TestClient(web.app)
+    resp = client.get("/api/following-digest")
+
+    assert resp.status_code == 200
+    assert captured["usernames"] == ["gercek_takip", "manuel_eklenen", "ortak"]
+
+
+def test_following_digest_requires_at_least_one_followed_account(tmp_path, monkeypatch):
+    db_path = _make_followed_accounts_db(tmp_path, [])
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
     monkeypatch.setattr(web.config, "X_FOLLOW_USERNAME", None)
 
     client = TestClient(web.app)
@@ -114,18 +182,110 @@ def test_following_digest_requires_configured_username(monkeypatch):
     assert resp.status_code == 400
 
 
-def test_following_digest_returns_502_on_x_api_error(monkeypatch):
-    monkeypatch.setattr(web.config, "X_FOLLOW_USERNAME", "birkullanici")
+def test_following_digest_returns_502_on_x_api_error(tmp_path, monkeypatch):
+    db_path = _make_followed_accounts_db(tmp_path, ["birkullanici"])
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+    monkeypatch.setattr(web.config, "X_FOLLOW_USERNAME", None)
 
-    def failing_digest(username, hours=36):
+    def failing_digest(usernames, hours=36):
         raise RuntimeError("X API kota doldu")
 
-    monkeypatch.setattr(web.x_twitter, "collect_following_digest", failing_digest)
+    monkeypatch.setattr(web.x_twitter, "collect_following_digest_for_usernames", failing_digest)
 
     client = TestClient(web.app)
     resp = client.get("/api/following-digest")
 
     assert resp.status_code == 502
+
+
+def test_following_digest_returns_502_when_fetching_real_following_list_fails(tmp_path, monkeypatch):
+    db_path = _make_followed_accounts_db(tmp_path, [])
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+    monkeypatch.setattr(web.config, "X_FOLLOW_USERNAME", "gercekhesabim")
+
+    def failing_get_following(username):
+        raise RuntimeError("X API kota doldu")
+
+    monkeypatch.setattr(web.x_twitter, "get_following_usernames", failing_get_following)
+
+    client = TestClient(web.app)
+    resp = client.get("/api/following-digest")
+
+    assert resp.status_code == 502
+
+
+def test_list_followed_accounts_returns_usernames_sorted(tmp_path, monkeypatch):
+    db_path = _make_followed_accounts_db(tmp_path, ["zeynep", "ahmet"])
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+
+    client = TestClient(web.app)
+    resp = client.get("/api/followed-accounts")
+
+    assert resp.status_code == 200
+    usernames = [row["username"] for row in resp.json()]
+    assert usernames == ["ahmet", "zeynep"]
+
+
+def test_add_followed_account_strips_at_sign(tmp_path, monkeypatch):
+    db_path = _make_followed_accounts_db(tmp_path, [])
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+
+    client = TestClient(web.app)
+    resp = client.post("/api/followed-accounts", params={"username": "@birisi"})
+
+    assert resp.status_code == 200
+    assert resp.json()["username"] == "birisi"
+
+    resp2 = client.get("/api/followed-accounts")
+    assert [row["username"] for row in resp2.json()] == ["birisi"]
+
+
+def test_add_followed_account_ignores_duplicate(tmp_path, monkeypatch):
+    db_path = _make_followed_accounts_db(tmp_path, ["birisi"])
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+
+    client = TestClient(web.app)
+    resp = client.post("/api/followed-accounts", params={"username": "birisi"})
+
+    assert resp.status_code == 200
+    resp2 = client.get("/api/followed-accounts")
+    assert len(resp2.json()) == 1
+
+
+def test_add_followed_account_rejects_empty_username(tmp_path, monkeypatch):
+    db_path = _make_followed_accounts_db(tmp_path, [])
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+
+    client = TestClient(web.app)
+    resp = client.post("/api/followed-accounts", params={"username": "   "})
+
+    assert resp.status_code == 400
+
+
+def test_remove_followed_account_deletes_row(tmp_path, monkeypatch):
+    db_path = _make_followed_accounts_db(tmp_path, ["birisi"])
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+
+    conn = web_get_connection(db_path)
+    account_id = conn.execute("SELECT id FROM followed_accounts WHERE username = ?", ("birisi",)).fetchone()[0]
+    conn.close()
+
+    client = TestClient(web.app)
+    resp = client.delete(f"/api/followed-accounts/{account_id}")
+
+    assert resp.status_code == 200
+    resp2 = client.get("/api/followed-accounts")
+    assert resp2.json() == []
+
+
+def test_remove_followed_account_returns_404_for_unknown_id(tmp_path, monkeypatch):
+    db_path = _make_followed_accounts_db(tmp_path, [])
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+
+    client = TestClient(web.app)
+    resp = client.delete("/api/followed-accounts/999999")
+
+    assert resp.status_code == 404
 
 
 def _make_test_db(tmp_path):

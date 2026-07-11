@@ -21,3 +21,12 @@ CREATE TABLE IF NOT EXISTS items (
 -- Dashboard'daki skor/kaynak filtrelerini hızlandırmak için indeksler
 CREATE INDEX IF NOT EXISTS idx_items_signal_score ON items(signal_score);
 CREATE INDEX IF NOT EXISTS idx_items_source ON items(source);
+
+-- "Takip ettiklerinin gündemi" için kullanıcının arayüzden yönettiği hesap listesi.
+-- X'in kendi "following" listesini çekmek yerine (ayrı, ücretli bir API isteği) bu
+-- yerel listeyi kullanıyoruz; hem kredi tasarrufu hem tam kontrol sağlıyor.
+CREATE TABLE IF NOT EXISTS followed_accounts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    added_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
