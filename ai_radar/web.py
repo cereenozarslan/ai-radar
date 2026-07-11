@@ -13,18 +13,50 @@ DİKKAT: Her arama, GERÇEK bir X API isteği gönderir (kredi harcar).
 Sonra tarayıcıda http://127.0.0.1:8000 açın.
 """
 
+import asyncio
+import contextlib
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 
-from ai_radar.collectors import x_twitter
+from ai_radar.collectors import github_trending, nuvemmag, x_twitter
 from ai_radar.collectors.common import save_items
 from ai_radar.config import config
 from ai_radar.database import get_connection
 from ai_radar.query_parser import parse_natural_query
+from ai_radar.signal_score import compute_signal_scores
 
-app = FastAPI(title="AI-Radar — X Arama")
+# NuvemMag ve GitHub Trending ücretsiz (X'in aksine kredi harcamıyor), bu yüzden
+# sunucu ayakta olduğu sürece kendiliğinden bu aralıkla yenilenirler.
+FREE_COLLECTOR_REFRESH_SECONDS = 3600
+
+
+async def _refresh_free_collectors_periodically() -> None:
+    collectors = (("NuvemMag", nuvemmag.collect), ("GitHub Trending", github_trending.collect))
+    while True:
+        for name, collect in collectors:
+            try:
+                items = await asyncio.to_thread(collect)
+                added = await asyncio.to_thread(save_items, items)
+                print(f"[otomatik yenileme] {name}: {added} yeni kayıt eklendi.")
+            except Exception as exc:
+                print(f"[otomatik yenileme] {name} başarısız: {exc}")
+        await asyncio.sleep(FREE_COLLECTOR_REFRESH_SECONDS)
+
+
+@contextlib.asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(_refresh_free_collectors_periodically())
+    try:
+        yield
+    finally:
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
+
+
+app = FastAPI(title="AI-Radar — X Arama", lifespan=lifespan)
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -48,7 +80,9 @@ def list_items():
         "id", "source", "title", "url", "author", "published_at",
         "image_url", "is_read", "is_saved", "popularity", "fetched_at",
     ]
-    return [dict(zip(cols, row)) for row in rows]
+    items = [dict(zip(cols, row)) for row in rows]
+    compute_signal_scores(items)
+    return items
 
 
 @app.post("/api/items/{item_id}/mark-read")
