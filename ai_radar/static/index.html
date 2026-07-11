@@ -26,7 +26,9 @@
     --github: #181717;
     --x: #0a0a0a;
     --shadow-sm: 0 1px 2px rgba(15, 25, 40, 0.06);
-    --shadow-md: 0 6px 22px rgba(15, 25, 40, 0.08);
+    --shadow-md: 0 6px 22px rgba(15, 25, 40, 0.08), 0 1.5px 4px rgba(15, 25, 40, 0.05);
+    --shadow-lg: 0 20px 45px rgba(15, 25, 40, 0.13), 0 4px 12px rgba(15, 25, 40, 0.07);
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -43,20 +45,23 @@
       --github: #d9dbe1;
       --x: #f2f3f5;
       --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-      --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45);
+      --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+      --shadow-lg: 0 26px 60px rgba(0, 0, 0, 0.55), 0 6px 16px rgba(0, 0, 0, 0.35);
     }
   }
   :root[data-theme="dark"] {
     --bg: #0a0f1a; --surface: #121a29; --surface-2: #16202f; --border: #253347;
     --text: #e7ecf3; --text-muted: #8b96a8; --accent: #5b8def; --accent-ink: #051022;
     --danger: #e2806a; --nuvemmag: #a3d95c; --github: #d9dbe1; --x: #f2f3f5;
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4); --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4); --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 26px 60px rgba(0, 0, 0, 0.55), 0 6px 16px rgba(0, 0, 0, 0.35);
   }
   :root[data-theme="light"] {
     --bg: #eef1f5; --surface: #ffffff; --surface-2: #f2f4f8; --border: #d9dfe6;
     --text: #16202c; --text-muted: #5c6b7a; --accent: #1e3f7a; --accent-ink: #ffffff;
     --danger: #b3402f; --nuvemmag: #6f9a2c; --github: #181717; --x: #0a0a0a;
-    --shadow-sm: 0 1px 2px rgba(15, 25, 40, 0.06); --shadow-md: 0 6px 22px rgba(15, 25, 40, 0.08);
+    --shadow-sm: 0 1px 2px rgba(15, 25, 40, 0.06); --shadow-md: 0 6px 22px rgba(15, 25, 40, 0.08), 0 1.5px 4px rgba(15, 25, 40, 0.05);
+    --shadow-lg: 0 20px 45px rgba(15, 25, 40, 0.13), 0 4px 12px rgba(15, 25, 40, 0.07);
   }
 
   * { box-sizing: border-box; }
@@ -65,15 +70,27 @@
   body {
     margin: 0;
     min-height: 100vh;
-    background: var(--bg);
+    background:
+      radial-gradient(ellipse 900px 500px at 12% -8%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 12%, color-mix(in srgb, var(--nuvemmag) 5%, transparent), transparent 55%),
+      var(--bg);
+    background-attachment: fixed;
     color: var(--text);
     font-family: -apple-system, "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
     line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
   }
 
   .mono { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; }
   a { color: inherit; }
   svg { display: block; }
+
+  ::selection { background: color-mix(in srgb, var(--accent) 35%, transparent); color: var(--text); }
+
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 20px; border: 2px solid var(--surface); background-clip: padding-box; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); background-clip: padding-box; }
 
   /* ---------- Üst bar + gündem şeridi ---------- */
   header.top {
@@ -83,7 +100,7 @@
     background: var(--surface);
     border-bottom: 1px solid var(--border);
   }
-  .wordmark { display: flex; align-items: center; gap: 0.55rem; font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; }
+  .wordmark { display: flex; align-items: center; gap: 0.55rem; font-weight: 700; font-size: 1.02rem; letter-spacing: -0.015em; }
   .pulse { position: relative; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); flex: none; }
   .pulse::after {
     content: ""; position: absolute; inset: -5px; border-radius: 50%;
@@ -129,7 +146,7 @@
   @media (prefers-reduced-motion: reduce) { .ticker-track { animation: none; } }
 
   /* ---------- Genel yerleşim ---------- */
-  .layout { display: flex; max-width: 1260px; margin: 0 auto; }
+  .layout { display: flex; max-width: 1680px; margin: 0 auto; }
 
   nav.sidebar {
     position: sticky; top: 98px; align-self: flex-start;
@@ -138,27 +155,21 @@
   }
   nav.sidebar button {
     display: flex; align-items: center; justify-content: center;
-    width: 42px; height: 42px; border-radius: 12px;
+    width: 42px; height: 42px; border-radius: 13px;
     background: var(--surface); border: 1px solid var(--border);
     box-shadow: var(--shadow-sm); cursor: pointer;
-    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
   }
-  nav.sidebar button:hover { transform: translateY(-1px); }
-  nav.sidebar button.active { box-shadow: 0 0 0 2px var(--icon-color, var(--accent)) inset; }
+  nav.sidebar button:hover { transform: translateY(-2px) scale(1.04); box-shadow: var(--shadow-md); }
+  nav.sidebar button.active { box-shadow: 0 0 0 2px var(--icon-color, var(--accent)) inset, 0 4px 14px color-mix(in srgb, var(--icon-color, var(--accent)) 35%, transparent); }
   @media (max-width: 900px) { nav.sidebar { display: none; } }
 
   .page { flex: 1; min-width: 0; padding: 0 1.5rem 4rem; }
 
   /* ---------- Arama alanı (hero) ---------- */
   .hero {
-    margin-top: 2.25rem; padding: 2rem 2rem 1.75rem; background: var(--surface);
-    border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-md);
-    display: grid; grid-template-columns: 1fr 250px; gap: 1.75rem;
-  }
-  @media (max-width: 780px) { .hero { grid-template-columns: 1fr; } }
-  .hero-side { border-left: 1px solid var(--border); padding-left: 1.5rem; }
-  @media (max-width: 780px) {
-    .hero-side { border-left: none; border-top: 1px solid var(--border); padding-left: 0; padding-top: 1.25rem; margin-top: 0.5rem; }
+    margin-top: 2.5rem; padding: 2.25rem 2.25rem 2rem; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow-md);
   }
   .trend-rank { display: flex; flex-direction: column; gap: 0.5rem; }
   .trend-rank-row { display: flex; align-items: center; gap: 0.55rem; }
@@ -177,9 +188,19 @@
     transition: width 0.3s ease;
   }
 
-  .eyebrow { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.6rem; }
-  h1 { font-size: clamp(1.35rem, 2.4vw, 1.7rem); font-weight: 700; letter-spacing: -0.015em; margin: 0 0 1.1rem; text-wrap: balance; }
-  h2.section-title { font-size: 1rem; font-weight: 700; margin: 0; }
+  .eyebrow { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.6rem; font-weight: 600; }
+  h1 {
+    font-family: ui-serif, Georgia, "Iowan Old Style", "Times New Roman", serif;
+    font-size: clamp(1.5rem, 2.7vw, 1.95rem); font-weight: 500; letter-spacing: -0.015em;
+    margin: 0 0 1.1rem; text-wrap: balance; line-height: 1.25;
+  }
+  @supports (background-clip: text) or (-webkit-background-clip: text) {
+    h1 {
+      background: linear-gradient(120deg, var(--text) 30%, var(--accent) 100%);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+  }
+  h2.section-title { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; margin: 0; }
 
   form.search { display: flex; gap: 0.55rem; }
   input[type="text"] {
@@ -190,10 +211,13 @@
 
   button.primary {
     padding: 0.8rem 1.35rem; font-size: 0.92rem; font-weight: 600; border-radius: 10px;
-    border: none; background: var(--accent); color: var(--accent-ink); cursor: pointer;
-    box-shadow: var(--shadow-sm); transition: filter 0.15s ease;
+    border: none; color: var(--accent-ink); cursor: pointer;
+    background: linear-gradient(155deg, color-mix(in srgb, var(--accent) 100%, white 8%), var(--accent));
+    box-shadow: var(--shadow-sm), 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
+    transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), filter 0.15s ease;
   }
-  button.primary:hover:not(:disabled) { filter: brightness(1.12); }
+  button.primary:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); box-shadow: var(--shadow-md), 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent); }
+  button.primary:active:not(:disabled) { transform: translateY(0); }
   button.primary:disabled { opacity: 0.6; cursor: default; }
 
   .hint { color: var(--text-muted); font-size: 0.81rem; margin: 0.85rem 0 0; }
@@ -207,20 +231,94 @@
   .search-results { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem; }
   .search-results .item { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; }
 
-  /* ---------- Takip ettiklerinin gündemi ---------- */
-  section.following-digest { margin-top: 1.75rem; padding: 1.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-md); }
-  .digest-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-  .digest-ticker {
-    margin-top: 0.9rem; font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
-    font-size: 0.8rem; color: var(--text-muted); background: var(--surface-2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 0.55rem 0.8rem; display: none;
+  /* ---------- Sağ ray: takip ettiklerinin gündemi (blog kenar çubuğu tarzı) ---------- */
+  .sidebar-left, .sidebar-right {
+    width: 260px; flex: none; align-self: flex-start; position: sticky; top: 98px;
+    display: flex; flex-direction: column; gap: 1.25rem; padding: 2.5rem 0 4rem;
   }
+  .sidebar-right { width: 300px; margin-left: 0.5rem; }
+  .sidebar-left { margin-right: 0.5rem; }
+  @media (max-width: 1150px) { .sidebar-right { display: none; } }
+  @media (max-width: 1300px) { .sidebar-left { display: none; } }
+
+  .widget-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 1.35rem; box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.25s var(--ease), transform 0.25s var(--ease);
+  }
+  .widget-card:hover { box-shadow: var(--shadow-md); }
+  .widget-card-head {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem;
+    padding-bottom: 0.75rem; border-bottom: 1px solid var(--border);
+    font-weight: 700; font-size: 0.95rem;
+  }
+  .widget-card .hint { font-size: 0.78rem; margin: 0.7rem 0 0; }
+  .widget-card button.primary { padding: 0.5rem 0.9rem; font-size: 0.8rem; flex: none; }
+
+  .mini-post-list { max-height: 460px; overflow-y: auto; margin-top: 0.7rem; }
+  .mini-post {
+    display: flex; align-items: center; gap: 0.65rem; padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border); text-decoration: none; color: var(--text);
+    transition: transform 0.2s var(--ease);
+  }
+  .mini-post:last-child { border-bottom: none; }
+  .mini-post:hover { transform: translateX(2px); }
+  .mini-post-num {
+    flex: none; width: 18px; text-align: center; color: var(--text-muted);
+    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-weight: 700; font-size: 0.78rem;
+  }
+  .mini-post-thumb {
+    flex: none; width: 48px; height: 48px; border-radius: 8px; overflow: hidden;
+    background: var(--surface-2); display: flex; align-items: center; justify-content: center;
+  }
+  .mini-post-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .mini-post-thumb .badge { width: 100%; height: 100%; border-radius: 8px; }
+  .mini-post-title {
+    font-size: 0.82rem; font-weight: 600; min-width: 0;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+
+  /* Takip gündemi: kişi kişi gruplanmış tweetler */
+  .person-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+  .person-chip {
+    padding: 0.3rem 0.7rem; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text-muted); font-size: 0.74rem; font-weight: 600;
+    cursor: pointer; transition: background-color 0.2s var(--ease), color 0.2s var(--ease), transform 0.2s var(--ease), border-color 0.2s var(--ease);
+  }
+  .person-chip:hover { transform: translateY(-1px); color: var(--text); border-color: var(--x); }
+
+  .person-group { padding: 0.75rem 0.6rem; margin: 0 -0.6rem; border-bottom: 1px solid var(--border); border-radius: 10px; }
+  .person-group:last-child { border-bottom: none; }
+  .person-group.flash-highlight { animation: flash-bg 0.9s var(--ease); }
+  @keyframes flash-bg {
+    0% { background: color-mix(in srgb, var(--x) 18%, transparent); }
+    100% { background: transparent; }
+  }
+  @media (prefers-reduced-motion: reduce) { .person-group.flash-highlight { animation: none; } }
+  .person-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.15rem; }
+  .person-avatar {
+    flex: none; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--x); color: #fff; font-size: 0.6rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .person-name { font-weight: 600; font-size: 0.82rem; }
+  .person-count {
+    margin-left: auto; font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+    font-size: 0.7rem; color: var(--text-muted);
+  }
+  .person-top .mini-post, .person-rest .mini-post { padding: 0.45rem 0; }
+  .person-toggle {
+    display: flex; align-items: center; gap: 0.3rem; margin-left: 1.85rem;
+    background: none; border: none; cursor: pointer; color: var(--accent);
+    font-size: 0.76rem; font-weight: 600; padding: 0.3rem 0 0.1rem;
+  }
+  .person-rest { padding-left: 1.85rem; }
 
   /* ---------- Kaynakları keşfet (odak + diğerleri) ---------- */
   section.explorer {
-    margin-top: 1.75rem; padding: 1.75rem; border: 1px solid var(--border); border-radius: 16px;
+    margin-top: 2rem; padding: 2rem; border: 1px solid var(--border); border-radius: 20px;
     box-shadow: var(--shadow-md); background: var(--surface);
-    transition: background-color 0.3s ease;
+    transition: background-color 0.4s var(--ease);
   }
 
   .explorer-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-top: 1rem; }
@@ -230,8 +328,13 @@
     padding: 0.45rem 0.85rem; border-radius: 20px;
     border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted);
     font-size: 0.83rem; font-weight: 600; cursor: pointer;
+    transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), background-color 0.2s var(--ease), color 0.2s var(--ease);
   }
-  .tab.active { background: var(--tab-color, var(--accent)); color: var(--tab-ink, var(--accent-ink)); border-color: transparent; }
+  .tab:hover:not(.active) { transform: translateY(-1px); border-color: var(--tab-color, var(--border)); }
+  .tab.active {
+    background: var(--tab-color, var(--accent)); color: var(--tab-ink, var(--accent-ink)); border-color: transparent;
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--tab-color, var(--accent)) 45%, transparent);
+  }
 
   .toolbar-spacer { flex: 1; }
   .filter-input {
@@ -266,22 +369,29 @@
     padding: 0.2rem; max-height: 520px; overflow-y: auto;
   }
   .photo-card {
-    position: relative; display: block; aspect-ratio: 4 / 3; border-radius: 10px; overflow: hidden;
+    position: relative; display: block; aspect-ratio: 4 / 3; border-radius: 14px; overflow: hidden;
     background: var(--item-accent, var(--surface-2)); text-decoration: none; color: #fff;
     box-shadow: var(--shadow-sm);
+    transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease);
   }
-  .photo-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .photo-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+  .photo-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(0.8); transition: transform 0.6s var(--ease); }
+  .photo-card:hover img { transform: scale(1.07); }
   .photo-card-badge { position: absolute; top: 0.5rem; left: 0.5rem; z-index: 1; }
   .photo-card-overlay {
     position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end;
-    padding: 0.7rem; background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0) 100%);
+    padding: 0.7rem; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.58) 45%, rgba(0,0,0,0.4) 100%);
+  }
+  .photo-card::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
   }
   .photo-card-meta { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.65rem; color: rgba(255,255,255,0.8); margin-bottom: 0.25rem; }
   .photo-card-title {
     font-weight: 700; font-size: 0.85rem; line-height: 1.3;
     display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
   }
-  .photo-card.hero .photo-card-title { font-size: 1.15rem; -webkit-line-clamp: 3; }
+  .photo-card.hero .photo-card-title { font-size: 1.2rem; -webkit-line-clamp: 3; }
   .photo-card.hero .photo-card-meta { font-size: 0.72rem; }
 
   /* Öne çıkan (manşet + ızgara) düzeni: solda büyük, sağda 2x2 küçük */
@@ -301,25 +411,11 @@
     .magazine .photo-card.grid { grid-column: auto !important; grid-row: auto !important; aspect-ratio: 4 / 3; }
   }
 
-  .mag-more { margin-top: 0.85rem; max-height: 320px; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; }
-
-  .explorer-others { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.85rem; margin-top: 0.85rem; }
-  @media (max-width: 640px) { .explorer-others { grid-template-columns: 1fr; } }
-  .mini-col { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 0.85rem; }
-  .mini-head { display: flex; align-items: center; gap: 0.45rem; font-weight: 600; font-size: 0.82rem; margin-bottom: 0.5rem; }
-  .mini-item {
-    display: block; font-size: 0.8rem; padding: 0.35rem 0; text-decoration: none;
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .mini-item:last-of-type { border-bottom: none; }
-  .mini-item:hover { text-decoration: underline; }
-  .mini-more { display: block; font-size: 0.74rem; color: var(--text-muted); padding-top: 0.4rem; }
-
   /* ---------- Tüm kaynaklar (özet, en altta) ---------- */
-  section.browse { margin: 1.75rem 0 3.5rem; padding: 1.75rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 16px; }
+  section.browse { margin: 2rem 0 3.5rem; padding: 2rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 20px; }
   .stat-row { display: flex; flex-wrap: wrap; gap: 0.6rem; }
-  .stat-chip { display: flex; align-items: center; gap: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 0.45rem 0.75rem; box-shadow: var(--shadow-sm); }
+  .stat-chip { display: flex; align-items: center; gap: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.45rem 0.75rem; box-shadow: var(--shadow-sm); transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease); }
+  .stat-chip:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
   .stat-chip .n { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-weight: 700; }
   .stat-chip .lbl { font-size: 0.77rem; color: var(--text-muted); }
 
@@ -331,7 +427,7 @@
   .columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 1.1rem; }
   @media (max-width: 900px) { .columns { grid-template-columns: 1fr; } }
 
-  .col { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm); }
+  .col { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm); }
   .col-head { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
   .col-head .name { display: flex; align-items: center; gap: 0.55rem; font-weight: 700; font-size: 0.89rem; }
   .col-head .count { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.76rem; color: var(--text-muted); }
@@ -340,10 +436,10 @@
   .item {
     padding: 0.65rem 1rem 0.65rem 0.85rem; border-bottom: 1px solid var(--border);
     border-left: 3px solid transparent; display: flex; gap: 0.65rem; align-items: flex-start;
-    transition: background-color 0.12s ease, border-left-color 0.12s ease;
+    transition: background-color 0.2s var(--ease), border-left-color 0.2s var(--ease), transform 0.2s var(--ease);
   }
   .item:last-child { border-bottom: none; }
-  .item:hover { background: var(--surface-2); border-left-color: var(--item-accent, var(--border)); }
+  .item:hover { background: var(--surface-2); border-left-color: var(--item-accent, var(--border)); transform: translateX(2px); }
 
   .item-media {
     width: 40px; height: 40px; border-radius: 8px; flex: none; overflow: hidden;
@@ -359,11 +455,26 @@
   .item-body a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
   .item-body .meta { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.7rem; color: var(--text-muted); }
 
-  .score-ring {
-    flex: none; width: 26px; height: 26px; border-radius: 50%;
-    border: 1.5px dashed var(--border); display: flex; align-items: center; justify-content: center;
+  /* "N/10" biçimi, sayının bir puan/derece olduğunu tek başına anlatır */
+  .score-chip {
+    flex: none; align-self: center; display: inline-flex; align-items: center; justify-content: center;
+    padding: 0.15rem 0.45rem; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface-2); white-space: nowrap; cursor: default;
     font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
-    font-size: 0.68rem; color: var(--text-muted); align-self: center;
+    font-size: 0.68rem; font-weight: 700; color: var(--text-muted);
+  }
+  .score-chip.tier-high { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface-2)); }
+  .score-chip.tier-mid { border-color: var(--text-muted); color: var(--text); }
+  .score-chip.tier-low { opacity: 0.75; }
+
+  /* Fotoğraf kartlarında koyu gradyan üzerinde durduğu için temadan bağımsız,
+     her zaman koyu/yarı saydam bir zemin kullanıyoruz (aksi halde açık temada okunmaz). */
+  .photo-card-meta { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+  .photo-card-meta .score-chip {
+    background: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.28); color: rgba(255,255,255,0.9);
+  }
+  .photo-card-meta .score-chip.tier-high {
+    border-color: var(--accent); color: #fff; background: color-mix(in srgb, var(--accent) 55%, rgba(0,0,0,0.4));
   }
 
   /* ---------- Okundu/yeni + kaydet ---------- */
@@ -378,8 +489,10 @@
   .save-btn {
     flex: none; align-self: center; border: none; background: transparent; cursor: pointer;
     font-size: 1.05rem; color: var(--text-muted); line-height: 1; padding: 0.2rem;
+    transition: transform 0.2s var(--ease), color 0.2s var(--ease);
   }
-  .save-btn:hover, .save-btn.active { color: var(--accent); }
+  .save-btn:hover { color: var(--accent); transform: scale(1.18); }
+  .save-btn.active { color: var(--accent); }
 
   .photo-card.is-read { filter: grayscale(0.35) brightness(0.78); }
   .photo-card-save { position: absolute; top: 0.45rem; right: 0.45rem; z-index: 2; }
@@ -390,6 +503,15 @@
   .photo-card-save .save-btn.active { color: #ffd76b; }
 
   .empty-note { padding: 1.2rem 1rem; color: var(--text-muted); font-size: 0.83rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .photo-card, .photo-card img, .item, .tab, .stat-chip, nav.sidebar button, .save-btn, button.primary {
+      transition: none !important;
+    }
+    .photo-card:hover, nav.sidebar button:hover, .stat-chip:hover, button.primary:hover:not(:disabled) {
+      transform: none !important;
+    }
+  }
 </style>
 </head>
 <body>
@@ -415,6 +537,13 @@
 </div>
 
 <div class="layout">
+  <aside class="sidebar-left">
+    <div class="widget-card">
+      <div class="widget-card-head"><span>Bu haftanın trend kelimeleri</span></div>
+      <div class="trend-rank" id="trend-rank" style="margin-top:0.9rem;"></div>
+    </div>
+  </aside>
+
   <nav class="sidebar" aria-label="Kaynak seç" id="sidebar-nav">
     <button data-tab="nuvemmag" title="NuvemMag" style="--icon-color:var(--nuvemmag)">
       <span style="color:var(--nuvemmag)"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6.5 19a4.5 4.5 0 0 1-.4-8.98A6 6 0 0 1 17.6 8.1 4.5 4.5 0 0 1 17 19H6.5z"/></svg></span>
@@ -431,48 +560,6 @@
   </nav>
 
   <div class="page">
-
-    <div class="hero">
-      <div class="hero-main">
-        <div class="eyebrow">X araması</div>
-        <h1>X'te ne öğrenmek istiyorsun?</h1>
-
-        <form class="search" id="search-form">
-          <input
-            type="text"
-            id="q"
-            placeholder='örn. "Claude&#39;ın son gelişmesi hakkında etkileşimi yüksek son 24 saatteki tweetler"'
-            autocomplete="off"
-            autofocus
-          />
-          <button type="submit" class="primary" id="submit-btn">Ara</button>
-        </form>
-        <p class="hint">Zaman aralığı ("son 24 saat") ve etkileşim ("yüksek etkileşim", "popüler") ifadelerini otomatik anlar. Her arama gerçek bir X API isteği gönderir.</p>
-
-        <div class="interpreted" id="interpreted"></div>
-        <div class="status" id="status"></div>
-        <div class="search-results" id="search-results"></div>
-      </div>
-
-      <div class="hero-side">
-        <div class="eyebrow" style="margin-bottom:0.7rem;">Bu haftanın trend kelimeleri</div>
-        <div class="trend-rank" id="trend-rank"></div>
-      </div>
-    </div>
-
-    <section class="following-digest">
-      <div class="digest-head">
-        <div>
-          <div class="eyebrow" style="margin-bottom:0.3rem;">X · takip ettiklerin</div>
-          <h2 class="section-title">Takip ettiklerinin gündemi</h2>
-        </div>
-        <button type="button" class="primary" id="digest-refresh-btn">Yenile</button>
-      </div>
-      <p class="hint">X'te takip ettiğin hesapların son 36 saatte paylaştıklarına bakar. Üstteki genel gündem şeridini etkilemez, ayrı bir alan. Her yenileme gerçek X API istekleri gönderir (kredi harcar) — bu yüzden otomatik açılmaz, sadece "Yenile"ye bastığınızda çalışır.</p>
-      <div class="status" id="digest-status"></div>
-      <div class="digest-ticker" id="digest-ticker"></div>
-      <div class="search-results" id="digest-results"></div>
-    </section>
 
     <section class="explorer" id="explorer-panel">
       <h2 class="section-title">Kaynakları keşfet</h2>
@@ -494,9 +581,33 @@
         </div>
       </div>
 
-      <div class="explorer-focus as-list" id="explorer-focus"></div>
-      <div class="explorer-others" id="explorer-others"></div>
+      <div class="explorer-focus as-cards" id="explorer-focus"></div>
     </section>
+
+    <div id="x-panel">
+      <div class="hero">
+        <div class="hero-main">
+          <div class="eyebrow">X araması</div>
+          <h1>X'te ne öğrenmek istiyorsun?</h1>
+
+          <form class="search" id="search-form">
+            <input
+              type="text"
+              id="q"
+              placeholder='örn. "Claude&#39;ın son gelişmesi hakkında etkileşimi yüksek son 24 saatteki tweetler"'
+              autocomplete="off"
+              autofocus
+            />
+            <button type="submit" class="primary" id="submit-btn">Ara</button>
+          </form>
+          <p class="hint">Zaman aralığı ("son 24 saat") ve etkileşim ("yüksek etkileşim", "popüler") ifadelerini otomatik anlar. Her arama gerçek bir X API isteği gönderir.</p>
+
+          <div class="interpreted" id="interpreted"></div>
+          <div class="status" id="status"></div>
+          <div class="search-results" id="search-results"></div>
+        </div>
+      </div>
+    </div>
 
     <section class="browse">
       <div class="eyebrow" style="margin:0 0 1.1rem;">Tüm kaynaklar</div>
@@ -505,6 +616,26 @@
     </section>
 
   </div>
+
+  <aside class="sidebar-right">
+    <div class="widget-card">
+      <div class="widget-card-head">
+        <div>
+          <div class="eyebrow" style="margin-bottom:0.2rem;">X · takip ettiklerin</div>
+          <span>Takip ettiklerinin gündemi</span>
+        </div>
+        <button type="button" class="primary" id="digest-refresh-btn">Yenile</button>
+      </div>
+      <p class="hint">Takip ettiğin hesapların son 36 saatte paylaştıklarına bakar, gerçek X API istekleri gönderir (kredi harcar) — bu yüzden otomatik açılmaz, sadece "Yenile"ye bastığında çalışır.</p>
+      <div class="status" id="digest-status"></div>
+      <div class="mini-post-list" id="digest-results"></div>
+    </div>
+
+    <div class="widget-card">
+      <div class="widget-card-head"><span>Takipte öne çıkanlar</span></div>
+      <div class="trend-rank" id="digest-trend-rank" style="margin-top:0.9rem;"></div>
+    </div>
+  </aside>
 </div>
 
 <script>
@@ -528,11 +659,12 @@
     "the","a","an","of","to","in","on","for","and","is","are","with","this","that",
     "ve","ile","bir","bu","şu","gibi","için","olan","son","yeni","den","dan","de","da",
     "ki","mi","mı","mu","var","yok","daha","çok","her","ama","ya","ne","how","what",
+    "https","http","www",
   ]);
 
   let ALL_ITEMS = [];
   let currentTab = "nuvemmag";
-  let currentView = "list";
+  let currentView = "card";
   let currentSort = "recent";
   let restPage = 1;
   const REST_PAGE_SIZE = 6;
@@ -551,8 +683,17 @@
     return `<span class="${cls}" style="background:var(--${meta.varName});color:${meta.badgeText}">${meta.icon}</span>`;
   }
 
-  function scoreRing() {
-    return `<span class="score-ring" title="Sinyal skoru — Faz 3'te LLM ile puanlanacak">—</span>`;
+  // "N/10" biçimi kendi kendini açıklıyor (bir puan/derece olduğu anlaşılıyor);
+  // ayrıca tam açıklama için hover'da başlık (title) metni de veriyoruz.
+  const SCORE_EXPLAINER = "Sinyal skoru: bu kaydın kendi kaynağındaki (NuvemMag/GitHub/X) popülerliği ve ne kadar taze olduğu birleştirilerek 1-10 arası hesaplanır.";
+
+  function scoreChip(it) {
+    const score = it.signal_score;
+    if (score == null) {
+      return `<span class="score-chip" title="${SCORE_EXPLAINER}">—/10</span>`;
+    }
+    const tier = score >= 7 ? "high" : score >= 4 ? "mid" : "low";
+    return `<span class="score-chip tier-${tier}" title="${SCORE_EXPLAINER} Bu kayıt: ${score}/10.">${score}/10</span>`;
   }
 
   // Canlı arama/gündem sonuçları henüz veritabanına yazılmadan gösterildiği
@@ -613,9 +754,77 @@
           <div class="meta">${it.author ? "@" + it.author : "yazar yok"} · ${fmtDate(it.published_at)}${newBadge(it)}</div>
         </div>
         ${saveButton(it)}
-        ${scoreRing()}
+        ${scoreChip(it)}
       </div>
     `;
+  }
+
+  // Sağ raydaki "Takip ettiklerinin gündemi" widget'ı için kompakt, numaralı satır
+  // (NuvemMag'ın kendi "Son Yazılar" kenar çubuğu widget'ıyla aynı görsel dil).
+  function miniPost(it, index) {
+    const meta = SOURCE_META.x_twitter;
+    const media = it.image_url
+      ? `<img src="${it.image_url}" alt="" loading="lazy"
+           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+         <span class="badge" style="display:none;background:var(--${meta.varName});color:${meta.badgeText}">${meta.icon}</span>`
+      : badge(meta);
+
+    return `
+      <a class="mini-post" href="${it.url}" target="_blank" rel="noopener noreferrer" onclick="markRead(${it.id})">
+        <span class="mini-post-num">${index}</span>
+        <span class="mini-post-thumb">${media}</span>
+        <span class="mini-post-title">${it.title}</span>
+      </a>
+    `;
+  }
+
+  const DIGEST_HIGHLIGHT_COUNT = 3;
+
+  // Takip gündemini kişi kişi grupluyoruz: her kişinin en çok etkileşim alan
+  // ilk 3 tweeti direkt görünür, gerisi "N tweet daha" ile açılıp kapanabilir.
+  function renderDigestByAuthor(items) {
+    if (!items.length) {
+      return `<p class="status">Son 36 saatte takip ettiklerinden gönderi bulunamadı.</p>`;
+    }
+    const byAuthor = {};
+    for (const it of items) {
+      const key = it.author || "bilinmiyor";
+      (byAuthor[key] ||= []).push(it);
+    }
+    const authorMax = (author) => Math.max(...byAuthor[author].map(it => it.popularity || 0));
+    const authors = Object.keys(byAuthor).sort((a, b) => authorMax(b) - authorMax(a));
+
+    // Kişi kişi hızlı atlama: tıklanan kişinin bloğuna kaydırıp kısaca vurguluyoruz.
+    const chips = authors.length > 1
+      ? `<div class="person-chips">${authors.map(a => `<button type="button" class="person-chip" data-jump="${a}">@${a}</button>`).join("")}</div>`
+      : "";
+
+    const groups = authors.map(author => {
+      const posts = [...byAuthor[author]].sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+      const top = posts.slice(0, DIGEST_HIGHLIGHT_COUNT);
+      const rest = posts.slice(DIGEST_HIGHLIGHT_COUNT);
+      const initials = author.slice(0, 2).toUpperCase();
+
+      return `
+        <div class="person-group" data-author="${author}">
+          <div class="person-head">
+            <span class="person-avatar">${initials}</span>
+            <span class="person-name">@${author}</span>
+            <span class="person-count">${posts.length}</span>
+          </div>
+          <div class="person-top">${top.map((it, i) => miniPost(it, i + 1)).join("")}</div>
+          ${rest.length ? `
+            <button type="button" class="person-toggle">
+              <span class="more">${rest.length} tweet daha ▾</span>
+              <span class="less" style="display:none;">Gizle ▴</span>
+            </button>
+            <div class="person-rest" style="display:none;">${rest.map((it, i) => miniPost(it, DIGEST_HIGHLIGHT_COUNT + i + 1)).join("")}</div>
+          ` : ""}
+        </div>
+      `;
+    }).join("");
+
+    return chips + groups;
   }
 
   function photoCard(it, meta, variant) {
@@ -633,32 +842,11 @@
         <span class="photo-card-badge">${badge(meta, "sm")}</span>
         ${save ? `<span class="photo-card-save">${save}</span>` : ""}
         <div class="photo-card-overlay">
-          <div class="photo-card-meta">${it.author ? "@" + it.author : "yazar yok"} · ${fmtDate(it.published_at)}${newBadge(it)}</div>
+          <div class="photo-card-meta">${scoreChip(it)}<span class="pcm-text">${it.author ? "@" + it.author : "yazar yok"} · ${fmtDate(it.published_at)}${newBadge(it)}</span></div>
           <div class="photo-card-title">${it.title}</div>
         </div>
       </a>
     `;
-  }
-
-  function renderMagazine(items, meta) {
-    // En önemli (etkileşimi en yüksek) ilk 5 kayıt: 1 manşet + 2x2 ızgara.
-    // Gerisi, kendi alanı içinde kaydırılabilen sade bir liste olarak kalır.
-    const HERO_COUNT = 5;
-    const top = items.slice(0, HERO_COUNT);
-    const rest = items.slice(HERO_COUNT);
-
-    const magazineHtml = top.length
-      ? `<div class="magazine">
-          ${photoCard(top[0], meta, "hero")}
-          ${top.slice(1).map(it => photoCard(it, meta, "grid")).join("")}
-        </div>`
-      : `<div class="empty-note">Henüz kayıt yok.</div>`;
-
-    const restHtml = rest.length
-      ? `<div class="mag-more item-list">${rest.map(it => itemRow(it, meta)).join("")}</div>`
-      : "";
-
-    return magazineHtml + restHtml;
   }
 
   // Keşif panelindeki kart görünümü için: manşet + ızgara aynı, ama gerisi
@@ -736,8 +924,8 @@
     { bg: "rgba(90, 180, 190, 0.16)",  border: "#4fa8b2" },
   ];
 
-  function renderTrendRank(items) {
-    const el = document.getElementById("trend-rank");
+  function renderTrendRank(items, elId = "trend-rank") {
+    const el = document.getElementById(elId);
     const freqs = wordFrequencies(items, 6);
     if (!freqs.length) {
       el.innerHTML = `<span style="color:var(--text-muted);font-size:0.82rem;">Henüz yeterli veri yok.</span>`;
@@ -789,21 +977,6 @@
         focusItems.length ? focusItems.map(it => itemRow(it, meta)).join("") : `<div class="empty-note">Bu filtreyle sonuç yok.</div>`
       }</div>`;
     }
-
-    const othersEl = document.getElementById("explorer-others");
-    othersEl.innerHTML = isSavedTab ? "" : SOURCE_ORDER.filter(src => src !== currentTab).map(src => {
-      const m = SOURCE_META[src];
-      const items = (bySource[src] || []).filter(it => matchesFilter(it, filterText));
-      const shown = items.slice(0, 5);
-      return `
-        <div class="mini-col">
-          <div class="mini-head">${badge(m, "sm")}${m.label}</div>
-          ${shown.map(it => `<a class="mini-item" href="${it.url}" target="_blank" rel="noopener noreferrer" title="${it.title}">${it.title}</a>`).join("")
-            || `<span class="mini-item" style="border:none;color:var(--text-muted)">Kayıt yok</span>`}
-          ${items.length > shown.length ? `<span class="mini-more">+${items.length - shown.length} daha</span>` : ""}
-        </div>
-      `;
-    }).join("");
 
     document.querySelectorAll("#explorer-tabs .tab").forEach(btn => {
       const active = btn.dataset.tab === currentTab;
@@ -869,11 +1042,21 @@
     return `<button type="button" class="tab" data-tab="${src}" style="--tab-color:var(--${m.varName});--tab-ink:${m.badgeText}">${badge(m, "sm")}${m.label}</button>`;
   }).join("");
 
+  // X'e özgü arama + takip gündemi widget'ları sadece "X" sekmesi seçiliyken görünür;
+  // diğer kaynaklara (NuvemMag, GitHub, Kaydedilenler) geçildiğinde sadece o kaynağın
+  // "Kaynakları keşfet" alanı kalır.
+  function updateXPanelVisibility() {
+    document.getElementById("x-panel").style.display = currentTab === "x_twitter" ? "" : "none";
+  }
+
   function selectTab(tab) {
     currentTab = tab;
     restPage = 1;
+    updateXPanelVisibility();
     renderExplorer();
   }
+  updateXPanelVisibility();
+  renderTrendRank([], "digest-trend-rank");
 
   tabsEl.addEventListener("click", (e) => {
     const btn = e.target.closest(".tab");
@@ -897,7 +1080,7 @@
     document.querySelectorAll("#view-toggle button").forEach(b => b.classList.toggle("active", b === btn));
     renderExplorer();
   });
-  document.querySelector('#view-toggle button[data-view="list"]').classList.add("active");
+  document.querySelector('#view-toggle button[data-view="card"]').classList.add("active");
 
   document.getElementById("sort-toggle").addEventListener("click", (e) => {
     const btn = e.target.closest("button");
@@ -992,15 +1175,37 @@
   // --- Takip ettiklerinin gündemi ---
   const digestBtn = document.getElementById("digest-refresh-btn");
   const digestStatus = document.getElementById("digest-status");
-  const digestTicker = document.getElementById("digest-ticker");
   const digestResults = document.getElementById("digest-results");
+
+  // Kişi çipine tıklayınca o kişinin bloğuna kaydır + kısaca vurgula; "N tweet daha"
+  // aç/kapa butonu da aynı yerde. İçerik her yenilemede yeniden oluştuğu için olay
+  // delegasyonu kullanıyoruz (sabit üst kapsayıcıya tek dinleyici).
+  digestResults.addEventListener("click", (e) => {
+    const chip = e.target.closest(".person-chip");
+    if (chip) {
+      const target = digestResults.querySelector(`.person-group[data-author="${chip.dataset.jump}"]`);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        target.classList.add("flash-highlight");
+        setTimeout(() => target.classList.remove("flash-highlight"), 900);
+      }
+      return;
+    }
+
+    const btn = e.target.closest(".person-toggle");
+    if (!btn) return;
+    const restEl = btn.nextElementSibling;
+    const isOpen = restEl.style.display !== "none";
+    restEl.style.display = isOpen ? "none" : "block";
+    btn.querySelector(".more").style.display = isOpen ? "" : "none";
+    btn.querySelector(".less").style.display = isOpen ? "none" : "";
+  });
 
   digestBtn.addEventListener("click", async () => {
     digestBtn.disabled = true;
     digestBtn.textContent = "Yükleniyor…";
     digestStatus.className = "status";
     digestStatus.textContent = "Takip ettiğin hesaplar taranıyor, gerçek X API istekleri gönderiliyor (birden fazla olabilir)…";
-    digestTicker.style.display = "none";
     digestResults.innerHTML = "";
 
     try {
@@ -1011,17 +1216,11 @@
         throw new Error(data.detail || "Bilinmeyen hata");
       }
 
-      const words = topWords(data.items, 8);
-      if (words.length) {
-        digestTicker.textContent = "Öne çıkanlar: " + words.join("   ·   ");
-        digestTicker.style.display = "block";
-      }
+      renderTrendRank(data.items, "digest-trend-rank");
 
       digestStatus.textContent = `${data.result_count} gönderi bulundu, ${data.added_count} yeni kayıt veritabanına eklendi.`;
 
-      digestResults.innerHTML = data.items.length
-        ? renderMagazine(data.items, SOURCE_META.x_twitter)
-        : `<p class="status">Son 36 saatte takip ettiklerinden gönderi bulunamadı.</p>`;
+      digestResults.innerHTML = renderDigestByAuthor(data.items);
 
       if (data.added_count > 0) {
         await loadEverything();

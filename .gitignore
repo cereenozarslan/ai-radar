@@ -15,3 +15,6 @@ chroma_data/
 
 # Editör
 .vscode/
+
+# Geliştirme sırasında oluşan geçici sunucu logu
+_uvicorn.log
