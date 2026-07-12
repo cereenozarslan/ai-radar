@@ -124,45 +124,104 @@
   }
   .theme-toggle button.active { background: var(--surface); color: var(--accent); box-shadow: var(--shadow-sm); }
 
-  .ticker {
-    position: sticky; top: 57px; z-index: 19;
-    overflow: hidden; white-space: nowrap;
-    background: var(--surface-2); border-bottom: 1px solid var(--border);
-    padding: 0.4rem 0;
-  }
-  .ticker-eyebrow {
-    position: absolute; left: 1.5rem; top: 50%; transform: translateY(-50%);
-    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
-    font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--accent); background: var(--surface-2); padding-right: 0.6rem; z-index: 1;
-  }
-  .ticker-track {
-    display: inline-block; padding-left: 7rem;
-    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
-    font-size: 0.76rem; color: var(--text-muted);
-    animation: ticker-scroll 26s linear infinite;
-  }
-  @keyframes ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-  @media (prefers-reduced-motion: reduce) { .ticker-track { animation: none; } }
-
   /* ---------- Genel yerleşim ---------- */
   .layout { display: flex; max-width: 1680px; margin: 0 auto; }
 
   nav.sidebar {
-    position: sticky; top: 98px; align-self: flex-start;
-    display: flex; flex-direction: column; gap: 0.5rem;
-    padding: 1.5rem 0.75rem;
+    position: sticky; top: 57px; align-self: flex-start; width: 210px; flex: none;
+    display: flex; flex-direction: column; gap: 0.2rem;
+    padding: 2.5rem 0.75rem 4rem;
+    /* İçerik (özellikle çok sayıda takip edilen konu) ekran yüksekliğini aşarsa
+       sayfa değil, sadece bu kutu kendi içinde kaysın. */
+    max-height: calc(100vh - 57px);
+    overflow-y: auto;
   }
+  .sidebar-group-label {
+    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+    font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700;
+    color: var(--text-muted); padding: 0 0.7rem; margin-bottom: 0.4rem;
+  }
+  .sidebar-divider { height: 1px; background: var(--border); margin: 0.6rem 0.5rem; }
+  /* X'in alt öğesi ("Takip Ettiklerin") — bir platforma değil, o platformun
+     içindeki bir alt görünüme (takip gündemi) götürdüğü için hafifçe girintili. */
+  .sidebar-subitem { padding-left: 2.35rem; font-size: 0.8rem; margin-top: -0.1rem; }
   nav.sidebar button {
-    display: flex; align-items: center; justify-content: center;
-    width: 42px; height: 42px; border-radius: 13px;
-    background: var(--surface); border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm); cursor: pointer;
-    transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+    display: flex; align-items: center; gap: 0.65rem; width: 100%; text-align: left;
+    padding: 0.55rem 0.7rem; border-radius: 10px;
+    background: transparent; border: 1px solid transparent;
+    color: var(--text-muted); font-size: 0.85rem; font-weight: 600; cursor: pointer;
+    transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), background-color 0.2s var(--ease), color 0.2s var(--ease);
   }
-  nav.sidebar button:hover { transform: translateY(-2px) scale(1.04); box-shadow: var(--shadow-md); }
-  nav.sidebar button.active { box-shadow: 0 0 0 2px var(--icon-color, var(--accent)) inset, 0 4px 14px color-mix(in srgb, var(--icon-color, var(--accent)) 35%, transparent); }
-  @media (max-width: 900px) { nav.sidebar { display: none; } }
+  nav.sidebar button:hover { background: var(--surface-2); color: var(--text); transform: translateX(2px); }
+  nav.sidebar button.active {
+    background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm), 0 0 0 1.5px var(--icon-color, var(--accent)) inset;
+  }
+  .sidebar-icon { flex: none; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
+  .sidebar-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sidebar-badge {
+    flex: none; min-width: 20px; height: 20px; padding: 0 0.35rem; border-radius: 10px;
+    background: var(--surface-2); color: var(--text-muted);
+    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+    font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  }
+  .sidebar-badge:empty { display: none; }
+  nav.sidebar button.active .sidebar-badge { background: var(--icon-color, var(--accent)); color: #fff; }
+
+  /* Platformlar / Takip Ettiğin Konular: her biri açılıp kapanabilen bir grup */
+  .sidebar-group { margin-bottom: 0.3rem; }
+  .sidebar-group-header {
+    display: flex; align-items: center; justify-content: space-between; width: 100%;
+    background: none; border: none; padding: 0.3rem 0.7rem; margin-bottom: 0.2rem; cursor: pointer;
+  }
+  .sidebar-group-header .sidebar-group-label { margin-bottom: 0; padding: 0; }
+  .sidebar-chevron {
+    color: var(--text-muted); font-size: 0.8rem; transition: transform 0.2s var(--ease);
+  }
+  .sidebar-group.collapsed .sidebar-chevron { transform: rotate(-90deg); }
+  .sidebar-group-items {
+    display: flex; flex-direction: column; gap: 0.2rem;
+    overflow: hidden; max-height: 900px; transition: max-height 0.25s var(--ease);
+  }
+  .sidebar-group.collapsed .sidebar-group-items { max-height: 0; }
+
+  /* Takip edilen konular: ekleme formu, konu düğmeleri, öneriler */
+  .sidebar-topic-add-toggle {
+    width: 100%; text-align: left; background: none; border: none; border-radius: 10px;
+    padding: 0.45rem 0.7rem; margin-bottom: 0.2rem; color: var(--accent); font-size: 0.82rem; font-weight: 700; cursor: pointer;
+    transition: background-color 0.15s var(--ease);
+  }
+  .sidebar-topic-add-toggle:hover { background: var(--surface-2); }
+  .sidebar-topic-add { display: flex; gap: 0.35rem; padding: 0 0.7rem 0.5rem; }
+  .sidebar-topic-add input {
+    flex: 1; min-width: 0; padding: 0.4rem 0.55rem; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-size: 0.78rem;
+  }
+  .sidebar-topic-add input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .sidebar-topic-add button {
+    flex: none; width: auto; padding: 0.4rem 0.6rem; border-radius: 8px; border: none;
+    background: var(--accent); color: var(--accent-ink); font-weight: 700; cursor: pointer;
+  }
+  .sidebar-topic-btn { position: relative; }
+  .sidebar-topic-remove {
+    flex: none; display: none; align-items: center; justify-content: center;
+    width: 18px; height: 18px; border-radius: 50%; color: var(--text-muted); font-size: 0.85rem; line-height: 1;
+    transition: background-color 0.15s var(--ease), color 0.15s var(--ease);
+  }
+  .sidebar-topic-btn:hover .sidebar-topic-remove { display: flex; }
+  .sidebar-topic-remove:hover { background: var(--danger); color: #fff; }
+  .sidebar-suggestions-label {
+    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+    font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-muted); padding: 0.5rem 0.7rem 0.2rem;
+  }
+  .sidebar-topic-suggestion {
+    width: 100%; text-align: left; background: none; border: none; border-radius: 10px;
+    padding: 0.45rem 0.7rem; color: var(--text-muted); font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    transition: background-color 0.15s var(--ease), color 0.15s var(--ease);
+  }
+  .sidebar-topic-suggestion:hover { background: var(--surface-2); color: var(--accent); }
+
+  @media (max-width: 1000px) { nav.sidebar { display: none; } }
 
   .page { flex: 1; min-width: 0; padding: 0 1.5rem 4rem; }
 
@@ -231,29 +290,15 @@
   .search-results { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem; }
   .search-results .item { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; }
 
-  /* ---------- Sağ ray: takip ettiklerinin gündemi (blog kenar çubuğu tarzı) ---------- */
-  .sidebar-left, .sidebar-right {
-    width: 260px; flex: none; align-self: flex-start; position: sticky; top: 98px;
-    display: flex; flex-direction: column; gap: 1.25rem; padding: 2.5rem 0 4rem;
-  }
-  .sidebar-right { width: 300px; margin-left: 0.5rem; }
-  .sidebar-left { margin-right: 0.5rem; }
-  @media (max-width: 1150px) { .sidebar-right { display: none; } }
-  @media (max-width: 1300px) { .sidebar-left { display: none; } }
-
-  .widget-card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
-    padding: 1.35rem; box-shadow: var(--shadow-sm);
-    transition: box-shadow 0.25s var(--ease), transform 0.25s var(--ease);
-  }
-  .widget-card:hover { box-shadow: var(--shadow-md); }
+  /* ---------- Takip ettiklerinin gündemi (artık X'in alt öğesi, ana içerik alanında) ---------- */
   .widget-card-head {
     display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem;
     padding-bottom: 0.75rem; border-bottom: 1px solid var(--border);
     font-weight: 700; font-size: 0.95rem;
   }
-  .widget-card .hint { font-size: 0.78rem; margin: 0.7rem 0 0; }
-  .widget-card button.primary { padding: 0.5rem 0.9rem; font-size: 0.8rem; flex: none; }
+  #following-digest-panel .hint { font-size: 0.82rem; margin: 0.9rem 0 0; }
+  #following-digest-panel button.primary { padding: 0.5rem 0.9rem; font-size: 0.8rem; flex: none; }
+  #following-digest-panel .mini-post-list { max-height: none; }
 
   /* Takip listesi yönetimi: eklenen hesaplar chip olarak, altında ekleme formu */
   .followed-accounts { margin-top: 0.9rem; }
@@ -282,6 +327,11 @@
   .followed-accounts-form button {
     flex: none; padding: 0.4rem 0.7rem; border-radius: 8px; border: none;
     background: var(--accent); color: var(--accent-ink); font-size: 0.78rem; font-weight: 600; cursor: pointer;
+  }
+
+  .topic-rising-badge {
+    flex: none; font-size: 0.68rem; font-weight: 700; color: #fff;
+    background: linear-gradient(135deg, #ff8a4a, #ff3d3d); padding: 0.1rem 0.5rem; border-radius: 10px;
   }
 
   .mini-post-list { max-height: 460px; overflow-y: auto; margin-top: 0.7rem; }
@@ -351,21 +401,7 @@
   }
 
   .explorer-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-top: 1rem; }
-  .tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-  .tab {
-    display: flex; align-items: center; gap: 0.4rem;
-    padding: 0.45rem 0.85rem; border-radius: 20px;
-    border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted);
-    font-size: 0.83rem; font-weight: 600; cursor: pointer;
-    transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), background-color 0.2s var(--ease), color 0.2s var(--ease);
-  }
-  .tab:hover:not(.active) { transform: translateY(-1px); border-color: var(--tab-color, var(--border)); }
-  .tab.active {
-    background: var(--tab-color, var(--accent)); color: var(--tab-ink, var(--accent-ink)); border-color: transparent;
-    box-shadow: 0 4px 16px color-mix(in srgb, var(--tab-color, var(--accent)) 45%, transparent);
-  }
-
-  .toolbar-spacer { flex: 1; }
+  .explorer-toolbar button.primary { padding: 0.5rem 0.9rem; font-size: 0.8rem; flex: none; }
   .filter-input {
     padding: 0.5rem 0.85rem; font-size: 0.85rem; border-radius: 20px;
     border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
@@ -383,7 +419,6 @@
   .explorer-focus.as-list .item-list { max-height: 460px; overflow-y: auto; }
   .explorer-focus.as-cards { border: none; padding: 0.9rem; }
 
-  .rest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.7rem; margin-top: 0.85rem; }
   .pager { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1rem; }
   .pager-btn {
     padding: 0.4rem 0.85rem; border-radius: 8px; border: 1px solid var(--border);
@@ -398,14 +433,20 @@
     padding: 0.2rem; max-height: 520px; overflow-y: auto;
   }
   .photo-card {
-    position: relative; display: block; aspect-ratio: 4 / 3; border-radius: 14px; overflow: hidden;
+    position: relative; display: block; min-height: 160px; max-height: 420px; border-radius: 14px; overflow: hidden;
     background: var(--item-accent, var(--surface-2)); text-decoration: none; color: #fff;
-    box-shadow: var(--shadow-sm);
-    transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease);
+    box-shadow: var(--shadow-sm); aspect-ratio: 4 / 3; /* görsel yüklenene kadar makul bir varsayılan */
+    transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease), aspect-ratio 0.1s linear;
   }
   .photo-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
-  .photo-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(0.8); transition: transform 0.6s var(--ease); }
-  .photo-card:hover img { transform: scale(1.07); }
+  /* Görsel yüklenince gerçek en-boy oranını JS ile karta uyguluyoruz (bkz.
+     photoCard()'daki onload) — böylece üstteki metin katmanı (position:absolute;
+     inset:0) HER ZAMAN görselle birebir örtüşüyor; ikisi arasında boşluk kalmıyor. */
+  .photo-card img {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+    filter: brightness(0.8); transition: transform 0.6s var(--ease);
+  }
+  .photo-card:hover img { transform: scale(1.04); }
   .photo-card-badge { position: absolute; top: 0.5rem; left: 0.5rem; z-index: 1; }
   .photo-card-overlay {
     position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end;
@@ -423,22 +464,16 @@
   .photo-card.hero .photo-card-title { font-size: 1.2rem; -webkit-line-clamp: 3; }
   .photo-card.hero .photo-card-meta { font-size: 0.72rem; }
 
-  /* Öne çıkan (manşet + ızgara) düzeni: solda büyük, sağda 2x2 küçük */
-  .magazine {
-    display: grid; grid-template-columns: 1.3fr 1fr 1fr; grid-template-rows: repeat(2, 1fr);
-    gap: 0.75rem; height: 360px;
-  }
-  .magazine .photo-card.hero { grid-column: 1; grid-row: 1 / span 2; aspect-ratio: auto; }
-  .magazine .photo-card.grid { aspect-ratio: auto; }
-  .magazine .photo-card.grid:nth-of-type(2) { grid-column: 2; grid-row: 1; }
-  .magazine .photo-card.grid:nth-of-type(3) { grid-column: 3; grid-row: 1; }
-  .magazine .photo-card.grid:nth-of-type(4) { grid-column: 2; grid-row: 2; }
-  .magazine .photo-card.grid:nth-of-type(5) { grid-column: 3; grid-row: 2; }
-  @media (max-width: 720px) {
-    .magazine { grid-template-columns: 1fr 1fr; height: auto; }
-    .magazine .photo-card.hero { grid-column: 1 / -1; grid-row: auto; aspect-ratio: 16 / 9; }
-    .magazine .photo-card.grid { grid-column: auto !important; grid-row: auto !important; aspect-ratio: 4 / 3; }
-  }
+  /* Pinterest tarzı masonry: her kart kendi görselinin doğal boyuna göre
+     yükseklik alır, sütunlar arasında birbirini tamamlayarak dizilir — sabit
+     bir ızgara hücresine zorla sıkıştırılmıyor, bu yüzden boş/kırpık görünen
+     kenarlar oluşmuyor. En yeni/önemli kayıt (hero) sırada en başta duruyor
+     ve başlığı biraz daha büyük — ama diğerleriyle AYNI sütun genişliğinde,
+     tek başına dev bir banere dönüşmüyor. */
+  .magazine { column-count: 3; column-gap: 0.75rem; }
+  .magazine .photo-card { break-inside: avoid; margin-bottom: 0.75rem; }
+  @media (max-width: 900px) { .magazine { column-count: 2; } }
+  @media (max-width: 560px) { .magazine { column-count: 1; } }
 
   /* ---------- Tüm kaynaklar (özet, en altta) ---------- */
   section.browse { margin: 2rem 0 3.5rem; padding: 2rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 20px; }
@@ -560,41 +595,65 @@
   </div>
 </header>
 
-<div class="ticker">
-  <span class="ticker-eyebrow">Gündem</span>
-  <span class="ticker-track" id="ticker-track">yükleniyor…</span>
-</div>
-
 <div class="layout">
-  <aside class="sidebar-left">
-    <div class="widget-card">
-      <div class="widget-card-head"><span>Bu haftanın trend kelimeleri</span></div>
-      <div class="trend-rank" id="trend-rank" style="margin-top:0.9rem;"></div>
-    </div>
-  </aside>
-
   <nav class="sidebar" aria-label="Kaynak seç" id="sidebar-nav">
-    <button data-tab="nuvemmag" title="NuvemMag" style="--icon-color:var(--nuvemmag)">
-      <span style="color:var(--nuvemmag)"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6.5 19a4.5 4.5 0 0 1-.4-8.98A6 6 0 0 1 17.6 8.1 4.5 4.5 0 0 1 17 19H6.5z"/></svg></span>
-    </button>
-    <button data-tab="github_trending" title="GitHub Trending" style="--icon-color:var(--github)">
-      <span style="color:var(--github)"><svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="4" cy="3" r="1.6"/><circle cx="4" cy="13" r="1.6"/><circle cx="12" cy="8" r="1.6"/><path d="M4 4.6v6.8"/><path d="M4 6a6 6 0 0 0 6.4 2"/></svg></span>
-    </button>
-    <button data-tab="x_twitter" title="X" style="--icon-color:var(--x)">
-      <span style="color:var(--x)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 4l16 16M20 4L4 20"/></svg></span>
-    </button>
-    <button data-tab="saved" title="Kaydedilenler" style="--icon-color:var(--accent)">
-      <span style="color:var(--accent);font-size:16px;">★</span>
-    </button>
+    <div class="sidebar-group" id="platforms-group">
+      <button type="button" class="sidebar-group-header">
+        <span class="sidebar-group-label">Platformlar</span>
+        <span class="sidebar-chevron">⌄</span>
+      </button>
+      <div class="sidebar-group-items">
+        <button data-tab="nuvemmag" title="NuvemMag" style="--icon-color:var(--nuvemmag)">
+          <span class="sidebar-icon" style="color:var(--nuvemmag)"><svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M6.5 19a4.5 4.5 0 0 1-.4-8.98A6 6 0 0 1 17.6 8.1 4.5 4.5 0 0 1 17 19H6.5z"/></svg></span>
+          <span class="sidebar-label">NuvemMag</span>
+          <span class="sidebar-badge" data-badge="nuvemmag"></span>
+        </button>
+        <button data-tab="github_trending" title="GitHub Trending" style="--icon-color:var(--github)">
+          <span class="sidebar-icon" style="color:var(--github)"><svg viewBox="0 0 16 16" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="4" cy="3" r="1.6"/><circle cx="4" cy="13" r="1.6"/><circle cx="12" cy="8" r="1.6"/><path d="M4 4.6v6.8"/><path d="M4 6a6 6 0 0 0 6.4 2"/></svg></span>
+          <span class="sidebar-label">GitHub Trending</span>
+          <span class="sidebar-badge" data-badge="github_trending"></span>
+        </button>
+        <button data-tab="x_twitter" title="X" style="--icon-color:var(--x)">
+          <span class="sidebar-icon" style="color:var(--x)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 4l16 16M20 4L4 20"/></svg></span>
+          <span class="sidebar-label">X</span>
+          <span class="sidebar-badge" data-badge="x_twitter"></span>
+        </button>
+        <button type="button" class="sidebar-subitem" id="following-digest-nav-btn" title="Takip ettiklerinin gündemi">
+          <span class="sidebar-label">Takip Ettiklerin</span>
+        </button>
+
+        <div class="sidebar-divider"></div>
+
+        <button data-tab="saved" title="Kaydedilenler" style="--icon-color:var(--accent)">
+          <span class="sidebar-icon" style="color:var(--accent);font-size:15px;">★</span>
+          <span class="sidebar-label">Kaydedilenler</span>
+          <span class="sidebar-badge" data-badge="saved"></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="sidebar-group" id="topics-group">
+      <button type="button" class="sidebar-group-header">
+        <span class="sidebar-group-label">Takip Ettiğin Konular</span>
+        <span class="sidebar-chevron">⌄</span>
+      </button>
+      <div class="sidebar-group-items">
+        <button type="button" class="sidebar-topic-add-toggle" id="sidebar-topic-add-toggle">+ Konu ekle</button>
+        <form class="sidebar-topic-add" id="sidebar-topic-form" style="display:none;">
+          <input type="text" id="sidebar-topic-input" placeholder="konu adı…" autocomplete="off" />
+          <button type="submit" title="Ekle">✓</button>
+        </form>
+        <div id="sidebar-topics-list"></div>
+        <div id="sidebar-topic-suggestions"></div>
+      </div>
+    </div>
   </nav>
 
   <div class="page">
 
     <section class="explorer" id="explorer-panel">
-      <h2 class="section-title">Kaynakları keşfet</h2>
+      <h2 class="section-title" id="explorer-title" style="display:none;"></h2>
       <div class="explorer-toolbar">
-        <div class="tabs" id="explorer-tabs"></div>
-        <div class="toolbar-spacer"></div>
         <div class="view-toggle text-toggle" id="sort-toggle">
           <button type="button" data-sort="recent" title="En yeni">Yeni</button>
           <button type="button" data-sort="popular" title="En popüler">Popüler</button>
@@ -608,9 +667,36 @@
             <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
           </button>
         </div>
+        <button type="button" class="primary" id="x-refresh-btn" style="display:none;" title="X'ten gerçek, taze veri çeker (kredi harcar)">Yenile</button>
       </div>
+      <div class="status" id="x-refresh-status"></div>
 
       <div class="explorer-focus as-cards" id="explorer-focus"></div>
+    </section>
+
+    <section class="explorer" id="following-digest-panel" style="display:none;">
+      <div class="widget-card-head">
+        <div>
+          <div class="eyebrow" style="margin-bottom:0.2rem;">X · takip ettiklerin</div>
+          <span>Takip ettiklerinin gündemi</span>
+        </div>
+        <button type="button" class="primary" id="digest-refresh-btn">Yenile</button>
+      </div>
+
+      <div class="followed-accounts">
+        <div class="followed-accounts-list" id="followed-accounts-list"></div>
+        <form class="followed-accounts-form" id="followed-accounts-form">
+          <input type="text" id="followed-accounts-input" placeholder="kullanıcı adı ekle…" autocomplete="off" />
+          <button type="submit">Ekle</button>
+        </form>
+      </div>
+
+      <p class="hint">Takip ettiğin hesapların son 36 saatte paylaştıklarına bakar, gerçek X API istekleri gönderir (kredi harcar) — bu yüzden otomatik açılmaz, sadece "Yenile"ye bastığında çalışır.</p>
+      <div class="status" id="digest-status"></div>
+      <div class="mini-post-list" id="digest-results"></div>
+
+      <div class="widget-card-head" style="margin-top:1.5rem;"><span>Takipte öne çıkanlar</span></div>
+      <div class="trend-rank" id="digest-trend-rank" style="margin-top:0.9rem;"></div>
     </section>
 
     <div id="x-panel">
@@ -645,35 +731,6 @@
     </section>
 
   </div>
-
-  <aside class="sidebar-right">
-    <div class="widget-card">
-      <div class="widget-card-head">
-        <div>
-          <div class="eyebrow" style="margin-bottom:0.2rem;">X · takip ettiklerin</div>
-          <span>Takip ettiklerinin gündemi</span>
-        </div>
-        <button type="button" class="primary" id="digest-refresh-btn">Yenile</button>
-      </div>
-
-      <div class="followed-accounts">
-        <div class="followed-accounts-list" id="followed-accounts-list"></div>
-        <form class="followed-accounts-form" id="followed-accounts-form">
-          <input type="text" id="followed-accounts-input" placeholder="kullanıcı adı ekle…" autocomplete="off" />
-          <button type="submit">Ekle</button>
-        </form>
-      </div>
-
-      <p class="hint">Takip ettiğin hesapların son 36 saatte paylaştıklarına bakar, gerçek X API istekleri gönderir (kredi harcar) — bu yüzden otomatik açılmaz, sadece "Yenile"ye bastığında çalışır.</p>
-      <div class="status" id="digest-status"></div>
-      <div class="mini-post-list" id="digest-results"></div>
-    </div>
-
-    <div class="widget-card">
-      <div class="widget-card-head"><span>Takipte öne çıkanlar</span></div>
-      <div class="trend-rank" id="digest-trend-rank" style="margin-top:0.9rem;"></div>
-    </div>
-  </aside>
 </div>
 
 <script>
@@ -691,7 +748,6 @@
     saved:            { label: "Kaydedilenler",     varName: "accent",   icon: ICONS.saved,    badgeText: "var(--accent-ink)" },
   };
   const SOURCE_ORDER = ["nuvemmag", "github_trending", "x_twitter"];
-  const TAB_ORDER = [...SOURCE_ORDER, "saved"];
 
   const STOPWORDS = new Set([
     "the","a","an","of","to","in","on","for","and","is","are","with","this","that",
@@ -702,10 +758,12 @@
 
   let ALL_ITEMS = [];
   let currentTab = "nuvemmag";
+  let currentTopic = null; // dolu olduğunda, "platform sekmesi" yerine tüm kaynaklarda konu filtresi gösterilir
+  let mainView = "explorer"; // "explorer" | "following-digest" (X'in alt öğesi "Takip Ettiklerin")
   let currentView = "card";
   let currentSort = "recent";
   let restPage = 1;
-  const REST_PAGE_SIZE = 6;
+  const MAGAZINE_PAGE_SIZE = 11; // masonry'de sayfa başına gösterilen kayıt sayısı (hero dahil)
 
   function fmtDate(iso) {
     if (!iso) return "tarih yok";
@@ -757,6 +815,7 @@
     fetch(`/api/items/${id}/mark-read`, { method: "POST" }).catch(() => {});
     const it = ALL_ITEMS.find(x => x.id === id);
     if (it) it.is_read = 1;
+    updateSidebarBadges();
   }
 
   async function toggleSave(event, id, btn) {
@@ -769,6 +828,7 @@
       btn.textContent = data.is_saved ? "★" : "☆";
       const it = ALL_ITEMS.find(x => x.id === id);
       if (it) it.is_saved = data.is_saved;
+      updateSidebarBadges();
     } catch (e) {
       // sessiz başarısızlık: buton eski haliyle kalır
     }
@@ -868,8 +928,13 @@
   function photoCard(it, meta, variant) {
     // Görsel yüklenemezse (404 vb.) img'i gizleyip kartın kendisini kaynak
     // rengiyle boyanmış düz bir arka plana düşürüyoruz (badge + başlık yine görünür kalır).
+    // Yüklenince ise gerçek en-boy oranını karta (aspect-ratio) yazıyoruz ki
+    // Pinterest tarzı masonry'de her kart kendi görselinin gerçek boyunu alsın
+    // (üstteki metin katmanı da her zaman görselle birebir örtüşsün).
     const img = it.image_url
-      ? `<img src="${it.image_url}" alt="" loading="lazy" onerror="this.remove();">`
+      ? `<img src="${it.image_url}" alt="" loading="lazy"
+           onload="this.parentElement.style.aspectRatio = this.naturalWidth + '/' + this.naturalHeight;"
+           onerror="this.remove();">`
       : "";
     const readClass = hasId(it) && it.is_read ? " is-read" : "";
     const save = saveButton(it);
@@ -887,26 +952,24 @@
     `;
   }
 
-  // Keşif panelindeki kart görünümü için: manşet + ızgara aynı, ama gerisi
-  // kaydırma yerine "Önceki/Sonraki" ile sayfalanabilir (1-2-3-4-5, sonra 6-7-8...).
-  function renderMagazinePaginated(items, meta, page) {
-    const HERO_COUNT = 5;
-    const top = items.slice(0, HERO_COUNT);
-    const rest = items.slice(HERO_COUNT);
-    const totalPages = Math.max(1, Math.ceil(rest.length / REST_PAGE_SIZE));
+  // Keşif panelindeki kart görünümü: Pinterest tarzı tek bir masonry akışı.
+  // Sayfa 1'in ilk kaydı "hero" (tam genişlikte, en üstte); "Önceki/Sonraki"
+  // ile sayfalanır (1-2-3-4-5, sonra 6-7-8...), her sayfa kendi masonry'sini gösterir.
+  function renderMagazinePaginated(items, metaFor, page) {
+    const totalPages = Math.max(1, Math.ceil(items.length / MAGAZINE_PAGE_SIZE));
     const clampedPage = Math.min(Math.max(1, page), totalPages);
-    const pageItems = rest.slice((clampedPage - 1) * REST_PAGE_SIZE, clampedPage * REST_PAGE_SIZE);
+    const pageItems = items.slice((clampedPage - 1) * MAGAZINE_PAGE_SIZE, clampedPage * MAGAZINE_PAGE_SIZE);
 
-    const magazineHtml = top.length
-      ? `<div class="magazine">
-          ${photoCard(top[0], meta, "hero")}
-          ${top.slice(1).map(it => photoCard(it, meta, "grid")).join("")}
-        </div>`
-      : `<div class="empty-note">Henüz kayıt yok.</div>`;
+    if (!pageItems.length) {
+      return `<div class="empty-note">Henüz kayıt yok.</div>`;
+    }
 
-    const pagedHtml = rest.length
+    const cardsHtml = pageItems
+      .map((it, i) => photoCard(it, metaFor(it), clampedPage === 1 && i === 0 ? "hero" : "grid"))
+      .join("");
+
+    const pagerHtml = totalPages > 1
       ? `
-        <div class="rest-grid">${pageItems.map(it => photoCard(it, meta, "grid")).join("")}</div>
         <div class="pager">
           <button type="button" class="pager-btn" data-page="${clampedPage - 1}" ${clampedPage <= 1 ? "disabled" : ""}>◀ Önceki</button>
           <span class="pager-info">Sayfa ${clampedPage} / ${totalPages}</span>
@@ -915,13 +978,27 @@
       `
       : "";
 
-    return magazineHtml + pagedHtml;
+    return `<div class="magazine">${cardsHtml}</div>` + pagerHtml;
   }
 
   function groupBySource(items) {
     const map = {};
     for (const it of items) (map[it.source] ||= []).push(it);
     return map;
+  }
+
+  // Sol menüdeki rozetler: kaynak başına okunmamış sayısı, Kaydedilenler'de ise
+  // kaç kayıt yıldızlanmış. Boşsa (0) rozet hiç görünmez (.sidebar-badge:empty).
+  function updateSidebarBadges() {
+    const bySource = groupBySource(ALL_ITEMS);
+    for (const src of SOURCE_ORDER) {
+      const unread = (bySource[src] || []).filter(it => !it.is_read).length;
+      const badgeEl = document.querySelector(`.sidebar-badge[data-badge="${src}"]`);
+      if (badgeEl) badgeEl.textContent = unread > 0 ? unread : "";
+    }
+    const savedCount = ALL_ITEMS.filter(it => it.is_saved).length;
+    const savedBadgeEl = document.querySelector('.sidebar-badge[data-badge="saved"]');
+    if (savedBadgeEl) savedBadgeEl.textContent = savedCount > 0 ? savedCount : "";
   }
 
   function matchesFilter(it, text) {
@@ -943,13 +1020,6 @@
 
   function topWords(items, n) {
     return wordFrequencies(items, n).map(([w]) => w);
-  }
-
-  function renderTicker(items) {
-    const top = topWords(items, 8);
-    const text = top.length ? top.join("   ·   ") : "henüz yeterli veri yok";
-    // Kusursuz döngü için metni iki kez yerleştirip %50 kaydırıyoruz
-    document.getElementById("ticker-track").textContent = text + "     " + text;
   }
 
   // Sırayla döngüye giren renk paleti: en sık kelime en üstte, en dolgun bar
@@ -986,12 +1056,35 @@
 
   function renderExplorer() {
     const filterText = document.getElementById("explorer-filter").value.trim().toLowerCase();
-    const bySource = groupBySource(ALL_ITEMS);
-    const isSavedTab = currentTab === "saved";
+    const titleEl = document.getElementById("explorer-title");
+    const panelEl = document.getElementById("explorer-panel");
+    const focusEl = document.getElementById("explorer-focus");
 
-    const meta = SOURCE_META[currentTab];
-    const focusItems = (isSavedTab ? ALL_ITEMS.filter(it => it.is_saved) : (bySource[currentTab] || []))
-      .filter(it => matchesFilter(it, filterText));
+    let focusItems, metaFor, tintVar;
+
+    if (currentTopic) {
+      // Konu modu: TÜM kaynaklardaki eşleşen kayıtlar, her kaydın kendi kaynak
+      // rengi/ikonu ile (tek bir kaynağa özel değil).
+      focusItems = ALL_ITEMS.filter(it => matchesFilter(it, currentTopic.toLowerCase()) && matchesFilter(it, filterText));
+      // "x_following" (takip gündemi tweetleri) SOURCE_META'da ayrı bir anahtar
+      // değil — X ile aynı görsel kimliği kullanıyor, yoksa meta undefined kalıp
+      // render'ı sessizce çökertiyordu (eski sekmenin içeriği ekranda asılı kalıyordu).
+      metaFor = (it) => SOURCE_META[it.source === "x_following" ? "x_twitter" : it.source];
+      tintVar = "accent";
+      titleEl.textContent = `Konu: ${currentTopic}`;
+      titleEl.style.display = "";
+    } else {
+      const bySource = groupBySource(ALL_ITEMS);
+      const isSavedTab = currentTab === "saved";
+      const meta = SOURCE_META[currentTab];
+      focusItems = (isSavedTab ? ALL_ITEMS.filter(it => it.is_saved) : (bySource[currentTab] || []))
+        .filter(it => matchesFilter(it, filterText));
+      metaFor = () => meta;
+      tintVar = meta.varName;
+      // Platform modunda başlık göstermiyoruz (kaynak zaten sol menüde seçili duruyor).
+      titleEl.textContent = "";
+      titleEl.style.display = "none";
+    }
 
     if (currentSort === "popular") {
       focusItems.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
@@ -999,33 +1092,36 @@
       focusItems.sort((a, b) => (b.fetched_at || "").localeCompare(a.fetched_at || ""));
     }
 
-    // Seçili kaynağın marka rengiyle panele hafif bir vurgu (renk yıkaması) uygula
-    document.getElementById("explorer-panel").style.backgroundColor = `color-mix(in srgb, var(--${meta.varName}) 4%, var(--surface))`;
+    // Seçili kaynağın (veya konu modunda accent'in) rengiyle panele hafif bir vurgu uygula
+    panelEl.style.backgroundColor = `color-mix(in srgb, var(--${tintVar}) 4%, var(--surface))`;
+    focusEl.style.backgroundColor = `color-mix(in srgb, var(--${tintVar}) 9%, var(--surface))`;
 
-    const focusEl = document.getElementById("explorer-focus");
-    focusEl.style.backgroundColor = `color-mix(in srgb, var(--${meta.varName}) 9%, var(--surface))`;
     if (currentView === "card") {
       focusEl.className = "explorer-focus as-cards";
       focusEl.innerHTML = focusItems.length
-        ? renderMagazinePaginated(focusItems, meta, restPage)
+        ? renderMagazinePaginated(focusItems, metaFor, restPage)
         : `<div class="empty-note">Bu filtreyle sonuç yok.</div>`;
     } else {
       focusEl.className = "explorer-focus as-list";
       focusEl.innerHTML = `<div class="item-list">${
-        focusItems.length ? focusItems.map(it => itemRow(it, meta)).join("") : `<div class="empty-note">Bu filtreyle sonuç yok.</div>`
+        focusItems.length ? focusItems.map(it => itemRow(it, metaFor(it))).join("") : `<div class="empty-note">Bu filtreyle sonuç yok.</div>`
       }</div>`;
     }
 
-    document.querySelectorAll("#explorer-tabs .tab").forEach(btn => {
-      const active = btn.dataset.tab === currentTab;
-      btn.classList.toggle("active", active);
-    });
-    document.querySelectorAll("#sidebar-nav button").forEach(btn => {
-      btn.classList.toggle("active", btn.dataset.tab === currentTab);
-    });
+    updateSidebarActiveStates();
     document.querySelectorAll("#sort-toggle button").forEach(btn => {
       btn.classList.toggle("active", btn.dataset.sort === currentSort);
     });
+  }
+
+  // Sol menüdeki hangi öğenin "seçili" göründüğünü tek yerden yönetiyoruz —
+  // hem platform sekmeleri (mainView="explorer" + tab eşleşmesi) hem de
+  // "Takip Ettiklerin" alt öğesi (mainView="following-digest") burada karar veriliyor.
+  function updateSidebarActiveStates() {
+    document.querySelectorAll("#sidebar-nav button[data-tab]").forEach(btn => {
+      btn.classList.toggle("active", mainView === "explorer" && !currentTopic && btn.dataset.tab === currentTab);
+    });
+    document.getElementById("following-digest-nav-btn").classList.toggle("active", mainView === "following-digest");
   }
 
   function renderBrowseOverview() {
@@ -1063,45 +1159,83 @@
     const resp = await fetch("/api/items");
     ALL_ITEMS = await resp.json();
 
-    renderTicker(ALL_ITEMS);
-    renderTrendRank(ALL_ITEMS);
     renderExplorer();
     renderBrowseOverview();
+    updateSidebarBadges();
 
     document.getElementById("top-meta").textContent =
       `${ALL_ITEMS.length} kayıt · güncellendi: ` +
       new Intl.DateTimeFormat("tr-TR", { hour: "2-digit", minute: "2-digit" }).format(new Date());
   }
 
-  // --- Kaynak sekmeleri (+ Kaydedilenler) ---
-  const tabsEl = document.getElementById("explorer-tabs");
-  tabsEl.innerHTML = TAB_ORDER.map(src => {
-    const m = SOURCE_META[src];
-    return `<button type="button" class="tab" data-tab="${src}" style="--tab-color:var(--${m.varName});--tab-ink:${m.badgeText}">${badge(m, "sm")}${m.label}</button>`;
-  }).join("");
-
-  // X'e özgü arama + takip gündemi widget'ları sadece "X" sekmesi seçiliyken görünür;
-  // diğer kaynaklara (NuvemMag, GitHub, Kaydedilenler) geçildiğinde sadece o kaynağın
-  // "Kaynakları keşfet" alanı kalır.
+  // X'e özgü arama + takip gündemi widget'ları sadece "X" sekmesi (konu modu
+  // değilken, ve "Takip Ettiklerin" alt görünümünde değilken) seçiliyken görünür.
   function updateXPanelVisibility() {
-    document.getElementById("x-panel").style.display = currentTab === "x_twitter" ? "" : "none";
+    document.getElementById("x-panel").style.display =
+      (mainView === "explorer" && !currentTopic && currentTab === "x_twitter") ? "" : "none";
+  }
+
+  // "Yenile" butonu: X sekmesinde veya bir konu sayfasındayken görünür (ikisi de
+  // gerçek X verisiyle ilgili) — diğer platformlarda zaten ücretsiz otomatik
+  // yenileniyor, orada bu butona gerek yok.
+  function updateXRefreshVisibility() {
+    document.getElementById("x-refresh-btn").style.display = (currentTopic || currentTab === "x_twitter") ? "" : "none";
+  }
+
+  // "Kaynakları keşfet" ile "Takip Ettiklerin" (X'in alt görünümü) aynı ana
+  // alanı paylaşıyor; sadece biri görünür.
+  function updateMainViewVisibility() {
+    document.getElementById("explorer-panel").style.display = mainView === "explorer" ? "" : "none";
+    document.getElementById("following-digest-panel").style.display = mainView === "following-digest" ? "" : "none";
   }
 
   function selectTab(tab) {
+    mainView = "explorer";
+    currentTopic = null;
     currentTab = tab;
     restPage = 1;
     updateXPanelVisibility();
+    updateXRefreshVisibility();
+    updateMainViewVisibility();
     renderExplorer();
+    renderSidebarTopics();
   }
+
+  // Platformlar gibi: bir konu seçildiğinde tüm kaynaklardaki eşleşen kayıtlar gösterilir.
+  function selectTopic(topic) {
+    mainView = "explorer";
+    currentTopic = topic;
+    restPage = 1;
+    updateXPanelVisibility();
+    updateXRefreshVisibility();
+    updateMainViewVisibility();
+    renderExplorer();
+    renderSidebarTopics();
+  }
+
+  // X'in alt öğesi: "Takip Ettiklerin" — platform/konu sekmelerinden ayrılıp
+  // takip gündemi görünümüne geçer (aynı gezinme mantığı, farklı bir "sayfa").
+  function selectFollowingDigestView() {
+    mainView = "following-digest";
+    currentTopic = null;
+    updateXPanelVisibility();
+    updateXRefreshVisibility();
+    updateMainViewVisibility();
+    updateSidebarActiveStates();
+    renderSidebarTopics();
+  }
+
   updateXPanelVisibility();
+  updateXRefreshVisibility();
+  updateMainViewVisibility();
   renderTrendRank([], "digest-trend-rank");
 
-  tabsEl.addEventListener("click", (e) => {
-    const btn = e.target.closest(".tab");
-    if (btn) selectTab(btn.dataset.tab);
-  });
   document.getElementById("sidebar-nav").addEventListener("click", (e) => {
-    const btn = e.target.closest("button");
+    if (e.target.closest("#following-digest-nav-btn")) {
+      selectFollowingDigestView();
+      return;
+    }
+    const btn = e.target.closest("button[data-tab]");
     if (btn) selectTab(btn.dataset.tab);
   });
 
@@ -1210,6 +1344,35 @@
     }
   });
 
+  // --- X'i manuel yenile (X sekmesi veya bir konu sayfasındayken görünür) ---
+  const xRefreshBtn = document.getElementById("x-refresh-btn");
+  const xRefreshStatus = document.getElementById("x-refresh-status");
+
+  xRefreshBtn.addEventListener("click", async () => {
+    xRefreshBtn.disabled = true;
+    xRefreshBtn.textContent = "Yenileniyor…";
+    xRefreshStatus.className = "status";
+    xRefreshStatus.textContent = currentTopic
+      ? `"${currentTopic}" için X'ten gerçek bir istek gönderiliyor…`
+      : "X'ten gerçek bir istek gönderiliyor…";
+
+    try {
+      const params = currentTopic ? "?" + new URLSearchParams({ topic: currentTopic }) : "";
+      const resp = await fetch("/api/refresh-x" + params, { method: "POST" });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.detail || "Bilinmeyen hata");
+
+      xRefreshStatus.textContent = `${data.result_count} gönderi bulundu, ${data.added_count} yeni kayıt eklendi.`;
+      if (data.added_count > 0) await loadEverything();
+    } catch (err) {
+      xRefreshStatus.className = "status error";
+      xRefreshStatus.textContent = "Hata: " + err.message;
+    } finally {
+      xRefreshBtn.disabled = false;
+      xRefreshBtn.textContent = "Yenile";
+    }
+  });
+
   // --- Takip ettiklerinin gündemi ---
   const digestBtn = document.getElementById("digest-refresh-btn");
   const digestStatus = document.getElementById("digest-status");
@@ -1312,7 +1475,107 @@
     await loadFollowedAccounts();
   });
 
+  // --- Takip edilen konular: sol menüde "Platformlar" ile aynı seviyede ana
+  // başlık. Bir konuya tıklamak onu ekler ve/veya o konunun sayfasına geçer
+  // (tüm kaynaklardaki eşleşen kayıtlar gösterilir), platformlar arasında
+  // gezinmekle aynı mantık.
+  const PRESET_TOPIC_SUGGESTIONS = ["OpenAI", "Claude", "Meta", "Anthropic"];
+
+  let FOLLOWED_TOPICS = [];
+  const sidebarTopicAddToggle = document.getElementById("sidebar-topic-add-toggle");
+  const sidebarTopicForm = document.getElementById("sidebar-topic-form");
+  const sidebarTopicInput = document.getElementById("sidebar-topic-input");
+  const sidebarTopicsListEl = document.getElementById("sidebar-topics-list");
+  const sidebarTopicSuggestionsEl = document.getElementById("sidebar-topic-suggestions");
+
+  function renderSidebarTopicSuggestions() {
+    const followedLower = new Set(FOLLOWED_TOPICS.map(t => t.topic.toLowerCase()));
+    const preset = PRESET_TOPIC_SUGGESTIONS.filter(s => !followedLower.has(s.toLowerCase()));
+    // Platformlardan gerçekten okunan içerikte sık geçen kelimeleri de öneriyoruz
+    // (zaten var olan trend-kelime mantığını yeniden kullanıyoruz).
+    const fromContent = topWords(ALL_ITEMS, 10)
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .filter(w => !followedLower.has(w.toLowerCase()) && !preset.some(p => p.toLowerCase() === w.toLowerCase()))
+      .slice(0, 4);
+
+    const suggestions = [...preset, ...fromContent];
+    sidebarTopicSuggestionsEl.innerHTML = suggestions.length
+      ? `<div class="sidebar-suggestions-label">Öneriler</div>` +
+        suggestions.map(s => `<button type="button" class="sidebar-topic-suggestion" data-topic="${s}">+ ${s}</button>`).join("")
+      : "";
+  }
+
+  function renderSidebarTopics() {
+    sidebarTopicsListEl.innerHTML = FOLLOWED_TOPICS.map(t => `
+      <button type="button" class="sidebar-topic-btn${currentTopic === t.topic ? " active" : ""}" data-topic="${t.topic}">
+        <span class="sidebar-label">${t.topic}</span>
+        ${t.is_rising ? `<span class="topic-rising-badge" title="Son 12 saatte %${t.growth_pct} etkileşim artışı">🔥</span>` : ""}
+        <span class="sidebar-topic-remove" data-topic="${t.topic}" title="Takipten kaldır">×</span>
+      </button>
+    `).join("");
+    renderSidebarTopicSuggestions();
+  }
+
+  async function loadFollowedTopics() {
+    const resp = await fetch("/api/followed-topics");
+    FOLLOWED_TOPICS = await resp.json();
+    renderSidebarTopics();
+  }
+
+  async function addFollowedTopic(topic) {
+    await fetch("/api/followed-topics?" + new URLSearchParams({ topic }), { method: "POST" });
+    await loadFollowedTopics();
+  }
+
+  // "+ Konu ekle" düğmesi tıklanana kadar giriş kutusu gizli kalır (sidebar'ı
+  // boş bir kutuyla kalabalıklaştırmamak için); tıklayınca açılıp odaklanır.
+  sidebarTopicAddToggle.addEventListener("click", () => {
+    const isHidden = sidebarTopicForm.style.display === "none";
+    sidebarTopicForm.style.display = isHidden ? "flex" : "none";
+    if (isHidden) sidebarTopicInput.focus();
+  });
+
+  sidebarTopicForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const topic = sidebarTopicInput.value.trim();
+    if (!topic) return;
+    sidebarTopicInput.value = "";
+    sidebarTopicForm.style.display = "none";
+    await addFollowedTopic(topic);
+    selectTopic(topic);
+  });
+
+  sidebarTopicsListEl.addEventListener("click", async (e) => {
+    const removeBtn = e.target.closest(".sidebar-topic-remove");
+    if (removeBtn) {
+      e.stopPropagation();
+      const topic = removeBtn.dataset.topic;
+      await fetch(`/api/followed-topics/${encodeURIComponent(topic)}`, { method: "DELETE" });
+      if (currentTopic === topic) { currentTopic = null; renderExplorer(); }
+      await loadFollowedTopics();
+      return;
+    }
+    const btn = e.target.closest(".sidebar-topic-btn");
+    if (btn) selectTopic(btn.dataset.topic);
+  });
+
+  sidebarTopicSuggestionsEl.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".sidebar-topic-suggestion");
+    if (!btn) return;
+    const topic = btn.dataset.topic;
+    await addFollowedTopic(topic);
+    selectTopic(topic);
+  });
+
+  // --- Sol menüdeki gruplar (Platformlar / Takip Ettiğin Konular) açılıp kapanabilir ---
+  document.querySelectorAll(".sidebar-group-header").forEach(header => {
+    header.addEventListener("click", () => {
+      header.closest(".sidebar-group").classList.toggle("collapsed");
+    });
+  });
+
   loadFollowedAccounts();
+  loadFollowedTopics();
   loadEverything();
 </script>
 </body>
