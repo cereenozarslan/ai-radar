@@ -30,3 +30,25 @@ CREATE TABLE IF NOT EXISTS followed_accounts (
     username TEXT NOT NULL UNIQUE,
     added_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Kullanıcının takip etmek istediği konu başlıkları (örn. "OpenAI", "Anthropic").
+-- Bir konuya tıklanınca zaten toplanmış TÜM kayıtlar (NuvemMag+GitHub+X) arasında
+-- eşleşenler gösterilir (ücretsiz, sadece yerel filtre) — bu tablo sadece listeyi tutar.
+CREATE TABLE IF NOT EXISTS followed_topics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    topic TEXT NOT NULL UNIQUE,
+    added_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Her takip edilen konu için, X'teki toplam etkileşimin periyodik "anlık görüntüsü".
+-- Zamanla biriken bu kayıtlar, "son 12 saat" ile "önceki 12 saat"i karşılaştırıp bir
+-- konunun aniden yükselip yükselmediğini (örn. %100+ etkileşim artışı) hesaplamak için
+-- kullanılır. Gerçek, ücretli X API istekleriyle (düşük sıklıkla) doldurulur.
+CREATE TABLE IF NOT EXISTS topic_engagement_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    topic TEXT NOT NULL,
+    checked_at TEXT NOT NULL DEFAULT (datetime('now')),
+    total_engagement INTEGER NOT NULL,
+    mention_count INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_topic_snapshots_topic ON topic_engagement_snapshots(topic);

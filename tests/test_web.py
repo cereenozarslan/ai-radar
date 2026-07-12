@@ -50,6 +50,60 @@ def test_search_endpoint_returns_502_on_x_api_error(monkeypatch):
     assert "X API hatası" in resp.json()["detail"]
 
 
+def test_refresh_x_without_topic_uses_default_query(monkeypatch):
+    """topic verilmezse collect() topic=None ile çağrılmalı (DEFAULT_QUERY'ye düşer)."""
+    captured = {}
+
+    def fake_collect(topic=None, **kwargs):
+        captured["topic"] = topic
+        return [{
+            "source": "x_twitter", "title": "örnek", "url": "https://x.com/i/web/status/1",
+            "content": "örnek", "author": "biri", "published_at": None,
+        }]
+
+    monkeypatch.setattr(web.x_twitter, "collect", fake_collect)
+    monkeypatch.setattr(web, "save_items", lambda items: len(items))
+
+    client = TestClient(web.app)
+    resp = client.post("/api/refresh-x")
+
+    assert resp.status_code == 200
+    assert captured["topic"] is None
+    data = resp.json()
+    assert data["result_count"] == 1
+    assert data["added_count"] == 1
+
+
+def test_refresh_x_with_topic_passes_it_through(monkeypatch):
+    captured = {}
+
+    def fake_collect(topic=None, **kwargs):
+        captured["topic"] = topic
+        return []
+
+    monkeypatch.setattr(web.x_twitter, "collect", fake_collect)
+
+    client = TestClient(web.app)
+    resp = client.post("/api/refresh-x", params={"topic": "Anthropic"})
+
+    assert resp.status_code == 200
+    assert captured["topic"] == "Anthropic"
+    assert resp.json()["topic"] == "Anthropic"
+
+
+def test_refresh_x_returns_502_on_x_api_error(monkeypatch):
+    def failing_collect(topic=None, **kwargs):
+        raise RuntimeError("X API kota doldu")
+
+    monkeypatch.setattr(web.x_twitter, "collect", failing_collect)
+
+    client = TestClient(web.app)
+    resp = client.post("/api/refresh-x")
+
+    assert resp.status_code == 502
+    assert "X API hatası" in resp.json()["detail"]
+
+
 def test_index_serves_html():
     client = TestClient(web.app)
     resp = client.get("/")
@@ -94,6 +148,115 @@ def _make_followed_accounts_db(tmp_path, usernames):
     conn.commit()
     conn.close()
     return db_path
+
+
+def _make_followed_topics_db(tmp_path, topics, snapshots=()):
+    """snapshots: [(topic, checked_at_iso, total_engagement, mention_count), ...]"""
+    from ai_radar.database import get_connection, init_db
+
+    db_path = tmp_path / "test.db"
+    init_db(db_path)
+    conn = get_connection(db_path)
+    for topic in topics:
+        conn.execute("INSERT INTO followed_topics (topic) VALUES (?)", (topic,))
+    for topic, checked_at, total_engagement, mention_count in snapshots:
+        conn.execute(
+            "INSERT INTO topic_engagement_snapshots (topic, checked_at, total_engagement, mention_count) "
+            "VALUES (?, ?, ?, ?)",
+            (topic, checked_at, total_engagement, mention_count),
+        )
+    conn.commit()
+    conn.close()
+    return db_path
+
+
+def test_list_followed_topics_returns_growth_info(tmp_path, monkeypatch):
+    from datetime import datetime, timedelta, timezone
+
+    now = datetime.now(timezone.utc)
+    snapshots = [
+        ("OpenAI", (now - timedelta(hours=2)).isoformat(), 100, 5),
+        ("OpenAI", (now - timedelta(hours=18)).isoformat(), 40, 2),
+    ]
+    db_path = _make_followed_topics_db(tmp_path, ["OpenAI"], snapshots)
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+
+    client = TestClient(web.app)
+    resp = client.get("/api/followed-topics")
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    assert data[0]["topic"] == "OpenAI"
+    assert data[0]["growth_pct"] == 150
+    assert data[0]["is_rising"] is True
+
+
+def test_list_followed_topics_not_rising_without_enough_history(tmp_path, monkeypatch):
+    db_path = _make_followed_topics_db(tmp_path, ["Anthropic"])
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+
+    client = TestClient(web.app)
+    resp = client.get("/api/followed-topics")
+
+    data = resp.json()
+    assert data[0]["growth_pct"] is None
+    assert data[0]["is_rising"] is False
+
+
+def test_add_followed_topic_and_ignore_duplicate(tmp_path, monkeypatch):
+    db_path = _make_followed_topics_db(tmp_path, [])
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+
+    client = TestClient(web.app)
+    resp = client.post("/api/followed-topics", params={"topic": "Meta"})
+    assert resp.status_code == 200
+    assert resp.json()["topic"] == "Meta"
+
+    resp2 = client.post("/api/followed-topics", params={"topic": "Meta"})
+    assert resp2.status_code == 200
+
+    resp3 = client.get("/api/followed-topics")
+    assert [row["topic"] for row in resp3.json()] == ["Meta"]
+
+
+def test_add_followed_topic_rejects_empty(tmp_path, monkeypatch):
+    db_path = _make_followed_topics_db(tmp_path, [])
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+
+    client = TestClient(web.app)
+    resp = client.post("/api/followed-topics", params={"topic": "   "})
+
+    assert resp.status_code == 400
+
+
+def test_remove_followed_topic_deletes_topic_and_snapshots(tmp_path, monkeypatch):
+    from datetime import datetime, timezone
+
+    snapshots = [("Meta", datetime.now(timezone.utc).isoformat(), 10, 1)]
+    db_path = _make_followed_topics_db(tmp_path, ["Meta"], snapshots)
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+
+    client = TestClient(web.app)
+    resp = client.delete("/api/followed-topics/Meta")
+
+    assert resp.status_code == 200
+    assert client.get("/api/followed-topics").json() == []
+
+    conn = web_get_connection(db_path)
+    remaining = conn.execute("SELECT COUNT(*) FROM topic_engagement_snapshots WHERE topic = ?", ("Meta",)).fetchone()[0]
+    conn.close()
+    assert remaining == 0
+
+
+def test_remove_followed_topic_returns_404_for_unknown_topic(tmp_path, monkeypatch):
+    db_path = _make_followed_topics_db(tmp_path, [])
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+
+    client = TestClient(web.app)
+    resp = client.delete("/api/followed-topics/BilinmeyenKonu")
+
+    assert resp.status_code == 404
 
 
 def test_following_digest_uses_local_followed_accounts_list(tmp_path, monkeypatch):

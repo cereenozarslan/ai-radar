@@ -27,10 +27,16 @@ from ai_radar.config import config
 from ai_radar.database import get_connection
 from ai_radar.query_parser import parse_natural_query
 from ai_radar.signal_score import compute_signal_scores
+from ai_radar.topic_trends import compute_topic_growth
 
 # NuvemMag ve GitHub Trending ücretsiz (X'in aksine kredi harcamıyor), bu yüzden
 # sunucu ayakta olduğu sürece kendiliğinden bu aralıkla yenilenirler.
 FREE_COLLECTOR_REFRESH_SECONDS = 3600
+
+# Takip edilen konuların X'teki etkileşimini periyodik "anlık görüntülerle" izliyoruz
+# (yükseliş tespiti için). Bu GERÇEK, ücretli X istekleri olduğu için NuvemMag/GitHub'dan
+# çok daha seyrek çalışıyor — günde 6 kez (her konu için).
+TOPIC_SNAPSHOT_REFRESH_SECONDS = 4 * 3600
 
 
 async def _refresh_free_collectors_periodically() -> None:
@@ -46,15 +52,45 @@ async def _refresh_free_collectors_periodically() -> None:
         await asyncio.sleep(FREE_COLLECTOR_REFRESH_SECONDS)
 
 
+async def _snapshot_followed_topics_periodically() -> None:
+    while True:
+        await asyncio.sleep(TOPIC_SNAPSHOT_REFRESH_SECONDS)
+
+        conn = get_connection()
+        topics = [r[0] for r in conn.execute("SELECT topic FROM followed_topics").fetchall()]
+        conn.close()
+
+        for topic in topics:
+            try:
+                snapshot = await asyncio.to_thread(x_twitter.collect_topic_snapshot, topic)
+                conn = get_connection()
+                conn.execute(
+                    "INSERT INTO topic_engagement_snapshots (topic, total_engagement, mention_count) VALUES (?, ?, ?)",
+                    (snapshot["topic"], snapshot["total_engagement"], snapshot["mention_count"]),
+                )
+                conn.commit()
+                conn.close()
+                print(
+                    f"[konu anlık görüntüsü] {topic}: {snapshot['mention_count']} gönderi, "
+                    f"{snapshot['total_engagement']} toplam etkileşim"
+                )
+            except Exception as exc:
+                print(f"[konu anlık görüntüsü] {topic} başarısız: {exc}")
+
+
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
-    task = asyncio.create_task(_refresh_free_collectors_periodically())
+    free_task = asyncio.create_task(_refresh_free_collectors_periodically())
+    topic_task = asyncio.create_task(_snapshot_followed_topics_periodically())
     try:
         yield
     finally:
-        task.cancel()
+        free_task.cancel()
+        topic_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
-            await task
+            await free_task
+        with contextlib.suppress(asyncio.CancelledError):
+            await topic_task
 
 
 app = FastAPI(title="AI-Radar — X Arama", lifespan=lifespan)
@@ -139,6 +175,29 @@ def search(q: str):
     }
 
 
+@app.post("/api/refresh-x")
+def refresh_x(topic: str | None = None):
+    """X'ten manuel olarak taze veri çeker: 'topic' verilirse o konuyu ("Konu: X"
+    sayfasındaki Yenile için), verilmezse genel AI/LLM taramasını (X platform
+    sekmesindeki Yenile için) yeniler.
+
+    Gerçek bir X API isteği gönderir (kredi harcar) — bu yüzden otomatik
+    çağrılmaz, sadece kullanıcı görünüm araç çubuğundaki 'Yenile'ye basınca çalışır.
+    """
+    try:
+        items = x_twitter.collect(topic=topic)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"X API hatası: {exc}") from exc
+
+    added = save_items(items)
+
+    return {
+        "topic": topic,
+        "result_count": len(items),
+        "added_count": added,
+    }
+
+
 @app.get("/api/followed-accounts")
 def list_followed_accounts():
     """Arayüzden eklenmiş, takip edilen X hesaplarını döner."""
@@ -180,6 +239,59 @@ def remove_followed_account(account_id: int):
     if cursor.rowcount == 0:
         raise HTTPException(status_code=404, detail="Kayıt bulunamadı.")
     return {"id": account_id}
+
+
+@app.get("/api/followed-topics")
+def list_followed_topics():
+    """Takip edilen konuları, biriken X anlık görüntülerinden hesaplanan
+    yükseliş (growth) bilgisiyle birlikte döner (bkz. ai_radar/topic_trends.py)."""
+    conn = get_connection()
+    topics = [r[0] for r in conn.execute("SELECT topic FROM followed_topics ORDER BY topic").fetchall()]
+
+    result = []
+    for topic in topics:
+        rows = conn.execute(
+            "SELECT checked_at, total_engagement FROM topic_engagement_snapshots WHERE topic = ?",
+            (topic,),
+        ).fetchall()
+        growth = compute_topic_growth([(r[0], r[1]) for r in rows])
+        result.append({"topic": topic, **growth})
+    conn.close()
+
+    return result
+
+
+@app.post("/api/followed-topics")
+def add_followed_topic(topic: str):
+    """Takip listesine bir konu ekler (örn. 'OpenAI', 'Anthropic')."""
+    topic = topic.strip()
+    if not topic:
+        raise HTTPException(status_code=400, detail="Konu boş olamaz.")
+
+    conn = get_connection()
+    try:
+        conn.execute("INSERT INTO followed_topics (topic) VALUES (?)", (topic,))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        pass  # zaten listede var, sessizce yoksay
+    finally:
+        conn.close()
+
+    return {"topic": topic}
+
+
+@app.delete("/api/followed-topics/{topic}")
+def remove_followed_topic(topic: str):
+    """Takip listesinden bir konuyu (ve biriken anlık görüntülerini) kaldırır."""
+    conn = get_connection()
+    cursor = conn.execute("DELETE FROM followed_topics WHERE topic = ?", (topic,))
+    conn.execute("DELETE FROM topic_engagement_snapshots WHERE topic = ?", (topic,))
+    conn.commit()
+    conn.close()
+
+    if cursor.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Kayıt bulunamadı.")
+    return {"topic": topic}
 
 
 @app.get("/api/following-digest")

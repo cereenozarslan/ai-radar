@@ -279,6 +279,28 @@ def collect(
     return [to_item_dict(tweet, users_by_id, media_by_key) for tweet in tweets]
 
 
+def collect_topic_snapshot(topic: str, hours: float = 12) -> dict:
+    """Bir konunun X'teki son `hours` saatteki toplam etkileşimini ve gönderi
+    sayısını döner (tek bir sayı çifti — tweet listesi değil).
+
+    "Takip edilen konular" için periyodik olarak çağrılıp topic_engagement_snapshots
+    tablosuna kaydedilir; zamanla biriken bu anlık görüntüler "son 12 saat" ile
+    "önceki 12 saat"i karşılaştırıp bir konunun aniden yükselip yükselmediğini
+    hesaplamak için kullanılır (bkz. ai_radar/topic_trends.py).
+
+    Gerçek bir X API isteği gönderir (kredi harcar).
+    """
+    query = build_query(topic)
+    start_time = compute_start_time(hours)
+    response = search_recent(query, max_results=100, start_time=start_time)
+    tweets = response.data or []
+    return {
+        "topic": topic,
+        "total_engagement": sum(engagement_score(t) for t in tweets),
+        "mention_count": len(tweets),
+    }
+
+
 def collect_following_digest_for_usernames(
     usernames: list[str],
     hours: float = 36,

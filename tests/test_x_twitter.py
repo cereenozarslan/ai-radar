@@ -166,6 +166,48 @@ def test_collect_sorts_by_engagement_and_applies_min_threshold(monkeypatch):
     assert [item["title"] for item in items] == ["tweet-2", "tweet-3"]
 
 
+def test_collect_topic_snapshot_sums_engagement_and_counts_mentions(monkeypatch):
+    """collect_topic_snapshot(), o konudaki tum tweet'lerin etkilesimini toplayip
+    kac tane tweet oldugunu saymali (tweet listesi degil, tek bir ozet donmeli)."""
+    def make_tweet(id_, likes):
+        return SimpleNamespace(
+            id=id_, text=f"tweet-{id_}", author_id=1, created_at=None,
+            public_metrics={"like_count": likes, "retweet_count": 0, "reply_count": 0, "quote_count": 0},
+        )
+
+    fake_response = SimpleNamespace(
+        data=[make_tweet(1, likes=10), make_tweet(2, likes=25)],
+        includes={"users": []},
+    )
+
+    captured = {}
+
+    def fake_search_recent(query, max_results=100, start_time=None):
+        captured["query"] = query
+        captured["start_time"] = start_time
+        return fake_response
+
+    monkeypatch.setattr(x_twitter, "search_recent", fake_search_recent)
+
+    snapshot = x_twitter.collect_topic_snapshot("Anthropic", hours=12)
+
+    assert snapshot == {"topic": "Anthropic", "total_engagement": 35, "mention_count": 2}
+    assert "Anthropic" in captured["query"]
+    assert captured["start_time"] is not None
+
+
+def test_collect_topic_snapshot_handles_no_results(monkeypatch):
+    """Hic tweet bulunamazsa hata vermemeli, sifir/sifir donmeli."""
+    monkeypatch.setattr(
+        x_twitter, "search_recent",
+        lambda query, max_results=100, start_time=None: SimpleNamespace(data=None, includes={}),
+    )
+
+    snapshot = x_twitter.collect_topic_snapshot("BilinmeyenKonu")
+
+    assert snapshot == {"topic": "BilinmeyenKonu", "total_engagement": 0, "mention_count": 0}
+
+
 def test_compute_start_time_returns_x_api_compatible_format():
     """X API 'YYYY-MM-DDTHH:MM:SSZ' formatinda bir zaman damgasi bekliyor."""
     result = compute_start_time(24)
