@@ -15,11 +15,31 @@ Argüman verilmezse DEFAULT_QUERY (genel AI/LLM taraması) kullanılır.
 """
 
 import argparse
+import time
 from datetime import datetime, timedelta, timezone
 
 import tweepy
 
 from ai_radar.config import config
+
+# X'in sunucusu ara sıra geçici olarak yanıt veremiyor (5xx / TwitterServerError).
+# Bu durumda kısa bir bekleyip birkaç kez daha deniyoruz. Kota/kimlik doğrulama
+# hatalarında (429/401/403) YENİDEN DENEMİYORUZ — bunlar tekrar denemekle
+# çözülmez, sadece boşuna kredi harcar.
+SERVER_ERROR_MAX_RETRIES = 2
+SERVER_ERROR_BACKOFF_SECONDS = 3
+
+
+def _call_with_server_error_retry(func, *args, **kwargs):
+    attempt = 0
+    while True:
+        try:
+            return func(*args, **kwargs)
+        except tweepy.TwitterServerError:
+            attempt += 1
+            if attempt > SERVER_ERROR_MAX_RETRIES:
+                raise
+            time.sleep(SERVER_ERROR_BACKOFF_SECONDS)
 
 # Gürültü kaynakları: retweet'ler, reply zincirleri (örn. "@biri @baskabiri ...cevap"
 # şeklindeki, aranan konuyla yüzeysel ilgisi olan yanıtlar) ve kripto/hisse
@@ -77,7 +97,7 @@ def _get_client() -> tweepy.Client:
 def get_user_id(username: str) -> str:
     """Kullanıcı adından X'in dahili kullanıcı id'sini çözer. Gerçek bir API isteği gönderir."""
     client = _get_client()
-    resp = client.get_user(username=username.lstrip("@"))
+    resp = _call_with_server_error_retry(client.get_user, username=username.lstrip("@"))
     if not resp.data:
         raise ValueError(f"'{username}' adında bir X kullanıcısı bulunamadı.")
     return resp.data.id
@@ -95,7 +115,8 @@ def get_following_usernames(username: str, max_accounts: int = 200) -> list[str]
     usernames: list[str] = []
     pagination_token = None
     while len(usernames) < max_accounts:
-        resp = client.get_users_following(
+        resp = _call_with_server_error_retry(
+            client.get_users_following,
             id=user_id,
             max_results=min(1000, max_accounts - len(usernames)),
             user_fields=["username"],
@@ -158,7 +179,8 @@ def search_recent(query: str, max_results: int = 10, start_time: str | None = No
     if start_time is not None:
         kwargs["start_time"] = start_time
 
-    return client.search_recent_tweets(
+    return _call_with_server_error_retry(
+        client.search_recent_tweets,
         query=query,
         max_results=clamp_max_results(max_results),
         sort_order="relevancy",

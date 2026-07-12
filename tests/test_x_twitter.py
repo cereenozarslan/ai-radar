@@ -1,6 +1,9 @@
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
+import pytest
+import tweepy
+
 import ai_radar.collectors.x_twitter as x_twitter
 from ai_radar.collectors.x_twitter import (
     build_following_queries,
@@ -281,3 +284,76 @@ def test_collect_following_digest_for_usernames_does_not_call_get_following_user
 def test_collect_following_digest_for_usernames_returns_empty_for_no_usernames():
     """Boş liste verilirse (henüz kimse eklenmemiş), hiç API isteği atmadan boş dönmeli."""
     assert collect_following_digest_for_usernames([], hours=36) == []
+
+
+class _FakeErrorResponse:
+    """tweepy.HTTPException'ın beklediği minimal 'response' arayüzü (status_code + reason + json())."""
+
+    def __init__(self, status_code=503, reason="Service Unavailable"):
+        self.status_code = status_code
+        self.reason = reason
+
+    def json(self):
+        return {}
+
+
+def _make_server_error():
+    return tweepy.TwitterServerError(_FakeErrorResponse())
+
+
+def test_retry_succeeds_after_transient_server_errors(monkeypatch):
+    """X'in sunucusu ilk denemelerde 5xx dönse bile, birkaç kez daha denenip
+    sonunda başarılı olursa sonuç alınmalı (kullanıcı tek bir 503 için elle
+    'Yenile'ye tekrar basmak zorunda kalmasın diye)."""
+    monkeypatch.setattr(x_twitter.time, "sleep", lambda seconds: None)
+
+    calls = {"count": 0}
+
+    def flaky():
+        calls["count"] += 1
+        if calls["count"] < 3:
+            raise _make_server_error()
+        return "basarili"
+
+    result = x_twitter._call_with_server_error_retry(flaky)
+
+    assert result == "basarili"
+    assert calls["count"] == 3
+
+
+def test_retry_gives_up_after_max_retries(monkeypatch):
+    """X'in sunucusu ısrarla 5xx dönerse, sonsuza kadar denemek yerine belirli
+    bir sayıdan sonra pes edip hatayı yukarı fırlatmalı (kredi israfını sınırlamak için)."""
+    monkeypatch.setattr(x_twitter.time, "sleep", lambda seconds: None)
+
+    calls = {"count": 0}
+
+    def always_fails():
+        calls["count"] += 1
+        raise _make_server_error()
+
+    with pytest.raises(tweepy.TwitterServerError):
+        x_twitter._call_with_server_error_retry(always_fails)
+
+    # ilk deneme + SERVER_ERROR_MAX_RETRIES kadar tekrar
+    assert calls["count"] == x_twitter.SERVER_ERROR_MAX_RETRIES + 1
+
+
+def test_retry_does_not_retry_non_server_errors(monkeypatch):
+    """429 (kota) veya 401/403 (yetki) gibi 5xx OLMAYAN hatalarda hiç yeniden
+    denenmemeli — bunlar tekrar denemekle çözülmez, sadece boşuna kredi harcar."""
+    def sleep_should_not_be_called(seconds):
+        raise AssertionError("5xx olmayan bir hatada sleep/retry cagrilmamaliydi")
+
+    monkeypatch.setattr(x_twitter.time, "sleep", sleep_should_not_be_called)
+
+    calls = {"count": 0}
+
+    def raises_quota_error():
+        calls["count"] += 1
+        raise tweepy.TooManyRequests(_FakeErrorResponse(status_code=429, reason="Too Many Requests"))
+
+    with pytest.raises(tweepy.TooManyRequests):
+        x_twitter._call_with_server_error_retry(raises_quota_error)
+
+    assert calls["count"] == 1
