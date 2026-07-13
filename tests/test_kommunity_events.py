@@ -10,6 +10,13 @@ def test_is_ai_related_matches_turkish_and_english_keywords():
     assert is_ai_related("Yapay Zeka ve Geleceğimiz")
     assert is_ai_related("Machine Learning Meetup")
     assert is_ai_related("LatentShift.ai Conference for engineers shipping AI in production")
+    assert is_ai_related("Büyük Dil Modelleri Üzerine Söyleşi")
+
+
+def test_is_ai_related_handles_circumflex_a_spelling():
+    # "zekâ" (^ şapkalı) da "zeka" kadar yaygın bir yazım; normalizasyon
+    # bunu kaçırmamalı.
+    assert is_ai_related("Yapay Zekâ Zirvesi")
 
 
 def test_is_ai_related_ignores_unrelated_titles():

@@ -34,10 +34,10 @@ _AI_KEYWORDS = [
     "makine ogrenmesi", "derin ogrenme", "deep learning", "llm", "gpt",
     "chatgpt", "veri bilimi", "data science", "nlp", "prompt muhendisligi",
     "prompt engineering", "chatbot", "uretken yapay zeka", "generative ai",
-    " ai ", " ai:", "(ai)", "ai)",
+    "buyuk dil model", " ai ", " ai:", "(ai)", "ai)",
 ]
 
-_TR_TO_ASCII = str.maketrans("ıİşŞğĞüÜöÖçÇ", "iIsSgGuUoOcC")
+_TR_TO_ASCII = str.maketrans("ıİşŞğĞüÜöÖçÇâÂ", "iIsSgGuUoOcCaA")
 
 
 def _normalize(text: str) -> str:
