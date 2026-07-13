@@ -1,4 +1,9 @@
-from ai_radar.collectors.youtube_topics import compute_engagement_score, parse_videos
+import ai_radar.collectors.youtube_topics as youtube_topics
+from ai_radar.collectors.youtube_topics import (
+    compute_engagement_score,
+    parse_videos,
+    search_video_ids_excluding_shorts,
+)
 
 RAW_ITEMS = [
     {
@@ -80,3 +85,30 @@ def test_parse_videos_handles_missing_statistics_gracefully():
     assert videos[0]["like_count"] == 0
     assert videos[0]["comment_count"] == 0
     assert videos[0]["image_url"] is None
+
+
+def test_search_video_ids_excluding_shorts_queries_only_medium_and_long(monkeypatch):
+    requested_durations = []
+
+    def fake_search(topic, max_results=15, days=30, video_duration="any"):
+        requested_durations.append(video_duration)
+        return {"medium": ["m1", "m2"], "long": ["l1"]}[video_duration]
+
+    monkeypatch.setattr(youtube_topics, "search_video_ids", fake_search)
+
+    ids = search_video_ids_excluding_shorts("Claude")
+
+    assert "short" not in requested_durations
+    assert set(requested_durations) == {"medium", "long"}
+    assert ids == ["m1", "m2", "l1"]
+
+
+def test_search_video_ids_excluding_shorts_dedupes_across_durations(monkeypatch):
+    def fake_search(topic, max_results=15, days=30, video_duration="any"):
+        return {"medium": ["a", "b"], "long": ["b", "c"]}[video_duration]
+
+    monkeypatch.setattr(youtube_topics, "search_video_ids", fake_search)
+
+    ids = search_video_ids_excluding_shorts("Claude")
+
+    assert ids == ["a", "b", "c"]

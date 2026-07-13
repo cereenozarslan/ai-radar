@@ -18,13 +18,27 @@ VIDEOS_URL = "https://www.googleapis.com/youtube/v3/videos"
 MAX_RESULTS = 15
 RECENT_DAYS = 30  # "güncel" kabul edilen pencere
 
+# YouTube'un "videoDuration" filtresi: "short" (<4dk) Shorts ve kısa klipleri
+# kapsıyor — kullanıcı bunları istemediği için ("kısa videolardan oluşmamalı,
+# eğitici olmalı") sadece orta (4-20dk) ve uzun (20dk+) videoları arıyoruz.
+VIDEO_DURATIONS = ("medium", "long")
+
 
 def _published_after(days: int) -> str:
     return (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def search_video_ids(topic: str, max_results: int = MAX_RESULTS, days: int = RECENT_DAYS) -> list[str]:
-    """Bir konuyla ilgili, son `days` gün içinde yayımlanmış videoların id'lerini arar."""
+def search_video_ids(
+    topic: str,
+    max_results: int = MAX_RESULTS,
+    days: int = RECENT_DAYS,
+    video_duration: str = "any",
+) -> list[str]:
+    """Bir konuyla ilgili, son `days` gün içinde yayımlanmış videoların id'lerini arar.
+
+    video_duration: YouTube'un kendi sınıflandırması — "short" (<4dk),
+    "medium" (4-20dk), "long" (20dk+) veya "any".
+    """
     resp = requests.get(
         SEARCH_URL,
         params={
@@ -35,6 +49,7 @@ def search_video_ids(topic: str, max_results: int = MAX_RESULTS, days: int = REC
             "maxResults": max_results,
             "publishedAfter": _published_after(days),
             "relevanceLanguage": "tr",
+            "videoDuration": video_duration,
             "key": config.YOUTUBE_API_KEY,
         },
         timeout=10,
@@ -46,6 +61,18 @@ def search_video_ids(topic: str, max_results: int = MAX_RESULTS, days: int = REC
         for item in data.get("items", [])
         if item.get("id", {}).get("videoId")
     ]
+
+
+def search_video_ids_excluding_shorts(topic: str, max_results: int = MAX_RESULTS, days: int = RECENT_DAYS) -> list[str]:
+    """Kısa (Shorts dahil <4dk) videoları hariç tutarak, orta+uzun videoları arar."""
+    video_ids: list[str] = []
+    seen: set[str] = set()
+    for duration in VIDEO_DURATIONS:
+        for video_id in search_video_ids(topic, max_results=max_results, days=days, video_duration=duration):
+            if video_id not in seen:
+                seen.add(video_id)
+                video_ids.append(video_id)
+    return video_ids
 
 
 def fetch_video_stats(video_ids: list[str]) -> list[dict]:
@@ -112,7 +139,8 @@ def parse_videos(raw_items: list[dict], topic: str) -> list[dict]:
 
 
 def collect_for_topic(topic: str) -> list[dict]:
-    """Bir konu için en alakalı/güncel videoları toplar (etkileşime göre sıralı)."""
-    video_ids = search_video_ids(topic)
+    """Bir konu için en alakalı/güncel, kısa (Shorts) olmayan videoları toplar
+    (etkileşime göre sıralı)."""
+    video_ids = search_video_ids_excluding_shorts(topic)
     raw_items = fetch_video_stats(video_ids)
     return parse_videos(raw_items, topic)
