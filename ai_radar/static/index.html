@@ -25,6 +25,7 @@
     --nuvemmag: #6f9a2c;
     --github: #181717;
     --x: #0a0a0a;
+    --events: #b8681f;
     --shadow-sm: 0 1px 2px rgba(15, 25, 40, 0.06);
     --shadow-md: 0 6px 22px rgba(15, 25, 40, 0.08), 0 1.5px 4px rgba(15, 25, 40, 0.05);
     --shadow-lg: 0 20px 45px rgba(15, 25, 40, 0.13), 0 4px 12px rgba(15, 25, 40, 0.07);
@@ -44,6 +45,7 @@
       --nuvemmag: #a3d95c;
       --github: #d9dbe1;
       --x: #f2f3f5;
+      --events: #e8a34f;
       --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
       --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
       --shadow-lg: 0 26px 60px rgba(0, 0, 0, 0.55), 0 6px 16px rgba(0, 0, 0, 0.35);
@@ -52,14 +54,14 @@
   :root[data-theme="dark"] {
     --bg: #0a0f1a; --surface: #121a29; --surface-2: #16202f; --border: #253347;
     --text: #e7ecf3; --text-muted: #8b96a8; --accent: #5b8def; --accent-ink: #051022;
-    --danger: #e2806a; --nuvemmag: #a3d95c; --github: #d9dbe1; --x: #f2f3f5;
+    --danger: #e2806a; --nuvemmag: #a3d95c; --github: #d9dbe1; --x: #f2f3f5; --events: #e8a34f;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4); --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 26px 60px rgba(0, 0, 0, 0.55), 0 6px 16px rgba(0, 0, 0, 0.35);
   }
   :root[data-theme="light"] {
     --bg: #eef1f5; --surface: #ffffff; --surface-2: #f2f4f8; --border: #d9dfe6;
     --text: #16202c; --text-muted: #5c6b7a; --accent: #1e3f7a; --accent-ink: #ffffff;
-    --danger: #b3402f; --nuvemmag: #6f9a2c; --github: #181717; --x: #0a0a0a;
+    --danger: #b3402f; --nuvemmag: #6f9a2c; --github: #181717; --x: #0a0a0a; --events: #b8681f;
     --shadow-sm: 0 1px 2px rgba(15, 25, 40, 0.06); --shadow-md: 0 6px 22px rgba(15, 25, 40, 0.08), 0 1.5px 4px rgba(15, 25, 40, 0.05);
     --shadow-lg: 0 20px 45px rgba(15, 25, 40, 0.13), 0 4px 12px rgba(15, 25, 40, 0.07);
   }
@@ -688,6 +690,20 @@
         <div id="rising-topics-list"></div>
       </div>
     </div>
+
+    <div class="sidebar-group" id="events-group">
+      <button type="button" class="sidebar-group-header">
+        <span class="sidebar-group-label">Etkinlikler</span>
+        <span class="sidebar-chevron">⌄</span>
+      </button>
+      <div class="sidebar-group-items">
+        <button data-tab="kommunity_events" title="Türkiye'deki yapay zeka etkinlikleri" style="--icon-color:var(--events)">
+          <span class="sidebar-icon" style="color:var(--events)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17"/><path d="M8 3v4"/><path d="M16 3v4"/></svg></span>
+          <span class="sidebar-label">YZ Etkinlikleri</span>
+          <span class="sidebar-badge" data-badge="kommunity_events"></span>
+        </button>
+      </div>
+    </div>
   </nav>
 
   <div class="page">
@@ -791,6 +807,7 @@
     github:   '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="4" cy="3" r="1.6"/><circle cx="4" cy="13" r="1.6"/><circle cx="12" cy="8" r="1.6"/><path d="M4 4.6v6.8"/><path d="M4 6a6 6 0 0 0 6.4 2"/></svg>',
     x:        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 4l16 16M20 4L4 20"/></svg>',
     saved:    '<span style="font-size:11px;line-height:1;">★</span>',
+    events:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17"/><path d="M8 3v4"/><path d="M16 3v4"/></svg>',
   };
 
   const SOURCE_META = {
@@ -798,6 +815,7 @@
     github_trending:  { label: "GitHub Trending",  varName: "github",   icon: ICONS.github,   badgeText: "#ffffff" },
     x_twitter:        { label: "X",                 varName: "x",        icon: ICONS.x,        badgeText: "#ffffff" },
     saved:            { label: "Kaydedilenler",     varName: "accent",   icon: ICONS.saved,    badgeText: "var(--accent-ink)" },
+    kommunity_events: { label: "Etkinlikler",        varName: "events",   icon: ICONS.events,   badgeText: "#ffffff" },
   };
   const SOURCE_ORDER = ["nuvemmag", "github_trending", "x_twitter"];
 
@@ -1061,6 +1079,14 @@
     const savedCount = ALL_ITEMS.filter(it => it.is_saved).length;
     const savedBadgeEl = document.querySelector('.sidebar-badge[data-badge="saved"]');
     if (savedBadgeEl) savedBadgeEl.textContent = savedCount > 0 ? savedCount : "";
+
+    // Etkinlikler, SOURCE_ORDER'da yer almadığı (Tüm kaynaklar özetine dahil
+    // edilmediği) için ayrıca sayılıyor; yalnızca henüz geçmemiş etkinlikler.
+    const now = new Date();
+    const upcomingEventsCount = (bySource.kommunity_events || [])
+      .filter(it => !it.is_read && (!it.published_at || new Date(it.published_at) >= now)).length;
+    const eventsBadgeEl = document.querySelector('.sidebar-badge[data-badge="kommunity_events"]');
+    if (eventsBadgeEl) eventsBadgeEl.textContent = upcomingEventsCount > 0 ? upcomingEventsCount : "";
   }
 
   function matchesFilter(it, text) {
@@ -1204,7 +1230,14 @@
       titleEl.style.display = "none";
     }
 
-    if (currentSort === "popular") {
+    if (!currentTopic && currentTab === "kommunity_events") {
+      // Etkinliklerde öncelik "en yakında olacak" olmalı, "en son eklenen" değil
+      // — bu yüzden Yeni/Popüler sıralamasını yok sayıp tarihe göre artan
+      // sıralıyoruz; tarihi geçmiş etkinlikler de listeden düşer.
+      const now = new Date();
+      focusItems = focusItems.filter(it => !it.published_at || new Date(it.published_at) >= now);
+      focusItems.sort((a, b) => new Date(a.published_at || 0) - new Date(b.published_at || 0));
+    } else if (currentSort === "popular") {
       focusItems.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
     } else {
       focusItems.sort((a, b) => (b.fetched_at || "").localeCompare(a.fetched_at || ""));

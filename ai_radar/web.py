@@ -21,7 +21,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 
-from ai_radar.collectors import github_trending, nuvemmag, x_twitter
+from ai_radar.collectors import github_trending, kommunity_events, nuvemmag, x_twitter
 from ai_radar.collectors.common import save_items
 from ai_radar.config import config
 from ai_radar.database import get_connection
@@ -38,6 +38,11 @@ FREE_COLLECTOR_REFRESH_SECONDS = 3600
 # çok daha seyrek çalışıyor — günde 6 kez (her konu için).
 TOPIC_SNAPSHOT_REFRESH_SECONDS = 4 * 3600
 
+# kommunity.com resmi/belgelenmiş bir API sunmuyor; belgelenmemiş uç noktasına
+# karşı nazik olmak için diğer ücretsiz toplayıcılardan çok daha seyrek
+# çalışıyor (etkinlik listeleri zaten saatlik değişmiyor).
+EVENTS_REFRESH_SECONDS = 6 * 3600
+
 
 async def _refresh_free_collectors_periodically() -> None:
     collectors = (("NuvemMag", nuvemmag.collect), ("GitHub Trending", github_trending.collect))
@@ -50,6 +55,19 @@ async def _refresh_free_collectors_periodically() -> None:
             except Exception as exc:
                 print(f"[otomatik yenileme] {name} başarısız: {exc}")
         await asyncio.sleep(FREE_COLLECTOR_REFRESH_SECONDS)
+
+
+async def _refresh_events_periodically() -> None:
+    # Diğer ücretsiz toplayıcılarla aynı desen: sunucu açılır açılmaz hemen bir
+    # kez kontrol eder, sonra döngü sonunda bekler.
+    while True:
+        try:
+            items = await asyncio.to_thread(kommunity_events.collect)
+            added = await asyncio.to_thread(save_items, items)
+            print(f"[otomatik yenileme] Etkinlikler: {added} yeni kayıt eklendi.")
+        except Exception as exc:
+            print(f"[otomatik yenileme] Etkinlikler başarısız: {exc}")
+        await asyncio.sleep(EVENTS_REFRESH_SECONDS)
 
 
 async def _snapshot_followed_topics_periodically() -> None:
@@ -84,14 +102,18 @@ async def _snapshot_followed_topics_periodically() -> None:
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
     free_task = asyncio.create_task(_refresh_free_collectors_periodically())
+    events_task = asyncio.create_task(_refresh_events_periodically())
     topic_task = asyncio.create_task(_snapshot_followed_topics_periodically())
     try:
         yield
     finally:
         free_task.cancel()
+        events_task.cancel()
         topic_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await free_task
+        with contextlib.suppress(asyncio.CancelledError):
+            await events_task
         with contextlib.suppress(asyncio.CancelledError):
             await topic_task
 
