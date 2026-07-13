@@ -23,5 +23,9 @@ class Config:
     # "Takip ettiklerinin gündemi" özelliği için kullanıcının kendi X kullanıcı adı
     X_FOLLOW_USERNAME: str | None = os.getenv("X_FOLLOW_USERNAME")
 
+    # YouTube Data API v3 - takip edilen konularla ilgili video önerileri için.
+    # Ücretsiz günlük kota (10.000 birim) yeterli, ödeme gerekmiyor.
+    YOUTUBE_API_KEY: str | None = os.getenv("YOUTUBE_API_KEY")
+
 
 config = Config()

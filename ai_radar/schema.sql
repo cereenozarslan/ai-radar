@@ -53,3 +53,25 @@ CREATE TABLE IF NOT EXISTS topic_engagement_snapshots (
     mention_count INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_topic_snapshots_topic ON topic_engagement_snapshots(topic);
+
+-- Her takip edilen konu için YouTube'dan önerilen videoların önbelleği.
+-- Ücretsiz YouTube Data API v3 kotası içinde periyodik olarak yenilenir; her
+-- yenilemede o konunun eski satırları silinip yenileriyle değiştirilir
+-- (biriken bir günlük değil, her zaman GÜNCEL bir önbellek).
+CREATE TABLE IF NOT EXISTS topic_videos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    topic TEXT NOT NULL,
+    video_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    url TEXT NOT NULL,
+    channel_title TEXT,
+    published_at TEXT,
+    image_url TEXT,
+    view_count INTEGER,
+    like_count INTEGER,
+    comment_count INTEGER,
+    engagement_score INTEGER,
+    fetched_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(topic, video_id)
+);
+CREATE INDEX IF NOT EXISTS idx_topic_videos_topic ON topic_videos(topic);

@@ -510,3 +510,89 @@ def test_toggle_save_returns_404_for_unknown_item(tmp_path, monkeypatch):
     resp = client.post("/api/items/999999/toggle-save")
 
     assert resp.status_code == 404
+
+
+def _make_topic_videos_db(tmp_path, rows=()):
+    """rows: [(topic, video_id, title, url, engagement_score), ...]"""
+    from ai_radar.database import get_connection, init_db
+
+    db_path = tmp_path / "test.db"
+    init_db(db_path)
+    conn = get_connection(db_path)
+    for topic, video_id, title, url, score in rows:
+        conn.execute(
+            "INSERT INTO topic_videos (topic, video_id, title, url, engagement_score) VALUES (?, ?, ?, ?, ?)",
+            (topic, video_id, title, url, score),
+        )
+    conn.commit()
+    conn.close()
+    return db_path
+
+
+def test_list_topic_videos_returns_cached_rows_sorted_by_engagement(tmp_path, monkeypatch):
+    db_path = _make_topic_videos_db(tmp_path, [
+        ("Claude", "v1", "Dusuk Etkilesim", "https://youtube.com/v1", 10),
+        ("Claude", "v2", "Yuksek Etkilesim", "https://youtube.com/v2", 500),
+        ("OpenAI", "v3", "Baska Konu", "https://youtube.com/v3", 999),
+    ])
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+
+    client = TestClient(web.app)
+    resp = client.get("/api/topic-videos", params={"topic": "Claude"})
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert [v["video_id"] for v in data] == ["v2", "v1"]
+
+
+def test_refresh_topic_videos_calls_collector_and_replaces_cache(tmp_path, monkeypatch):
+    db_path = _make_topic_videos_db(tmp_path, [
+        ("Claude", "old", "Eski Video", "https://youtube.com/old", 1),
+    ])
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+    monkeypatch.setattr(web.config, "YOUTUBE_API_KEY", "sahte-anahtar")
+
+    def fake_collect_for_topic(topic):
+        return [{
+            "topic": topic, "video_id": "new", "title": "Yeni Video",
+            "url": "https://youtube.com/new", "channel_title": "Kanal", "published_at": "2026-07-01T00:00:00Z",
+            "image_url": None, "view_count": 100, "like_count": 10, "comment_count": 2, "engagement_score": 1200,
+        }]
+
+    monkeypatch.setattr(web.youtube_topics, "collect_for_topic", fake_collect_for_topic)
+
+    client = TestClient(web.app)
+    resp = client.post("/api/refresh-topic-videos", params={"topic": "Claude"})
+
+    assert resp.status_code == 200
+    assert resp.json() == {"topic": "Claude", "result_count": 1}
+
+    listed = client.get("/api/topic-videos", params={"topic": "Claude"}).json()
+    assert [v["video_id"] for v in listed] == ["new"]  # eski satır silinmiş olmali
+
+
+def test_refresh_topic_videos_requires_api_key(tmp_path, monkeypatch):
+    db_path = _make_topic_videos_db(tmp_path)
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+    monkeypatch.setattr(web.config, "YOUTUBE_API_KEY", None)
+
+    client = TestClient(web.app)
+    resp = client.post("/api/refresh-topic-videos", params={"topic": "Claude"})
+
+    assert resp.status_code == 400
+
+
+def test_refresh_topic_videos_returns_502_on_youtube_api_error(tmp_path, monkeypatch):
+    db_path = _make_topic_videos_db(tmp_path)
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+    monkeypatch.setattr(web.config, "YOUTUBE_API_KEY", "sahte-anahtar")
+
+    def failing_collect(topic):
+        raise RuntimeError("YouTube kota hatasi")
+
+    monkeypatch.setattr(web.youtube_topics, "collect_for_topic", failing_collect)
+
+    client = TestClient(web.app)
+    resp = client.post("/api/refresh-topic-videos", params={"topic": "Claude"})
+
+    assert resp.status_code == 502

@@ -28,6 +28,7 @@ from ai_radar.collectors import (
     meetup_events,
     nuvemmag,
     x_twitter,
+    youtube_topics,
 )
 from ai_radar.collectors.common import save_items
 from ai_radar.config import config
@@ -54,6 +55,38 @@ EVENT_COLLECTORS = (
     ("meetup.com", meetup_events.collect),
     ("coderspace.io", coderspace_events.collect),
 )
+
+# YouTube Data API v3 ücretsiz günlük kotası (10.000 birim) çok geniş, ama
+# video istatistikleri (izlenme/beğeni/yorum) saatlik değişmediği için günde
+# iki kez yenilemek yeterli.
+TOPIC_VIDEOS_REFRESH_SECONDS = 12 * 3600
+
+
+def _save_topic_videos(topic: str, videos: list[dict]) -> None:
+    """Bir konunun video önbelleğini TAMAMEN yeniler (eski satırlar silinir).
+
+    topic_engagement_snapshots'ın aksine burada zaman içindeki geçmişi
+    biriktirmiyoruz — her yenileme, o konu için her zaman GÜNCEL bir video
+    listesi olmalı.
+    """
+    conn = get_connection()
+    conn.execute("DELETE FROM topic_videos WHERE topic = ?", (topic,))
+    for video in videos:
+        conn.execute(
+            """
+            INSERT INTO topic_videos
+                (topic, video_id, title, url, channel_title, published_at, image_url, view_count, like_count, comment_count, engagement_score)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                video["topic"], video["video_id"], video["title"], video["url"],
+                video.get("channel_title"), video.get("published_at"), video.get("image_url"),
+                video.get("view_count"), video.get("like_count"), video.get("comment_count"),
+                video.get("engagement_score"),
+            ),
+        )
+    conn.commit()
+    conn.close()
 
 
 async def _refresh_free_collectors_periodically() -> None:
@@ -113,6 +146,30 @@ async def _snapshot_followed_topics_periodically() -> None:
         await asyncio.sleep(TOPIC_SNAPSHOT_REFRESH_SECONDS)
 
 
+async def _refresh_topic_videos_periodically() -> None:
+    # Diğer ücretsiz toplayıcılarla aynı desen: hemen bir kez kontrol eder,
+    # sonra döngü sonunda bekler. YouTube anahtarı .env'de yoksa (henüz
+    # kurulmadıysa) sessizce atlar.
+    while True:
+        if not config.YOUTUBE_API_KEY:
+            await asyncio.sleep(TOPIC_VIDEOS_REFRESH_SECONDS)
+            continue
+
+        conn = get_connection()
+        topics = [r[0] for r in conn.execute("SELECT topic FROM followed_topics").fetchall()]
+        conn.close()
+
+        for topic in topics:
+            try:
+                videos = await asyncio.to_thread(youtube_topics.collect_for_topic, topic)
+                await asyncio.to_thread(_save_topic_videos, topic, videos)
+                print(f"[YouTube] {topic}: {len(videos)} video bulundu.")
+            except Exception as exc:
+                print(f"[YouTube] {topic} başarısız: {exc}")
+
+        await asyncio.sleep(TOPIC_VIDEOS_REFRESH_SECONDS)
+
+
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
     # Şemaya sonradan eklenen sütunları (ör. is_online) eski veritabanlarına
@@ -122,18 +179,22 @@ async def lifespan(app: FastAPI):
     free_task = asyncio.create_task(_refresh_free_collectors_periodically())
     events_task = asyncio.create_task(_refresh_events_periodically())
     topic_task = asyncio.create_task(_snapshot_followed_topics_periodically())
+    topic_videos_task = asyncio.create_task(_refresh_topic_videos_periodically())
     try:
         yield
     finally:
         free_task.cancel()
         events_task.cancel()
         topic_task.cancel()
+        topic_videos_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await free_task
         with contextlib.suppress(asyncio.CancelledError):
             await events_task
         with contextlib.suppress(asyncio.CancelledError):
             await topic_task
+        with contextlib.suppress(asyncio.CancelledError):
+            await topic_videos_task
 
 
 app = FastAPI(title="AI-Radar — X Arama", lifespan=lifespan)
@@ -381,3 +442,46 @@ def following_digest(hours: float = 36):
         "added_count": added,
         "items": items,
     }
+
+
+@app.get("/api/topic-videos")
+def list_topic_videos(topic: str):
+    """Bir konu için önbelleğe alınmış YouTube video önerilerini döner
+    (etkileşim skoruna göre sıralı — en üstteki 3'ü arayüzde kart, gerisi liste)."""
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT video_id, title, url, channel_title, published_at, image_url, "
+        "view_count, like_count, comment_count, engagement_score "
+        "FROM topic_videos WHERE topic = ? ORDER BY engagement_score DESC",
+        (topic,),
+    ).fetchall()
+    conn.close()
+
+    cols = [
+        "video_id", "title", "url", "channel_title", "published_at",
+        "image_url", "view_count", "like_count", "comment_count", "engagement_score",
+    ]
+    return [dict(zip(cols, row)) for row in rows]
+
+
+@app.post("/api/refresh-topic-videos")
+def refresh_topic_videos(topic: str):
+    """Bir konu için YouTube video önerilerini şimdi (canlı) yeniler.
+
+    YouTube Data API v3'ün ücretsiz kotası içinde kaldığı için (bkz.
+    youtube_topics.py) X'teki gibi bir maliyet uyarısı gerekmiyor.
+    """
+    if not config.YOUTUBE_API_KEY:
+        raise HTTPException(
+            status_code=400,
+            detail="YOUTUBE_API_KEY tanımlı değil — .env dosyasına eklemen gerekiyor.",
+        )
+
+    try:
+        videos = youtube_topics.collect_for_topic(topic)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"YouTube API hatası: {exc}") from exc
+
+    _save_topic_videos(topic, videos)
+
+    return {"topic": topic, "result_count": len(videos)}

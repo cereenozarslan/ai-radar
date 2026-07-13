@@ -16,21 +16,19 @@
 </script>
 <style>
   :root {
-    /* Açık tema: koyu paletle aynı ruhta (nötr gri + tek mavi vurgu) tasarlandı */
-    --bg: #f2f2f4;
+    --bg: #eef1f5;
     --surface: #ffffff;
-    --surface-2: #f7f7f9;
-    --surface-hover: #ecedf0;
-    --border: #e1e2e6;
-    --text: #17181c;
-    --text-muted: #6b707b;
-    --accent: #2563eb;
+    --surface-2: #f2f4f8;
+    --border: #d9dfe6;
+    --text: #16202c;
+    --text-muted: #5c6b7a;
+    --accent: #1e3f7a;
     --accent-ink: #ffffff;
     --danger: #b3402f;
-    --nuvemmag: #5c8a3a;
-    --github: #6b6f7b;
-    --x: #3f4450;
-    --events: #a0672e;
+    --nuvemmag: #6f9a2c;
+    --github: #181717;
+    --x: #0a0a0a;
+    --events: #b8681f;
     --shadow-sm: 0 1px 2px rgba(15, 25, 40, 0.06);
     --shadow-md: 0 6px 22px rgba(15, 25, 40, 0.08), 0 1.5px 4px rgba(15, 25, 40, 0.05);
     --shadow-lg: 0 20px 45px rgba(15, 25, 40, 0.13), 0 4px 12px rgba(15, 25, 40, 0.07);
@@ -38,36 +36,35 @@
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #131316;
-      --surface: #1b1c20;
-      --surface-2: #202127;
-      --surface-hover: #222329;
-      --border: #26272c;
-      --text: #f4f4f5;
-      --text-muted: #9ca0aa;
-      --accent: #3b82f6;
-      --accent-ink: #ffffff;
+      --bg: #0a0f1a;
+      --surface: #121a29;
+      --surface-2: #16202f;
+      --border: #253347;
+      --text: #e7ecf3;
+      --text-muted: #8b96a8;
+      --accent: #5b8def;
+      --accent-ink: #051022;
       --danger: #e2806a;
-      --nuvemmag: #7fa65c;
-      --github: #a8abb3;
-      --x: #8b93a6;
-      --events: #c08a4e;
+      --nuvemmag: #a3d95c;
+      --github: #d9dbe1;
+      --x: #f2f3f5;
+      --events: #e8a34f;
       --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
       --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
       --shadow-lg: 0 26px 60px rgba(0, 0, 0, 0.55), 0 6px 16px rgba(0, 0, 0, 0.35);
     }
   }
   :root[data-theme="dark"] {
-    --bg: #131316; --surface: #1b1c20; --surface-2: #202127; --surface-hover: #222329; --border: #26272c;
-    --text: #f4f4f5; --text-muted: #9ca0aa; --accent: #3b82f6; --accent-ink: #ffffff;
-    --danger: #e2806a; --nuvemmag: #7fa65c; --github: #a8abb3; --x: #8b93a6; --events: #c08a4e;
+    --bg: #0a0f1a; --surface: #121a29; --surface-2: #16202f; --border: #253347;
+    --text: #e7ecf3; --text-muted: #8b96a8; --accent: #5b8def; --accent-ink: #051022;
+    --danger: #e2806a; --nuvemmag: #a3d95c; --github: #d9dbe1; --x: #f2f3f5; --events: #e8a34f;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4); --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 26px 60px rgba(0, 0, 0, 0.55), 0 6px 16px rgba(0, 0, 0, 0.35);
   }
   :root[data-theme="light"] {
-    --bg: #f2f2f4; --surface: #ffffff; --surface-2: #f7f7f9; --surface-hover: #ecedf0; --border: #e1e2e6;
-    --text: #17181c; --text-muted: #6b707b; --accent: #2563eb; --accent-ink: #ffffff;
-    --danger: #b3402f; --nuvemmag: #5c8a3a; --github: #6b6f7b; --x: #3f4450; --events: #a0672e;
+    --bg: #eef1f5; --surface: #ffffff; --surface-2: #f2f4f8; --border: #d9dfe6;
+    --text: #16202c; --text-muted: #5c6b7a; --accent: #1e3f7a; --accent-ink: #ffffff;
+    --danger: #b3402f; --nuvemmag: #6f9a2c; --github: #181717; --x: #0a0a0a; --events: #b8681f;
     --shadow-sm: 0 1px 2px rgba(15, 25, 40, 0.06); --shadow-md: 0 6px 22px rgba(15, 25, 40, 0.08), 0 1.5px 4px rgba(15, 25, 40, 0.05);
     --shadow-lg: 0 20px 45px rgba(15, 25, 40, 0.13), 0 4px 12px rgba(15, 25, 40, 0.07);
   }
@@ -398,6 +395,43 @@
   }
   .person-rest { padding-left: 1.85rem; }
 
+  /* ---------- Konu modunda YouTube video önerileri ---------- */
+  .yt-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; margin-top: 1rem; }
+  @media (max-width: 900px) { .yt-cards { grid-template-columns: 1fr; } }
+  .yt-card {
+    display: block; text-decoration: none; color: var(--text);
+    border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+    background: var(--surface); box-shadow: var(--shadow-sm);
+    transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  }
+  .yt-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .yt-card-thumb { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; background: var(--surface-2); }
+  .yt-card-body { padding: 0.7rem 0.8rem; }
+  .yt-card-title {
+    font-weight: 700; font-size: 0.86rem; line-height: 1.32; margin-bottom: 0.35rem;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .yt-card-meta { font-size: 0.72rem; color: var(--text-muted); }
+  .yt-card-stats { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+  .yt-list { margin-top: 0.6rem; }
+  .yt-list-row {
+    display: flex; align-items: center; gap: 0.65rem; padding: 0.55rem 0;
+    border-bottom: 1px solid var(--border); text-decoration: none; color: var(--text);
+    transition: transform 0.2s var(--ease);
+  }
+  .yt-list-row:last-child { border-bottom: none; }
+  .yt-list-row:hover { transform: translateX(2px); }
+  .yt-list-thumb { flex: none; width: 84px; aspect-ratio: 16/9; object-fit: cover; border-radius: 6px; background: var(--surface-2); }
+  .yt-list-title { font-size: 0.83rem; font-weight: 600; line-height: 1.3; }
+  .yt-list-meta { font-size: 0.71rem; color: var(--text-muted); margin-top: 0.15rem; }
+
+  #topic-videos-more-toggle {
+    display: flex; align-items: center; gap: 0.3rem; margin-top: 0.7rem;
+    background: none; border: none; cursor: pointer; color: var(--accent);
+    font-size: 0.8rem; font-weight: 600; padding: 0;
+  }
+
   /* ---------- Kaynakları keşfet (odak + diğerleri) ---------- */
   section.explorer {
     margin-top: 2rem; padding: 2rem; border: 1px solid var(--border); border-radius: 20px;
@@ -422,7 +456,9 @@
 
   .explorer-focus { margin-top: 1.1rem; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: background-color 0.25s ease; }
   .explorer-focus.as-list .item-list { max-height: 460px; overflow-y: auto; }
-  .explorer-focus.as-cards { border: none; padding: 0.9rem; }
+  /* Kart görünümünde sayfa değil, sadece bu alan kendi içinde kaysın (sidebar'daki
+     gibi) — büyüklü küçüklü masonry kartları ekrana sığar, sayfa aşağı akmaz. */
+  .explorer-focus.as-cards { border: none; padding: 0.9rem; max-height: calc(100vh - 230px); overflow-y: auto; }
 
   .pager { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1rem; }
   .pager-btn {
@@ -432,23 +468,30 @@
   .pager-btn:disabled { opacity: 0.4; cursor: default; }
   .pager-info { font-size: 0.78rem; color: var(--text-muted); }
 
-  /* ---------- Fotoğraf üstü başlık kartları (manşet/grid düzeni) ---------- */
+  /* ---------- Fotoğraf üstü başlık kartları (dergi/manşet tarzı) ---------- */
+  .photo-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 0.75rem;
+    padding: 0.2rem; max-height: 520px; overflow-y: auto;
+  }
   .photo-card {
-    position: relative; display: block; border-radius: 14px; overflow: hidden;
+    position: relative; display: block; min-height: 160px; max-height: 420px; border-radius: 14px; overflow: hidden;
     background: var(--item-accent, var(--surface-2)); text-decoration: none; color: #fff;
-    box-shadow: var(--shadow-sm);
-    transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+    box-shadow: var(--shadow-sm); aspect-ratio: 4 / 3; /* görsel yüklenene kadar makul bir varsayılan */
+    transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease), aspect-ratio 0.1s linear;
   }
   .photo-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+  /* Görsel yüklenince gerçek en-boy oranını JS ile karta uyguluyoruz (bkz.
+     photoCard()'daki onload) — böylece üstteki metin katmanı (position:absolute;
+     inset:0) HER ZAMAN görselle birebir örtüşüyor; ikisi arasında boşluk kalmıyor. */
   .photo-card img {
     position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
-    filter: brightness(0.8); transition: transform 0.6s var(--ease);
+    transition: transform 0.6s var(--ease);
   }
   .photo-card:hover img { transform: scale(1.04); }
   .photo-card-badge { position: absolute; top: 0.5rem; left: 0.5rem; z-index: 1; }
   .photo-card-overlay {
     position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end;
-    padding: 0.7rem; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.58) 45%, rgba(0,0,0,0.4) 100%);
+    padding: 0.7rem; background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.5) 32%, rgba(0,0,0,0) 65%);
   }
   .photo-card::after {
     content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
@@ -459,30 +502,19 @@
     font-weight: 700; font-size: 0.85rem; line-height: 1.3;
     display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
   }
-  .photo-card.hero .photo-card-title { font-size: 1.35rem; -webkit-line-clamp: 4; }
+  .photo-card.hero .photo-card-title { font-size: 1.2rem; -webkit-line-clamp: 3; }
   .photo-card.hero .photo-card-meta { font-size: 0.72rem; }
 
-  /* 1. sayfa — "Manşet düzeni": solda tam yükseklikte 1 büyük manşet kartı
-     (filtrelenmiş sonuçların en yüksek signal_score'lusu), sağda 2x2
-     düzeninde 4 küçük kart. Mobilde tek sütuna düşer, manşet üstte kalır. */
-  .headline-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 0.9rem; align-items: stretch; }
-  .headline-grid .photo-card.hero { min-height: 480px; }
-  .headline-side { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 0.9rem; }
-  .headline-side .photo-card.quad { aspect-ratio: 4 / 3; }
-  @media (max-width: 900px) {
-    .headline-grid { grid-template-columns: 1fr; }
-    .headline-grid .photo-card.hero { min-height: 280px; }
-  }
-  @media (max-width: 560px) {
-    .headline-side { grid-template-columns: 1fr; }
-  }
-
-  /* 2. ve sonraki sayfalar — düzenli, hepsi aynı boyutta "normal grid". */
-  .normal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.9rem; }
-  .normal-grid .photo-card.grid { aspect-ratio: 4 / 3; }
-  @media (max-width: 1100px) { .normal-grid { grid-template-columns: repeat(3, 1fr); } }
-  @media (max-width: 800px) { .normal-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 520px) { .normal-grid { grid-template-columns: 1fr; } }
+  /* Pinterest tarzı masonry: her kart kendi görselinin doğal boyuna göre
+     yükseklik alır, sütunlar arasında birbirini tamamlayarak dizilir — sabit
+     bir ızgara hücresine zorla sıkıştırılmıyor, bu yüzden boş/kırpık görünen
+     kenarlar oluşmuyor. En yeni/önemli kayıt (hero) sırada en başta duruyor
+     ve başlığı biraz daha büyük — ama diğerleriyle AYNI sütun genişliğinde,
+     tek başına dev bir banere dönüşmüyor. */
+  .magazine { column-count: 3; column-gap: 0.75rem; }
+  .magazine .photo-card { break-inside: avoid; margin-bottom: 0.75rem; }
+  @media (max-width: 900px) { .magazine { column-count: 2; } }
+  @media (max-width: 560px) { .magazine { column-count: 1; } }
 
   /* Fare ile kart/liste satırı üzerine gelince çıkan önizleme kutusu. Tıklamayı
      engellememesi için pointer-events:none — altındaki karta gelen tıklama
@@ -541,7 +573,7 @@
     transition: background-color 0.2s var(--ease), border-left-color 0.2s var(--ease), transform 0.2s var(--ease);
   }
   .item:last-child { border-bottom: none; }
-  .item:hover { background: var(--surface-hover); border-left-color: var(--item-accent, var(--border)); transform: translateX(2px); }
+  .item:hover { background: var(--surface-2); border-left-color: var(--item-accent, var(--border)); transform: translateX(2px); }
 
   .item-media {
     width: 40px; height: 40px; border-radius: 8px; flex: none; overflow: hidden;
@@ -739,6 +771,17 @@
       <div class="status" id="x-refresh-status"></div>
 
       <div class="explorer-focus as-cards" id="explorer-focus"></div>
+
+      <div id="topic-videos-section" style="display:none;">
+        <div class="widget-card-head" style="margin-top:1.5rem;">
+          <span>YouTube'dan Öne Çıkanlar</span>
+          <button type="button" class="primary" id="topic-videos-refresh-btn">Yenile</button>
+        </div>
+        <div class="status" id="topic-videos-status"></div>
+        <div class="yt-cards" id="topic-videos-cards"></div>
+        <button type="button" id="topic-videos-more-toggle" style="display:none;"></button>
+        <div class="yt-list" id="topic-videos-list" style="display:none;"></div>
+      </div>
     </section>
 
     <section class="explorer" id="following-digest-panel" style="display:none;">
@@ -848,9 +891,13 @@
   let currentView = "card";
   let currentSort = "recent";
   let eventsOnlineFilter = ""; // "" = tümü, "0" = sadece yüz yüze, "1" = sadece online
+
+  // Konu modunda YouTube video önerileri (bkz. renderTopicVideos())
+  let TOPIC_VIDEOS = [];
+  let topicVideosExpanded = false;
+  const TOPIC_VIDEOS_TOP_COUNT = 3;
   let restPage = 1;
-  const PAGE1_SIZE = 5;  // 1. sayfa: manşet düzeni (1 büyük manşet + 2x2 küçük kart)
-  const PAGEN_SIZE = 12; // 2. ve sonraki sayfalar: normal grid
+  const MAGAZINE_PAGE_SIZE = 11; // masonry'de sayfa başına gösterilen kayıt sayısı (hero dahil)
 
   // Fare ile üzerine gelince kart/liste önizlemesi: HTML özniteliğine (attribute)
   // gömmek yerine küçük bir anahtarla bu Map'te tutuyoruz — böylece başlık/içerik
@@ -1023,8 +1070,13 @@
   function photoCard(it, meta, variant) {
     // Görsel yüklenemezse (404 vb.) img'i gizleyip kartın kendisini kaynak
     // rengiyle boyanmış düz bir arka plana düşürüyoruz (badge + başlık yine görünür kalır).
+    // Yüklenince ise gerçek en-boy oranını karta (aspect-ratio) yazıyoruz ki
+    // Pinterest tarzı masonry'de her kart kendi görselinin gerçek boyunu alsın
+    // (üstteki metin katmanı da her zaman görselle birebir örtüşsün).
     const img = it.image_url
-      ? `<img src="${it.image_url}" alt="" loading="lazy" onerror="this.remove();">`
+      ? `<img src="${it.image_url}" alt="" loading="lazy"
+           onload="this.parentElement.style.aspectRatio = this.naturalWidth + '/' + this.naturalHeight;"
+           onerror="this.remove();">`
       : "";
     const readClass = hasId(it) && it.is_read ? " is-read" : "";
     const save = saveButton(it);
@@ -1044,46 +1096,101 @@
     `;
   }
 
-  // Keşif panelindeki kart görünümü, hibrit düzen:
-  // - 1. sayfa "Manşet düzeni": filtrelenmiş TÜM sonuçlar içinde en yüksek
-  //   signal_score'lu kayıt manşet (büyük, solda) olarak ayrılır, geçerli
-  //   Yeni/Popüler sıralamasındaki sıradaki 4 kayıt sağda 2x2 küçük kart olur.
-  // - 2. ve sonraki sayfalar "normal grid": manşet hariç kalanlar, hepsi aynı
-  //   boyutta, sayfa başına PAGEN_SIZE kayıt.
-  function totalMagazinePages(totalCount) {
-    if (totalCount <= PAGE1_SIZE) return 1;
-    return 1 + Math.ceil((totalCount - PAGE1_SIZE) / PAGEN_SIZE);
+  function fmtCompactNumber(n) {
+    if (n === null || n === undefined) return "0";
+    return new Intl.NumberFormat("tr-TR", { notation: "compact", maximumFractionDigits: 1 }).format(n);
   }
 
+  function ytCard(v) {
+    const thumb = v.image_url
+      ? `<img class="yt-card-thumb" src="${v.image_url}" alt="" loading="lazy" onerror="this.remove();">`
+      : "";
+    return `
+      <a class="yt-card" href="${v.url}" target="_blank" rel="noopener noreferrer">
+        ${thumb}
+        <div class="yt-card-body">
+          <div class="yt-card-title">${v.title}</div>
+          <div class="yt-card-meta">${v.channel_title || "Kanal bilinmiyor"}</div>
+          <div class="yt-card-stats">👁 ${fmtCompactNumber(v.view_count)} · 👍 ${fmtCompactNumber(v.like_count)} · 💬 ${fmtCompactNumber(v.comment_count)}</div>
+        </div>
+      </a>
+    `;
+  }
+
+  function ytListRow(v) {
+    const thumb = v.image_url
+      ? `<img class="yt-list-thumb" src="${v.image_url}" alt="" loading="lazy" onerror="this.remove();">`
+      : `<span class="yt-list-thumb"></span>`;
+    return `
+      <a class="yt-list-row" href="${v.url}" target="_blank" rel="noopener noreferrer">
+        ${thumb}
+        <div>
+          <div class="yt-list-title">${v.title}</div>
+          <div class="yt-list-meta">${v.channel_title || "Kanal bilinmiyor"} · 👁 ${fmtCompactNumber(v.view_count)} · 👍 ${fmtCompactNumber(v.like_count)}</div>
+        </div>
+      </a>
+    `;
+  }
+
+  // Konu modunda: en yüksek etkileşimli 3 video kart olarak, gerisi
+  // açılıp kapanabilen bir liste olarak gösterilir.
+  function renderTopicVideos() {
+    const cardsEl = document.getElementById("topic-videos-cards");
+    const listEl = document.getElementById("topic-videos-list");
+    const toggleEl = document.getElementById("topic-videos-more-toggle");
+
+    const top = TOPIC_VIDEOS.slice(0, TOPIC_VIDEOS_TOP_COUNT);
+    const rest = TOPIC_VIDEOS.slice(TOPIC_VIDEOS_TOP_COUNT);
+
+    cardsEl.innerHTML = top.length
+      ? top.map(ytCard).join("")
+      : `<div class="empty-note">Bu konu için henüz video bulunamadı.</div>`;
+
+    if (rest.length) {
+      toggleEl.style.display = "";
+      toggleEl.textContent = topicVideosExpanded ? "Diğer videoları gizle ▴" : `Diğer videolar (${rest.length}) ▾`;
+      listEl.style.display = topicVideosExpanded ? "" : "none";
+      listEl.innerHTML = rest.map(ytListRow).join("");
+    } else {
+      toggleEl.style.display = "none";
+      listEl.style.display = "none";
+      listEl.innerHTML = "";
+    }
+  }
+
+  async function loadTopicVideos(topic) {
+    topicVideosExpanded = false;
+    try {
+      const resp = await fetch("/api/topic-videos?" + new URLSearchParams({ topic }));
+      TOPIC_VIDEOS = await resp.json();
+    } catch (e) {
+      TOPIC_VIDEOS = [];
+    }
+    renderTopicVideos();
+  }
+
+  // Etkinlikler/Yükselen Gündem gibi platform sekmelerinde değil, sadece
+  // "Konu: X" görünümündeyken (ve X'in alt görünümlerinde değilken) anlamlı.
+  function updateTopicVideosVisibility() {
+    document.getElementById("topic-videos-section").style.display =
+      (mainView === "explorer" && currentTopic) ? "" : "none";
+  }
+
+  // Keşif panelindeki kart görünümü: Pinterest tarzı tek bir masonry akışı.
+  // Sayfa 1'in ilk kaydı "hero" (tam genişlikte, en üstte); "Önceki/Sonraki"
+  // ile sayfalanır (1-2-3-4-5, sonra 6-7-8...), her sayfa kendi masonry'sini gösterir.
   function renderMagazinePaginated(items, metaFor, page) {
-    if (!items.length) {
+    const totalPages = Math.max(1, Math.ceil(items.length / MAGAZINE_PAGE_SIZE));
+    const clampedPage = Math.min(Math.max(1, page), totalPages);
+    const pageItems = items.slice((clampedPage - 1) * MAGAZINE_PAGE_SIZE, clampedPage * MAGAZINE_PAGE_SIZE);
+
+    if (!pageItems.length) {
       return `<div class="empty-note">Henüz kayıt yok.</div>`;
     }
 
-    let heroIndex = 0;
-    for (let i = 1; i < items.length; i++) {
-      if ((items[i].signal_score || 0) > (items[heroIndex].signal_score || 0)) heroIndex = i;
-    }
-    const hero = items[heroIndex];
-    const rest = items.filter((_, i) => i !== heroIndex);
-
-    const totalPages = totalMagazinePages(items.length);
-    const clampedPage = Math.min(Math.max(1, page), totalPages);
-
-    let bodyHtml;
-    if (clampedPage === 1) {
-      const quadItems = rest.slice(0, PAGE1_SIZE - 1);
-      bodyHtml = `
-        <div class="headline-grid">
-          ${photoCard(hero, metaFor(hero), "hero")}
-          <div class="headline-side">${quadItems.map(it => photoCard(it, metaFor(it), "quad")).join("")}</div>
-        </div>
-      `;
-    } else {
-      const start = (PAGE1_SIZE - 1) + (clampedPage - 2) * PAGEN_SIZE;
-      const pageItems = rest.slice(start, start + PAGEN_SIZE);
-      bodyHtml = `<div class="normal-grid">${pageItems.map(it => photoCard(it, metaFor(it), "grid")).join("")}</div>`;
-    }
+    const cardsHtml = pageItems
+      .map((it, i) => photoCard(it, metaFor(it), clampedPage === 1 && i === 0 ? "hero" : "grid"))
+      .join("");
 
     const pagerHtml = totalPages > 1
       ? `
@@ -1095,7 +1202,7 @@
       `
       : "";
 
-    return bodyHtml + pagerHtml;
+    return `<div class="magazine">${cardsHtml}</div>` + pagerHtml;
   }
 
   function groupBySource(items) {
@@ -1402,6 +1509,7 @@
     updateXPanelVisibility();
     updateXRefreshVisibility();
     updateEventsModeVisibility();
+    updateTopicVideosVisibility();
     updateMainViewVisibility();
     renderExplorer();
     renderSidebarTopics();
@@ -1416,10 +1524,12 @@
     updateXPanelVisibility();
     updateXRefreshVisibility();
     updateEventsModeVisibility();
+    updateTopicVideosVisibility();
     updateMainViewVisibility();
     renderExplorer();
     renderSidebarTopics();
     renderRisingTopics();
+    loadTopicVideos(topic);
   }
 
   // X'in alt öğesi: "Takip Ettiklerin" — platform/konu sekmelerinden ayrılıp
@@ -1430,6 +1540,7 @@
     updateXPanelVisibility();
     updateXRefreshVisibility();
     updateEventsModeVisibility();
+    updateTopicVideosVisibility();
     updateMainViewVisibility();
     updateSidebarActiveStates();
     renderSidebarTopics();
@@ -1439,6 +1550,7 @@
   updateXPanelVisibility();
   updateXRefreshVisibility();
   updateEventsModeVisibility();
+  updateTopicVideosVisibility();
   updateMainViewVisibility();
   renderTrendRank([], "digest-trend-rank");
 
@@ -1591,6 +1703,38 @@
       xRefreshBtn.disabled = false;
       xRefreshBtn.textContent = "Yenile";
     }
+  });
+
+  // --- Konu modunda YouTube video önerileri: manuel yenile + "diğer videolar" aç/kapa ---
+  const topicVideosRefreshBtn = document.getElementById("topic-videos-refresh-btn");
+  const topicVideosStatus = document.getElementById("topic-videos-status");
+
+  topicVideosRefreshBtn.addEventListener("click", async () => {
+    if (!currentTopic) return;
+    topicVideosRefreshBtn.disabled = true;
+    topicVideosRefreshBtn.textContent = "Yenileniyor…";
+    topicVideosStatus.className = "status";
+    topicVideosStatus.textContent = `"${currentTopic}" için YouTube'dan güncel videolar çekiliyor…`;
+
+    try {
+      const resp = await fetch("/api/refresh-topic-videos?" + new URLSearchParams({ topic: currentTopic }), { method: "POST" });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.detail || "Bilinmeyen hata");
+
+      topicVideosStatus.textContent = `${data.result_count} video bulundu.`;
+      await loadTopicVideos(currentTopic);
+    } catch (err) {
+      topicVideosStatus.className = "status error";
+      topicVideosStatus.textContent = "Hata: " + err.message;
+    } finally {
+      topicVideosRefreshBtn.disabled = false;
+      topicVideosRefreshBtn.textContent = "Yenile";
+    }
+  });
+
+  document.getElementById("topic-videos-more-toggle").addEventListener("click", () => {
+    topicVideosExpanded = !topicVideosExpanded;
+    renderTopicVideos();
   });
 
   // --- Takip ettiklerinin gündemi ---
