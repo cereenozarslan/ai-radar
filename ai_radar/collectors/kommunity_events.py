@@ -43,6 +43,12 @@ _AI_KEYWORDS = [
 
 _TR_TO_ASCII = str.maketrans("ıİşŞğĞüÜöÖçÇâÂ", "iIsSgGuUoOcCaA")
 
+# Bağımsız "ai" kelimesi (" ai ") çok geniş bir yakalayıcı — "AI Haters Party"
+# gibi YZ'yle dalga geçen/YZ karşıtı ironik başlıkları da yanlışlıkla
+# yakalıyor. Bu tür kelimeler geçiyorsa, başka bir YZ anahtar kelimesiyle
+# eşleşse bile etkinliği eliyoruz.
+_EXCLUDE_KEYWORDS = ["hater"]
+
 
 def _normalize(text: str) -> str:
     """Türkçe karakterleri ASCII'ye indirger; anahtar kelime karşılaştırmasını
@@ -53,6 +59,8 @@ def _normalize(text: str) -> str:
 def is_ai_related(name: str) -> bool:
     """Etkinlik başlığında yapay zeka ile ilgili bir anahtar kelime geçiyor mu?"""
     normalized = _normalize(name or "")
+    if any(keyword in normalized for keyword in _EXCLUDE_KEYWORDS):
+        return False
     return any(keyword in normalized for keyword in _AI_KEYWORDS)
 
 

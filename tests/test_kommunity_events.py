@@ -19,6 +19,12 @@ def test_is_ai_related_handles_circumflex_a_spelling():
     assert is_ai_related("Yapay Zekâ Zirvesi")
 
 
+def test_is_ai_related_excludes_ironic_ai_hater_titles():
+    # Bağımsız "ai" kelimesi çok geniş yakalıyor; "AI Haters Party" gibi
+    # YZ karşıtı/ironik başlıklar başka anahtar kelime içermese bile elenmeli.
+    assert not is_ai_related("AI Haters Party: A Night for Real People")
+
+
 def test_is_ai_related_matches_producer_and_product_names():
     assert is_ai_related("Anthropic'in Yeni Modeli Üzerine Sohbet")
     assert is_ai_related("Claude ile Kod Yazmak")
