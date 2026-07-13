@@ -19,6 +19,21 @@ def test_is_ai_related_handles_circumflex_a_spelling():
     assert is_ai_related("Yapay Zekâ Zirvesi")
 
 
+def test_is_ai_related_matches_producer_and_product_names():
+    assert is_ai_related("Anthropic'in Yeni Modeli Üzerine Sohbet")
+    assert is_ai_related("Claude ile Kod Yazmak")
+    assert is_ai_related("OpenAI Devrimi")
+    assert is_ai_related("Gemini Kullanıcı Buluşması")
+    assert is_ai_related("GitHub Copilot Atölyesi")
+    assert is_ai_related("Llama ile Yerel Model Çalıştırma")
+
+
+def test_is_ai_related_does_not_match_bare_meta():
+    # "Meta" bilerek eklenmedi: Instagram/VR/reklam gibi YZ dışı etkinlikleri
+    # de yakalar. Meta'nın YZ tarafı "llama" ile zaten kapsanıyor.
+    assert not is_ai_related("Meta Reklam Yöneticileri Buluşması")
+
+
 def test_is_ai_related_ignores_unrelated_titles():
     assert not is_ai_related("Coffee & Code")
     assert not is_ai_related("Mehtap Turu")

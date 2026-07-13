@@ -35,6 +35,10 @@ _AI_KEYWORDS = [
     "chatgpt", "veri bilimi", "data science", "nlp", "prompt muhendisligi",
     "prompt engineering", "chatbot", "uretken yapay zeka", "generative ai",
     "buyuk dil model", " ai ", " ai:", "(ai)", "ai)",
+    # Üretici/ürün adları: "Meta" bilerek eklenmedi — Meta'nın YZ dışı (Instagram,
+    # VR, reklam vb.) etkinlikleri de yakalar; onların YZ tarafı zaten "llama"
+    # ile kapsanıyor.
+    "anthropic", "claude", "openai", "gemini", "copilot", "llama",
 ]
 
 _TR_TO_ASCII = str.maketrans("ıİşŞğĞüÜöÖçÇâÂ", "iIsSgGuUoOcCaA")
