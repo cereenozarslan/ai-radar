@@ -1,9 +1,23 @@
 from fastapi.testclient import TestClient
 
+import ai_radar.collectors.common as common
 import ai_radar.web as web
 from ai_radar.database import get_connection as web_get_connection
 
 # Not: Bu testler gerçek X API isteği göndermez; x_twitter.collect() mock'lanır.
+
+
+def _isolate_db(monkeypatch, db_path):
+    """web.get_connection'ı test veritabanına yönlendirir.
+
+    DİKKAT: save_items() (ai_radar.collectors.common), get_connection'ı
+    KENDİ modülünden ayrıca import ediyor — sadece web.get_connection'ı
+    yamalamak yetmez, aksi halde save_items() çağıran testler (boş olmayan
+    bir liste döndüren mock'larla) sessizce GERÇEK production veritabanına
+    yazar. Bu yüzden ikisini birlikte yamalıyoruz.
+    """
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+    monkeypatch.setattr(common, "get_connection", lambda db_path_arg=None: web_get_connection(db_path))
 
 
 def test_search_endpoint_returns_interpreted_filters_and_items(monkeypatch):
@@ -551,6 +565,10 @@ def test_refresh_topic_videos_calls_collector_and_replaces_cache(tmp_path, monke
     ])
     monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
     monkeypatch.setattr(web.config, "YOUTUBE_API_KEY", "sahte-anahtar")
+    # Bu test items tablosuna yazilan yan etkiyi degil sadece topic_videos
+    # onbellegini dogruluyor -- save_items'i stub'layip gercek DB'ye
+    # yazilmasini (ve dolayisiyla production DB'sine sizmasini) onluyoruz.
+    monkeypatch.setattr(web, "save_items", lambda items: len(items))
 
     def fake_collect_for_topic(topic):
         return [{
@@ -596,3 +614,183 @@ def test_refresh_topic_videos_returns_502_on_youtube_api_error(tmp_path, monkeyp
     resp = client.post("/api/refresh-topic-videos", params={"topic": "Claude"})
 
     assert resp.status_code == 502
+
+
+def test_refresh_topic_videos_also_saves_items_for_youtube_platform_tab(tmp_path, monkeypatch):
+    db_path = _make_topic_videos_db(tmp_path)
+    _isolate_db(monkeypatch, db_path)
+    monkeypatch.setattr(web.config, "YOUTUBE_API_KEY", "sahte-anahtar")
+
+    def fake_collect_for_topic(topic):
+        return [{
+            "topic": topic, "video_id": "new", "title": "Yeni Video",
+            "url": "https://youtube.com/new", "channel_title": "Kanal", "published_at": "2026-07-01T00:00:00Z",
+            "image_url": None, "view_count": 100, "like_count": 10, "comment_count": 2, "engagement_score": 1200,
+        }]
+
+    monkeypatch.setattr(web.youtube_topics, "collect_for_topic", fake_collect_for_topic)
+
+    client = TestClient(web.app)
+    resp = client.post("/api/refresh-topic-videos", params={"topic": "Claude"})
+    assert resp.status_code == 200
+
+    items = client.get("/api/items").json()
+    youtube_items = [it for it in items if it["source"] == "youtube"]
+    assert any(it["title"] == "Yeni Video" for it in youtube_items)
+
+
+def _make_youtube_channels_db(tmp_path, rows=()):
+    """rows: [(handle, channel_id, uploads_playlist_id, display_name), ...]"""
+    from ai_radar.database import get_connection, init_db
+
+    db_path = tmp_path / "test.db"
+    init_db(db_path)
+    conn = get_connection(db_path)
+    for handle, channel_id, uploads_playlist_id, display_name in rows:
+        conn.execute(
+            "INSERT INTO followed_youtube_channels (handle, channel_id, uploads_playlist_id, display_name) "
+            "VALUES (?, ?, ?, ?)",
+            (handle, channel_id, uploads_playlist_id, display_name),
+        )
+    conn.commit()
+    conn.close()
+    return db_path
+
+
+def test_list_followed_youtube_channels_returns_rows(tmp_path, monkeypatch):
+    db_path = _make_youtube_channels_db(tmp_path, [
+        ("@fireship", "UC123", "UU123", "Fireship"),
+    ])
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+
+    client = TestClient(web.app)
+    resp = client.get("/api/followed-youtube-channels")
+
+    assert resp.status_code == 200
+    assert resp.json() == [{"id": 1, "handle": "@fireship", "display_name": "Fireship", "thumbnail_url": None}]
+
+
+def test_add_followed_youtube_channel_resolves_and_saves(tmp_path, monkeypatch):
+    db_path = _make_youtube_channels_db(tmp_path)
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+    monkeypatch.setattr(web.config, "YOUTUBE_API_KEY", "sahte-anahtar")
+
+    def fake_resolve(handle):
+        return {
+            "channel_id": "UC123", "uploads_playlist_id": "UU123",
+            "display_name": "Fireship", "thumbnail_url": "https://example.com/t.jpg",
+        }
+
+    monkeypatch.setattr(web.youtube_channels, "resolve_channel", fake_resolve)
+
+    client = TestClient(web.app)
+    resp = client.post("/api/followed-youtube-channels", params={"handle": "@fireship"})
+
+    assert resp.status_code == 200
+    assert resp.json() == {"handle": "@fireship", "display_name": "Fireship"}
+
+    listed = client.get("/api/followed-youtube-channels").json()
+    assert listed[0]["display_name"] == "Fireship"
+
+
+def test_add_followed_youtube_channel_returns_404_when_not_found(tmp_path, monkeypatch):
+    db_path = _make_youtube_channels_db(tmp_path)
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+    monkeypatch.setattr(web.config, "YOUTUBE_API_KEY", "sahte-anahtar")
+    monkeypatch.setattr(web.youtube_channels, "resolve_channel", lambda handle: None)
+
+    client = TestClient(web.app)
+    resp = client.post("/api/followed-youtube-channels", params={"handle": "@boyle-bir-kanal-yok"})
+
+    assert resp.status_code == 404
+
+
+def test_add_followed_youtube_channel_requires_api_key(tmp_path, monkeypatch):
+    db_path = _make_youtube_channels_db(tmp_path)
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+    monkeypatch.setattr(web.config, "YOUTUBE_API_KEY", None)
+
+    client = TestClient(web.app)
+    resp = client.post("/api/followed-youtube-channels", params={"handle": "@fireship"})
+
+    assert resp.status_code == 400
+
+
+def test_add_followed_youtube_channel_ignores_duplicate(tmp_path, monkeypatch):
+    db_path = _make_youtube_channels_db(tmp_path)
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+    monkeypatch.setattr(web.config, "YOUTUBE_API_KEY", "sahte-anahtar")
+
+    def fake_resolve(handle):
+        return {
+            "channel_id": "UC123", "uploads_playlist_id": "UU123",
+            "display_name": "Fireship", "thumbnail_url": None,
+        }
+
+    monkeypatch.setattr(web.youtube_channels, "resolve_channel", fake_resolve)
+
+    client = TestClient(web.app)
+    client.post("/api/followed-youtube-channels", params={"handle": "@fireship"})
+    resp2 = client.post("/api/followed-youtube-channels", params={"handle": "@fireship"})
+    assert resp2.status_code == 200
+
+    listed = client.get("/api/followed-youtube-channels").json()
+    assert len(listed) == 1
+
+
+def test_remove_followed_youtube_channel(tmp_path, monkeypatch):
+    db_path = _make_youtube_channels_db(tmp_path, [
+        ("@fireship", "UC123", "UU123", "Fireship"),
+    ])
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+
+    client = TestClient(web.app)
+    resp = client.delete("/api/followed-youtube-channels/1")
+    assert resp.status_code == 200
+
+    resp_missing = client.delete("/api/followed-youtube-channels/999")
+    assert resp_missing.status_code == 404
+
+    assert client.get("/api/followed-youtube-channels").json() == []
+
+
+def test_refresh_youtube_channels_calls_collector_for_each_channel(tmp_path, monkeypatch):
+    db_path = _make_youtube_channels_db(tmp_path, [
+        ("@fireship", "UC123", "UU123", "Fireship"),
+        ("@anthropic", "UC456", "UU456", "Anthropic"),
+    ])
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+    monkeypatch.setattr(web.config, "YOUTUBE_API_KEY", "sahte-anahtar")
+    # Bu test sadece koleksiyoncunun her kanal icin cagrildigini dogruluyor;
+    # save_items'i stub'layip production DB'sine sizmasini onluyoruz.
+    monkeypatch.setattr(web, "save_items", lambda items: len(items))
+
+    calls = []
+
+    def fake_collect_for_channel(uploads_playlist_id, display_name):
+        calls.append(display_name)
+        return [{
+            "source": "youtube_channel", "title": f"{display_name} videosu",
+            "url": f"https://youtube.com/{display_name}", "content": None,
+            "author": display_name, "published_at": None, "image_url": None, "popularity": 10,
+        }]
+
+    monkeypatch.setattr(web.youtube_channels, "collect_for_channel", fake_collect_for_channel)
+
+    client = TestClient(web.app)
+    resp = client.post("/api/refresh-youtube-channels")
+
+    assert resp.status_code == 200
+    assert resp.json() == {"channel_count": 2, "added_count": 2}
+    assert set(calls) == {"Fireship", "Anthropic"}
+
+
+def test_refresh_youtube_channels_requires_api_key(tmp_path, monkeypatch):
+    db_path = _make_youtube_channels_db(tmp_path)
+    monkeypatch.setattr(web, "get_connection", lambda: web_get_connection(db_path))
+    monkeypatch.setattr(web.config, "YOUTUBE_API_KEY", None)
+
+    client = TestClient(web.app)
+    resp = client.post("/api/refresh-youtube-channels")
+
+    assert resp.status_code == 400

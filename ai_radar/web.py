@@ -28,6 +28,7 @@ from ai_radar.collectors import (
     meetup_events,
     nuvemmag,
     x_twitter,
+    youtube_channels,
     youtube_topics,
 )
 from ai_radar.collectors.common import save_items
@@ -60,6 +61,17 @@ EVENT_COLLECTORS = (
 # video istatistikleri (izlenme/beğeni/yorum) saatlik değişmediği için günde
 # iki kez yenilemek yeterli.
 TOPIC_VIDEOS_REFRESH_SECONDS = 12 * 3600
+
+# "Platformlar > YouTube" sekmesi sadece takip edilen konularla sınırlı
+# kalmasın diye birkaç genel/geniş YZ terimiyle de arama yapılıyor. Kota
+# maliyetini düşük tutmak için kasıtlı olarak KISA bir liste (her terim
+# ~200 birim; ücretsiz günlük kotanın küçük bir kısmı).
+YOUTUBE_GENERAL_SEARCH_TERMS = ("yapay zeka", "artificial intelligence", "machine learning")
+
+# Kanal takibi (playlistItems.list) arama (search.list) kadar pahalı değil
+# (~3 birim/kanal), bu yüzden diğer ücretsiz toplayıcılarla aynı sıklıkta
+# (saatlik) çalışabiliyor.
+YOUTUBE_CHANNELS_REFRESH_SECONDS = FREE_COLLECTOR_REFRESH_SECONDS
 
 
 def _save_topic_videos(topic: str, videos: list[dict]) -> None:
@@ -150,6 +162,12 @@ async def _refresh_topic_videos_periodically() -> None:
     # Diğer ücretsiz toplayıcılarla aynı desen: hemen bir kez kontrol eder,
     # sonra döngü sonunda bekler. YouTube anahtarı .env'de yoksa (henüz
     # kurulmadıysa) sessizce atlar.
+    #
+    # Takip edilen konular için çekilen videolar HEM konu sayfası önbelleğine
+    # (topic_videos) HEM DE "Platformlar > YouTube" sekmesi için items
+    # tablosuna yazılıyor — aynı veriyi ikinci kez API'den istemeden. Genel YZ
+    # terimleri (YOUTUBE_GENERAL_SEARCH_TERMS) sadece items tablosuna yazılıyor
+    # (bunlar için bir "konu sayfası" yok).
     while True:
         if not config.YOUTUBE_API_KEY:
             await asyncio.sleep(TOPIC_VIDEOS_REFRESH_SECONDS)
@@ -163,11 +181,45 @@ async def _refresh_topic_videos_periodically() -> None:
             try:
                 videos = await asyncio.to_thread(youtube_topics.collect_for_topic, topic)
                 await asyncio.to_thread(_save_topic_videos, topic, videos)
+                await asyncio.to_thread(save_items, [youtube_topics.to_item_dict(v) for v in videos])
                 print(f"[YouTube] {topic}: {len(videos)} video bulundu.")
             except Exception as exc:
                 print(f"[YouTube] {topic} başarısız: {exc}")
 
+        for term in YOUTUBE_GENERAL_SEARCH_TERMS:
+            try:
+                videos = await asyncio.to_thread(youtube_topics.collect_for_topic, term)
+                added = await asyncio.to_thread(save_items, [youtube_topics.to_item_dict(v) for v in videos])
+                print(f"[YouTube] '{term}' (genel): {len(videos)} video bulundu, {added} yeni kayıt eklendi.")
+            except Exception as exc:
+                print(f"[YouTube] '{term}' (genel) başarısız: {exc}")
+
         await asyncio.sleep(TOPIC_VIDEOS_REFRESH_SECONDS)
+
+
+async def _refresh_youtube_channels_periodically() -> None:
+    while True:
+        if not config.YOUTUBE_API_KEY:
+            await asyncio.sleep(YOUTUBE_CHANNELS_REFRESH_SECONDS)
+            continue
+
+        conn = get_connection()
+        channels = conn.execute(
+            "SELECT uploads_playlist_id, display_name FROM followed_youtube_channels"
+        ).fetchall()
+        conn.close()
+
+        for uploads_playlist_id, display_name in channels:
+            try:
+                items = await asyncio.to_thread(
+                    youtube_channels.collect_for_channel, uploads_playlist_id, display_name
+                )
+                added = await asyncio.to_thread(save_items, items)
+                print(f"[YouTube kanal] {display_name}: {added} yeni video eklendi.")
+            except Exception as exc:
+                print(f"[YouTube kanal] {display_name} başarısız: {exc}")
+
+        await asyncio.sleep(YOUTUBE_CHANNELS_REFRESH_SECONDS)
 
 
 @contextlib.asynccontextmanager
@@ -180,6 +232,7 @@ async def lifespan(app: FastAPI):
     events_task = asyncio.create_task(_refresh_events_periodically())
     topic_task = asyncio.create_task(_snapshot_followed_topics_periodically())
     topic_videos_task = asyncio.create_task(_refresh_topic_videos_periodically())
+    youtube_channels_task = asyncio.create_task(_refresh_youtube_channels_periodically())
     try:
         yield
     finally:
@@ -187,6 +240,7 @@ async def lifespan(app: FastAPI):
         events_task.cancel()
         topic_task.cancel()
         topic_videos_task.cancel()
+        youtube_channels_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await free_task
         with contextlib.suppress(asyncio.CancelledError):
@@ -195,6 +249,8 @@ async def lifespan(app: FastAPI):
             await topic_task
         with contextlib.suppress(asyncio.CancelledError):
             await topic_videos_task
+        with contextlib.suppress(asyncio.CancelledError):
+            await youtube_channels_task
 
 
 app = FastAPI(title="AI-Radar — X Arama", lifespan=lifespan)
@@ -483,5 +539,109 @@ def refresh_topic_videos(topic: str):
         raise HTTPException(status_code=502, detail=f"YouTube API hatası: {exc}") from exc
 
     _save_topic_videos(topic, videos)
+    save_items([youtube_topics.to_item_dict(v) for v in videos])
 
     return {"topic": topic, "result_count": len(videos)}
+
+
+@app.get("/api/followed-youtube-channels")
+def list_followed_youtube_channels():
+    """Takip edilen YouTube kanallarını döner."""
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT id, handle, display_name, thumbnail_url FROM followed_youtube_channels ORDER BY display_name"
+    ).fetchall()
+    conn.close()
+    return [
+        {"id": r[0], "handle": r[1], "display_name": r[2], "thumbnail_url": r[3]}
+        for r in rows
+    ]
+
+
+@app.post("/api/followed-youtube-channels")
+def add_followed_youtube_channel(handle: str):
+    """Bir YouTube kanalını (@handle ile) takip listesine ekler.
+
+    Handle'ı gerçek kanal id'sine ve "uploads" oynatma listesine ÇÖZER ve bunu
+    saklar — periyodik yenileme her seferinde tekrar arama yapmak zorunda kalmaz.
+    """
+    if not config.YOUTUBE_API_KEY:
+        raise HTTPException(
+            status_code=400,
+            detail="YOUTUBE_API_KEY tanımlı değil — .env dosyasına eklemen gerekiyor.",
+        )
+
+    handle = handle.strip()
+    if not handle:
+        raise HTTPException(status_code=400, detail="Kanal adı boş olamaz.")
+
+    try:
+        resolved = youtube_channels.resolve_channel(handle)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"YouTube API hatası: {exc}") from exc
+
+    if not resolved:
+        raise HTTPException(status_code=404, detail=f"'{handle}' adında bir YouTube kanalı bulunamadı.")
+
+    conn = get_connection()
+    try:
+        conn.execute(
+            """
+            INSERT INTO followed_youtube_channels (handle, channel_id, uploads_playlist_id, display_name, thumbnail_url)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                handle, resolved["channel_id"], resolved["uploads_playlist_id"],
+                resolved["display_name"], resolved["thumbnail_url"],
+            ),
+        )
+        conn.commit()
+    except sqlite3.IntegrityError:
+        pass  # zaten listede var, sessizce yoksay
+    finally:
+        conn.close()
+
+    return {"handle": handle, "display_name": resolved["display_name"]}
+
+
+@app.delete("/api/followed-youtube-channels/{channel_id}")
+def remove_followed_youtube_channel(channel_id: int):
+    """Takip listesinden bir YouTube kanalını kaldırır."""
+    conn = get_connection()
+    cursor = conn.execute("DELETE FROM followed_youtube_channels WHERE id = ?", (channel_id,))
+    conn.commit()
+    conn.close()
+
+    if cursor.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Kayıt bulunamadı.")
+    return {"id": channel_id}
+
+
+@app.post("/api/refresh-youtube-channels")
+def refresh_youtube_channels():
+    """Takip edilen TÜM YouTube kanalları için son videoları şimdi (canlı) çeker.
+
+    YouTube Data API v3'ün ücretsiz kotası içinde kaldığı için (kanal başına
+    ~3 birim) X'teki gibi bir maliyet uyarısı gerekmiyor.
+    """
+    if not config.YOUTUBE_API_KEY:
+        raise HTTPException(
+            status_code=400,
+            detail="YOUTUBE_API_KEY tanımlı değil — .env dosyasına eklemen gerekiyor.",
+        )
+
+    conn = get_connection()
+    channels = conn.execute(
+        "SELECT uploads_playlist_id, display_name FROM followed_youtube_channels"
+    ).fetchall()
+    conn.close()
+
+    total_added = 0
+    for uploads_playlist_id, display_name in channels:
+        try:
+            items = youtube_channels.collect_for_channel(uploads_playlist_id, display_name)
+            total_added += save_items(items)
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"YouTube API hatası ({display_name}): {exc}") from exc
+
+    return {"channel_count": len(channels), "added_count": total_added}

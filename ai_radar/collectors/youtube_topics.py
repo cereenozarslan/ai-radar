@@ -162,3 +162,22 @@ def collect_for_topic(topic: str) -> list[dict]:
     video_ids = search_video_ids_excluding_shorts(topic)
     raw_items = fetch_video_stats(video_ids)
     return parse_videos(raw_items, topic)
+
+
+def to_item_dict(video: dict) -> dict:
+    """Bir `parse_videos()` kaydını items tablosu şemasına çevirir.
+
+    "Platformlar > YouTube" sekmesinde göstermek için — konu sayfası
+    (topic_videos önbelleği) için zaten çekilmiş aynı veriyi ikinci kez
+    API'den çekmeden yeniden kullanmayı sağlar.
+    """
+    return {
+        "source": "youtube",
+        "title": video["title"],
+        "url": video["url"],
+        "content": None,
+        "author": video.get("channel_title"),
+        "published_at": video.get("published_at"),
+        "image_url": video.get("image_url"),
+        "popularity": video.get("view_count"),
+    }

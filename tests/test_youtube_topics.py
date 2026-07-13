@@ -3,6 +3,7 @@ from ai_radar.collectors.youtube_topics import (
     compute_engagement_score,
     parse_videos,
     search_video_ids_excluding_shorts,
+    to_item_dict,
 )
 
 RAW_ITEMS = [
@@ -154,6 +155,24 @@ def test_parse_videos_keeps_education_and_technology_categories():
     videos = parse_videos(raw, topic="Claude")
     ids = {v["video_id"] for v in videos}
     assert ids == {"edu-video", "tech-video"}
+
+
+def test_to_item_dict_maps_video_to_items_schema():
+    video = {
+        "topic": "Claude", "video_id": "v1", "title": "Baslik",
+        "url": "https://www.youtube.com/watch?v=v1", "channel_title": "Kanal A",
+        "published_at": "2026-07-01T00:00:00Z", "image_url": "https://example.com/thumb.jpg",
+        "view_count": 5000, "like_count": 100, "comment_count": 10, "engagement_score": 25000,
+    }
+    item = to_item_dict(video)
+
+    assert item["source"] == "youtube"
+    assert item["title"] == "Baslik"
+    assert item["url"] == "https://www.youtube.com/watch?v=v1"
+    assert item["author"] == "Kanal A"
+    assert item["published_at"] == "2026-07-01T00:00:00Z"
+    assert item["image_url"] == "https://example.com/thumb.jpg"
+    assert item["popularity"] == 5000
 
 
 def test_parse_videos_keeps_items_without_category_id():

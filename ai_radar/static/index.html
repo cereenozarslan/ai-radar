@@ -29,6 +29,8 @@
     --github: #181717;
     --x: #0a0a0a;
     --events: #b8681f;
+    --youtube: #cc0000;
+    --gold: #b8860b;
     --shadow-sm: 0 1px 2px rgba(15, 25, 40, 0.06);
     --shadow-md: 0 6px 22px rgba(15, 25, 40, 0.08), 0 1.5px 4px rgba(15, 25, 40, 0.05);
     --shadow-lg: 0 20px 45px rgba(15, 25, 40, 0.13), 0 4px 12px rgba(15, 25, 40, 0.07);
@@ -49,6 +51,8 @@
       --github: #d9dbe1;
       --x: #f2f3f5;
       --events: #e8a34f;
+      --youtube: #ff5252;
+      --gold: #e6b800;
       --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
       --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
       --shadow-lg: 0 26px 60px rgba(0, 0, 0, 0.55), 0 6px 16px rgba(0, 0, 0, 0.35);
@@ -57,14 +61,14 @@
   :root[data-theme="dark"] {
     --bg: #0a0f1a; --surface: #121a29; --surface-2: #16202f; --border: #253347;
     --text: #e7ecf3; --text-muted: #8b96a8; --accent: #5b8def; --accent-ink: #051022;
-    --danger: #e2806a; --nuvemmag: #a3d95c; --github: #d9dbe1; --x: #f2f3f5; --events: #e8a34f;
+    --danger: #e2806a; --nuvemmag: #a3d95c; --github: #d9dbe1; --x: #f2f3f5; --events: #e8a34f; --youtube: #ff5252; --gold: #e6b800;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4); --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 26px 60px rgba(0, 0, 0, 0.55), 0 6px 16px rgba(0, 0, 0, 0.35);
   }
   :root[data-theme="light"] {
     --bg: #eef1f5; --surface: #ffffff; --surface-2: #f2f4f8; --border: #d9dfe6;
     --text: #16202c; --text-muted: #5c6b7a; --accent: #1e3f7a; --accent-ink: #ffffff;
-    --danger: #b3402f; --nuvemmag: #6f9a2c; --github: #181717; --x: #0a0a0a; --events: #b8681f;
+    --danger: #b3402f; --nuvemmag: #6f9a2c; --github: #181717; --x: #0a0a0a; --events: #b8681f; --youtube: #cc0000; --gold: #b8860b;
     --shadow-sm: 0 1px 2px rgba(15, 25, 40, 0.06); --shadow-md: 0 6px 22px rgba(15, 25, 40, 0.08), 0 1.5px 4px rgba(15, 25, 40, 0.05);
     --shadow-lg: 0 20px 45px rgba(15, 25, 40, 0.13), 0 4px 12px rgba(15, 25, 40, 0.07);
   }
@@ -224,6 +228,20 @@
   }
   .sidebar-topic-suggestion:hover { background: var(--surface-2); color: var(--accent); }
   .sidebar-topic-suggestion.active { background: var(--surface-2); color: var(--accent); }
+
+  /* Konu ekle/öneriler artık sidebar'da değil, konu sayfasının üstünde geniş
+     içerik alanında — dar sütun için tasarlanmış tam-genişlik satırlar yerine
+     yan yana sığan çipler daha uygun. */
+  #topic-manage-section { margin: 0.9rem 0 1.1rem; }
+  #topic-manage-section .sidebar-topic-add-toggle { width: auto; display: inline-block; padding: 0.4rem 0.8rem; border: 1px solid var(--border); }
+  #topic-manage-section .sidebar-topic-add { max-width: 320px; }
+  #topic-manage-section #sidebar-topic-suggestions {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: 0.6rem;
+  }
+  #topic-manage-section .sidebar-suggestions-label { width: 100%; padding: 0; }
+  #topic-manage-section .sidebar-topic-suggestion {
+    width: auto; border: 1px solid var(--border); border-radius: 20px; padding: 0.35rem 0.75rem;
+  }
 
   @media (max-width: 1000px) { nav.sidebar { display: none; } }
 
@@ -688,16 +706,13 @@
           <span class="sidebar-label">X</span>
           <span class="sidebar-badge" data-badge="x_twitter"></span>
         </button>
+        <button data-tab="youtube" title="YouTube" style="--icon-color:var(--youtube)">
+          <span class="sidebar-icon" style="color:var(--youtube)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="3.5"/><path d="M10.5 9.5l5 2.5-5 2.5z" fill="currentColor" stroke="none"/></svg></span>
+          <span class="sidebar-label">YouTube</span>
+          <span class="sidebar-badge" data-badge="youtube"></span>
+        </button>
         <button type="button" class="sidebar-subitem" id="following-digest-nav-btn" title="Takip ettiklerinin gündemi">
           <span class="sidebar-label">Takip Ettiklerin</span>
-        </button>
-
-        <div class="sidebar-divider"></div>
-
-        <button data-tab="saved" title="Kaydedilenler" style="--icon-color:var(--accent)">
-          <span class="sidebar-icon" style="color:var(--accent);font-size:15px;">★</span>
-          <span class="sidebar-label">Kaydedilenler</span>
-          <span class="sidebar-badge" data-badge="saved"></span>
         </button>
       </div>
     </div>
@@ -708,13 +723,7 @@
         <span class="sidebar-chevron">⌄</span>
       </button>
       <div class="sidebar-group-items">
-        <button type="button" class="sidebar-topic-add-toggle" id="sidebar-topic-add-toggle">+ Konu ekle</button>
-        <form class="sidebar-topic-add" id="sidebar-topic-form" style="display:none;">
-          <input type="text" id="sidebar-topic-input" placeholder="konu adı…" autocomplete="off" />
-          <button type="submit" title="Ekle">✓</button>
-        </form>
         <div id="sidebar-topics-list"></div>
-        <div id="sidebar-topic-suggestions"></div>
       </div>
     </div>
 
@@ -741,12 +750,36 @@
         </button>
       </div>
     </div>
+
+    <div class="sidebar-group" id="saved-group">
+      <button type="button" class="sidebar-group-header">
+        <span class="sidebar-group-label">Kaydedilenler</span>
+        <span class="sidebar-chevron">⌄</span>
+      </button>
+      <div class="sidebar-group-items">
+        <button data-tab="saved" title="Kaydedilenler" style="--icon-color:var(--gold)">
+          <span class="sidebar-icon" style="color:var(--gold);font-size:15px;">★</span>
+          <span class="sidebar-label">Kaydedilenler</span>
+          <span class="sidebar-badge" data-badge="saved"></span>
+        </button>
+      </div>
+    </div>
   </nav>
 
   <div class="page">
 
     <section class="explorer" id="explorer-panel">
       <h2 class="section-title" id="explorer-title" style="display:none;"></h2>
+
+      <div id="topic-manage-section" style="display:none;">
+        <button type="button" class="sidebar-topic-add-toggle" id="sidebar-topic-add-toggle">+ Konu ekle</button>
+        <form class="sidebar-topic-add" id="sidebar-topic-form" style="display:none;">
+          <input type="text" id="sidebar-topic-input" placeholder="konu adı…" autocomplete="off" />
+          <button type="submit" title="Ekle">✓</button>
+        </form>
+        <div id="sidebar-topic-suggestions"></div>
+      </div>
+
       <div class="explorer-toolbar">
         <div class="view-toggle text-toggle" id="sort-toggle">
           <button type="button" data-sort="recent" title="En yeni">Yeni</button>
@@ -807,6 +840,26 @@
 
       <div class="widget-card-head" style="margin-top:1.5rem;"><span>Takipte öne çıkanlar</span></div>
       <div class="trend-rank" id="digest-trend-rank" style="margin-top:0.9rem;"></div>
+
+      <div class="widget-card-head" style="margin-top:1.5rem;">
+        <div>
+          <div class="eyebrow" style="margin-bottom:0.2rem;">YouTube · takip ettiklerin</div>
+          <span>Takip ettiğin kanalların son videoları</span>
+        </div>
+        <button type="button" class="primary" id="yt-channels-refresh-btn">Yenile</button>
+      </div>
+
+      <div class="followed-accounts">
+        <div class="followed-accounts-list" id="yt-channels-list"></div>
+        <form class="followed-accounts-form" id="yt-channels-form">
+          <input type="text" id="yt-channels-input" placeholder="@kanal-adı ekle…" autocomplete="off" />
+          <button type="submit">Ekle</button>
+        </form>
+      </div>
+
+      <p class="hint">YouTube Data API v3'ün ücretsiz kotasını kullanır (ödeme gerekmez); arka planda saatlik otomatik yenilenir, "Yenile" ile şimdi de çekebilirsin.</p>
+      <div class="status" id="yt-channels-status"></div>
+      <div class="yt-cards" id="yt-channels-videos"></div>
     </section>
 
     <div id="x-panel">
@@ -861,14 +914,17 @@
     x:        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 4l16 16M20 4L4 20"/></svg>',
     saved:    '<span style="font-size:11px;line-height:1;">★</span>',
     events:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17"/><path d="M8 3v4"/><path d="M16 3v4"/></svg>',
+    youtube:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="3.5"/><path d="M10.5 9.5l5 2.5-5 2.5z" fill="currentColor" stroke="none"/></svg>',
   };
 
   const SOURCE_META = {
     nuvemmag:         { label: "NuvemMag",         varName: "nuvemmag", icon: ICONS.nuvemmag, badgeText: "#0a0a0a" },
     github_trending:  { label: "GitHub Trending",  varName: "github",   icon: ICONS.github,   badgeText: "#ffffff" },
     x_twitter:        { label: "X",                 varName: "x",        icon: ICONS.x,        badgeText: "#ffffff" },
-    saved:            { label: "Kaydedilenler",     varName: "accent",   icon: ICONS.saved,    badgeText: "var(--accent-ink)" },
+    saved:            { label: "Kaydedilenler",     varName: "gold",     icon: ICONS.saved,    badgeText: "#1a1400" },
     events:           { label: "Etkinlikler",        varName: "events",   icon: ICONS.events,   badgeText: "#ffffff" },
+    youtube:          { label: "YouTube",             varName: "youtube",  icon: ICONS.youtube,  badgeText: "#ffffff" },
+    youtube_channel:  { label: "YouTube",             varName: "youtube",  icon: ICONS.youtube,  badgeText: "#ffffff" },
   };
   const SOURCE_ORDER = ["nuvemmag", "github_trending", "x_twitter"];
 
@@ -1176,6 +1232,13 @@
       (mainView === "explorer" && currentTopic) ? "" : "none";
   }
 
+  // "Konu ekle" + "Öneriler" artık sidebar'da her zaman durmuyor, sadece bir
+  // konu sayfasındayken (herhangi bir konuya tıklandığında) en üstte çıkıyor.
+  function updateTopicManageVisibility() {
+    document.getElementById("topic-manage-section").style.display =
+      (mainView === "explorer" && currentTopic) ? "" : "none";
+  }
+
   // Keşif panelindeki kart görünümü: Pinterest tarzı tek bir masonry akışı.
   // Sayfa 1'in ilk kaydı "hero" (tam genişlikte, en üstte); "Önceki/Sonraki"
   // ile sayfalanır (1-2-3-4-5, sonra 6-7-8...), her sayfa kendi masonry'sini gösterir.
@@ -1231,6 +1294,11 @@
       .filter(it => EVENT_SOURCES.includes(it.source) && !it.is_read && (!it.published_at || new Date(it.published_at) >= now)).length;
     const eventsBadgeEl = document.querySelector('.sidebar-badge[data-badge="events"]');
     if (eventsBadgeEl) eventsBadgeEl.textContent = upcomingEventsCount > 0 ? upcomingEventsCount : "";
+
+    // YouTube de aynı sebeple (SOURCE_ORDER dışında) ayrıca sayılıyor.
+    const youtubeUnread = (bySource.youtube || []).filter(it => !it.is_read).length;
+    const youtubeBadgeEl = document.querySelector('.sidebar-badge[data-badge="youtube"]');
+    if (youtubeBadgeEl) youtubeBadgeEl.textContent = youtubeUnread > 0 ? youtubeUnread : "";
   }
 
   function matchesFilter(it, text) {
@@ -1468,6 +1536,7 @@
     renderBrowseOverview();
     updateSidebarBadges();
     renderRisingTopics();
+    renderYoutubeChannelVideos();
 
     document.getElementById("top-meta").textContent =
       `${ALL_ITEMS.length} kayıt · güncellendi: ` +
@@ -1510,6 +1579,7 @@
     updateXRefreshVisibility();
     updateEventsModeVisibility();
     updateTopicVideosVisibility();
+    updateTopicManageVisibility();
     updateMainViewVisibility();
     renderExplorer();
     renderSidebarTopics();
@@ -1525,6 +1595,7 @@
     updateXRefreshVisibility();
     updateEventsModeVisibility();
     updateTopicVideosVisibility();
+    updateTopicManageVisibility();
     updateMainViewVisibility();
     renderExplorer();
     renderSidebarTopics();
@@ -1541,16 +1612,19 @@
     updateXRefreshVisibility();
     updateEventsModeVisibility();
     updateTopicVideosVisibility();
+    updateTopicManageVisibility();
     updateMainViewVisibility();
     updateSidebarActiveStates();
     renderSidebarTopics();
     renderRisingTopics();
+    renderYoutubeChannelVideos();
   }
 
   updateXPanelVisibility();
   updateXRefreshVisibility();
   updateEventsModeVisibility();
   updateTopicVideosVisibility();
+  updateTopicManageVisibility();
   updateMainViewVisibility();
   renderTrendRank([], "digest-trend-rank");
 
@@ -1839,6 +1913,106 @@
     await loadFollowedAccounts();
   });
 
+  // --- Takip ettiğin YouTube kanalları: "Takip Ettiklerin" sayfasında, X
+  // gündeminin altında ayrı bir widget. Ücretsiz olduğu için (X'in aksine)
+  // arka planda otomatik yenilenir; "Yenile" sadece anlık taze veri ister. ---
+  let FOLLOWED_YOUTUBE_CHANNELS = [];
+  const ytChannelsListEl = document.getElementById("yt-channels-list");
+  const ytChannelsForm = document.getElementById("yt-channels-form");
+  const ytChannelsInput = document.getElementById("yt-channels-input");
+  const ytChannelsStatus = document.getElementById("yt-channels-status");
+  const ytChannelsRefreshBtn = document.getElementById("yt-channels-refresh-btn");
+
+  function renderFollowedYoutubeChannels() {
+    ytChannelsListEl.innerHTML = FOLLOWED_YOUTUBE_CHANNELS.length
+      ? FOLLOWED_YOUTUBE_CHANNELS.map(c => `
+          <span class="followed-chip">
+            ${c.display_name}
+            <button type="button" class="followed-chip-remove" data-id="${c.id}" title="Takipten kaldır">×</button>
+          </span>
+        `).join("")
+      : `<span class="followed-empty">Henüz bir kanal eklenmedi — aşağıya @kanal-adı yaz.</span>`;
+  }
+
+  function ytChannelCard(it) {
+    const thumb = it.image_url
+      ? `<img class="yt-card-thumb" src="${it.image_url}" alt="" loading="lazy" onerror="this.remove();">`
+      : "";
+    return `
+      <a class="yt-card" href="${it.url}" target="_blank" rel="noopener noreferrer" onclick="markRead(${it.id})">
+        ${thumb}
+        <div class="yt-card-body">
+          <div class="yt-card-title">${it.title}</div>
+          <div class="yt-card-meta">${it.author || "Kanal bilinmiyor"}</div>
+          <div class="yt-card-stats">👁 ${fmtCompactNumber(it.popularity)} · ${fmtDate(it.published_at)}</div>
+        </div>
+      </a>
+    `;
+  }
+
+  function renderYoutubeChannelVideos() {
+    const el = document.getElementById("yt-channels-videos");
+    const videos = ALL_ITEMS
+      .filter(it => it.source === "youtube_channel")
+      .sort((a, b) => (b.published_at || "").localeCompare(a.published_at || ""))
+      .slice(0, 12);
+    el.innerHTML = videos.length
+      ? videos.map(ytChannelCard).join("")
+      : `<div class="empty-note">Henüz takip ettiğin bir kanaldan video yok.</div>`;
+  }
+
+  async function loadFollowedYoutubeChannels() {
+    const resp = await fetch("/api/followed-youtube-channels");
+    FOLLOWED_YOUTUBE_CHANNELS = await resp.json();
+    renderFollowedYoutubeChannels();
+  }
+
+  ytChannelsForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const handle = ytChannelsInput.value.trim();
+    if (!handle) return;
+    ytChannelsInput.value = "";
+    ytChannelsStatus.className = "status";
+    ytChannelsStatus.textContent = `"${handle}" aranıyor…`;
+    try {
+      const resp = await fetch("/api/followed-youtube-channels?" + new URLSearchParams({ handle }), { method: "POST" });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.detail || "Bilinmeyen hata");
+      ytChannelsStatus.textContent = `"${data.display_name}" eklendi.`;
+      await loadFollowedYoutubeChannels();
+    } catch (err) {
+      ytChannelsStatus.className = "status error";
+      ytChannelsStatus.textContent = "Hata: " + err.message;
+    }
+  });
+
+  ytChannelsListEl.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".followed-chip-remove");
+    if (!btn) return;
+    await fetch(`/api/followed-youtube-channels/${btn.dataset.id}`, { method: "DELETE" });
+    await loadFollowedYoutubeChannels();
+  });
+
+  ytChannelsRefreshBtn.addEventListener("click", async () => {
+    ytChannelsRefreshBtn.disabled = true;
+    ytChannelsRefreshBtn.textContent = "Yenileniyor…";
+    ytChannelsStatus.className = "status";
+    ytChannelsStatus.textContent = "Takip ettiğin kanallardan güncel videolar çekiliyor…";
+    try {
+      const resp = await fetch("/api/refresh-youtube-channels", { method: "POST" });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.detail || "Bilinmeyen hata");
+      ytChannelsStatus.textContent = `${data.channel_count} kanal kontrol edildi, ${data.added_count} yeni video eklendi.`;
+      if (data.added_count > 0) await loadEverything();
+    } catch (err) {
+      ytChannelsStatus.className = "status error";
+      ytChannelsStatus.textContent = "Hata: " + err.message;
+    } finally {
+      ytChannelsRefreshBtn.disabled = false;
+      ytChannelsRefreshBtn.textContent = "Yenile";
+    }
+  });
+
   // --- Takip edilen konular: sol menüde "Platformlar" ile aynı seviyede ana
   // başlık. Bir konuya tıklamak onu ekler ve/veya o konunun sayfasına geçer
   // (tüm kaynaklardaki eşleşen kayıtlar gösterilir), platformlar arasında
@@ -2027,6 +2201,7 @@
 
   loadFollowedAccounts();
   loadFollowedTopics();
+  loadFollowedYoutubeChannels();
   loadEverything();
 </script>
 </body>

@@ -75,3 +75,17 @@ CREATE TABLE IF NOT EXISTS topic_videos (
     UNIQUE(topic, video_id)
 );
 CREATE INDEX IF NOT EXISTS idx_topic_videos_topic ON topic_videos(topic);
+
+-- "Takip Ettiklerin" için kullanıcının takip ettiği YouTube kanalları.
+-- @handle eklendiği anda bir kere kanal id + "uploads" oynatma listesine
+-- çözülüp burada saklanır; periyodik görev sonraki her yenilemede bu
+-- önceden-çözülmüş id'leri kullanır (tekrar arama yapmaya gerek kalmaz).
+CREATE TABLE IF NOT EXISTS followed_youtube_channels (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    handle TEXT NOT NULL UNIQUE,
+    channel_id TEXT NOT NULL,
+    uploads_playlist_id TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    thumbnail_url TEXT,
+    added_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
