@@ -112,3 +112,59 @@ def test_search_video_ids_excluding_shorts_dedupes_across_durations(monkeypatch)
     ids = search_video_ids_excluding_shorts("Claude")
 
     assert ids == ["a", "b", "c"]
+
+
+def test_parse_videos_excludes_gaming_category():
+    # "Claude" GTA III'un ana karakteri de oldugu icin oyun videolari da
+    # baslikta kelimeyi geciriyor -- Gaming (categoryId=20) elenmeli.
+    raw = [{
+        "id": "gta-video",
+        "snippet": {
+            "title": "PRANK SKYLAR JADI MYTHIC MAWI TAPI JAGO CLAUDE",
+            "channelTitle": "Oyun Kanali", "publishedAt": "2026-07-01T00:00:00Z",
+            "thumbnails": {}, "categoryId": "20",
+        },
+        "statistics": {"viewCount": "500000"},
+    }]
+    videos = parse_videos(raw, topic="Claude")
+    assert videos == []
+
+
+def test_parse_videos_keeps_education_and_technology_categories():
+    raw = [
+        {
+            "id": "edu-video",
+            "snippet": {
+                "title": "Claude Cowork Full Tutorial for Beginners",
+                "channelTitle": "Egitim Kanali", "publishedAt": "2026-07-01T00:00:00Z",
+                "thumbnails": {}, "categoryId": "27",
+            },
+            "statistics": {"viewCount": "10000"},
+        },
+        {
+            "id": "tech-video",
+            "snippet": {
+                "title": "Claude AI Derinlemesine Inceleme",
+                "channelTitle": "Teknoloji Kanali", "publishedAt": "2026-07-01T00:00:00Z",
+                "thumbnails": {}, "categoryId": "28",
+            },
+            "statistics": {"viewCount": "8000"},
+        },
+    ]
+    videos = parse_videos(raw, topic="Claude")
+    ids = {v["video_id"] for v in videos}
+    assert ids == {"edu-video", "tech-video"}
+
+
+def test_parse_videos_keeps_items_without_category_id():
+    # Bazi videolarda categoryId hic gelmeyebiliyor; bilinmeyen durumda
+    # (yanlislikla) elemek yerine listede tutuyoruz.
+    raw = [{
+        "id": "no-category",
+        "snippet": {
+            "title": "Kategorisiz Video", "channelTitle": "Kanal", "publishedAt": None, "thumbnails": {},
+        },
+        "statistics": {"viewCount": "100"},
+    }]
+    videos = parse_videos(raw, topic="Claude")
+    assert len(videos) == 1

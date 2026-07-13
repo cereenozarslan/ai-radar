@@ -23,6 +23,22 @@ RECENT_DAYS = 30  # "güncel" kabul edilen pencere
 # eğitici olmalı") sadece orta (4-20dk) ve uzun (20dk+) videoları arıyoruz.
 VIDEO_DURATIONS = ("medium", "long")
 
+# YouTube her videoyu resmi bir kategoriye atıyor (snippet.categoryId). Konu
+# adı ("Claude" gibi) alakasız bir bağlamda da geçebiliyor (GTA'daki "Claude"
+# karakteri, Jean-Claude Van Damme filmleri vb.) — bu kategorilerdeki
+# videoları, başlıkta konu geçse bile eliyoruz.
+_EXCLUDED_CATEGORY_IDS = {
+    "1",   # Film & Animation
+    "2",   # Autos & Vehicles
+    "10",  # Music
+    "15",  # Pets & Animals
+    "17",  # Sports
+    "19",  # Travel & Events
+    "20",  # Gaming
+    "23",  # Comedy
+    "24",  # Entertainment
+}
+
 
 def _published_after(days: int) -> str:
     return (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -115,6 +131,8 @@ def parse_videos(raw_items: list[dict], topic: str) -> list[dict]:
         snippet = item.get("snippet") or {}
         stats = item.get("statistics") or {}
         if not video_id or not snippet.get("title"):
+            continue
+        if snippet.get("categoryId") in _EXCLUDED_CATEGORY_IDS:
             continue
 
         thumbnails = snippet.get("thumbnails") or {}
