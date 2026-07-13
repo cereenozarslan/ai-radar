@@ -4,6 +4,9 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>AI-Radar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <script>
   // Tema tercihini CSS'den önce uygula ki sayfa yanlış temayla "yanıp sönmesin" (FOUC).
   (function () {
@@ -13,19 +16,21 @@
 </script>
 <style>
   :root {
-    --bg: #eef1f5;
+    /* Açık tema: koyu paletle aynı ruhta (nötr gri + tek mavi vurgu) tasarlandı */
+    --bg: #f2f2f4;
     --surface: #ffffff;
-    --surface-2: #f2f4f8;
-    --border: #d9dfe6;
-    --text: #16202c;
-    --text-muted: #5c6b7a;
-    --accent: #1e3f7a;
+    --surface-2: #f7f7f9;
+    --surface-hover: #ecedf0;
+    --border: #e1e2e6;
+    --text: #17181c;
+    --text-muted: #6b707b;
+    --accent: #2563eb;
     --accent-ink: #ffffff;
     --danger: #b3402f;
-    --nuvemmag: #6f9a2c;
-    --github: #181717;
-    --x: #0a0a0a;
-    --events: #b8681f;
+    --nuvemmag: #5c8a3a;
+    --github: #6b6f7b;
+    --x: #3f4450;
+    --events: #a0672e;
     --shadow-sm: 0 1px 2px rgba(15, 25, 40, 0.06);
     --shadow-md: 0 6px 22px rgba(15, 25, 40, 0.08), 0 1.5px 4px rgba(15, 25, 40, 0.05);
     --shadow-lg: 0 20px 45px rgba(15, 25, 40, 0.13), 0 4px 12px rgba(15, 25, 40, 0.07);
@@ -33,35 +38,36 @@
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #0a0f1a;
-      --surface: #121a29;
-      --surface-2: #16202f;
-      --border: #253347;
-      --text: #e7ecf3;
-      --text-muted: #8b96a8;
-      --accent: #5b8def;
-      --accent-ink: #051022;
+      --bg: #131316;
+      --surface: #1b1c20;
+      --surface-2: #202127;
+      --surface-hover: #222329;
+      --border: #26272c;
+      --text: #f4f4f5;
+      --text-muted: #9ca0aa;
+      --accent: #3b82f6;
+      --accent-ink: #ffffff;
       --danger: #e2806a;
-      --nuvemmag: #a3d95c;
-      --github: #d9dbe1;
-      --x: #f2f3f5;
-      --events: #e8a34f;
+      --nuvemmag: #7fa65c;
+      --github: #a8abb3;
+      --x: #8b93a6;
+      --events: #c08a4e;
       --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
       --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
       --shadow-lg: 0 26px 60px rgba(0, 0, 0, 0.55), 0 6px 16px rgba(0, 0, 0, 0.35);
     }
   }
   :root[data-theme="dark"] {
-    --bg: #0a0f1a; --surface: #121a29; --surface-2: #16202f; --border: #253347;
-    --text: #e7ecf3; --text-muted: #8b96a8; --accent: #5b8def; --accent-ink: #051022;
-    --danger: #e2806a; --nuvemmag: #a3d95c; --github: #d9dbe1; --x: #f2f3f5; --events: #e8a34f;
+    --bg: #131316; --surface: #1b1c20; --surface-2: #202127; --surface-hover: #222329; --border: #26272c;
+    --text: #f4f4f5; --text-muted: #9ca0aa; --accent: #3b82f6; --accent-ink: #ffffff;
+    --danger: #e2806a; --nuvemmag: #7fa65c; --github: #a8abb3; --x: #8b93a6; --events: #c08a4e;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4); --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 26px 60px rgba(0, 0, 0, 0.55), 0 6px 16px rgba(0, 0, 0, 0.35);
   }
   :root[data-theme="light"] {
-    --bg: #eef1f5; --surface: #ffffff; --surface-2: #f2f4f8; --border: #d9dfe6;
-    --text: #16202c; --text-muted: #5c6b7a; --accent: #1e3f7a; --accent-ink: #ffffff;
-    --danger: #b3402f; --nuvemmag: #6f9a2c; --github: #181717; --x: #0a0a0a; --events: #b8681f;
+    --bg: #f2f2f4; --surface: #ffffff; --surface-2: #f7f7f9; --surface-hover: #ecedf0; --border: #e1e2e6;
+    --text: #17181c; --text-muted: #6b707b; --accent: #2563eb; --accent-ink: #ffffff;
+    --danger: #b3402f; --nuvemmag: #5c8a3a; --github: #6b6f7b; --x: #3f4450; --events: #a0672e;
     --shadow-sm: 0 1px 2px rgba(15, 25, 40, 0.06); --shadow-md: 0 6px 22px rgba(15, 25, 40, 0.08), 0 1.5px 4px rgba(15, 25, 40, 0.05);
     --shadow-lg: 0 20px 45px rgba(15, 25, 40, 0.13), 0 4px 12px rgba(15, 25, 40, 0.07);
   }
@@ -78,7 +84,7 @@
       var(--bg);
     background-attachment: fixed;
     color: var(--text);
-    font-family: -apple-system, "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+    font-family: "Inter", -apple-system, "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
     line-height: 1.45;
     -webkit-font-smoothing: antialiased;
   }
@@ -112,7 +118,7 @@
   @media (prefers-reduced-motion: reduce) { .pulse::after { animation: none; display: none; } }
 
   .top-right { display: flex; align-items: center; gap: 0.9rem; }
-  .top-meta { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.76rem; color: var(--text-muted); }
+  .top-meta { font-size: 0.76rem; color: var(--text-muted); }
 
   .theme-toggle {
     display: flex; align-items: center; gap: 0.3rem;
@@ -139,7 +145,6 @@
     overflow-y: auto;
   }
   .sidebar-group-label {
-    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
     font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700;
     color: var(--text-muted); padding: 0 0.7rem; margin-bottom: 0.4rem;
   }
@@ -163,7 +168,6 @@
   .sidebar-badge {
     flex: none; min-width: 20px; height: 20px; padding: 0 0.35rem; border-radius: 10px;
     background: var(--surface-2); color: var(--text-muted);
-    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
     font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center;
   }
   .sidebar-badge:empty { display: none; }
@@ -212,7 +216,6 @@
   .sidebar-topic-btn:hover .sidebar-topic-remove { display: flex; }
   .sidebar-topic-remove:hover { background: var(--danger); color: #fff; }
   .sidebar-suggestions-label {
-    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
     font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase;
     color: var(--text-muted); padding: 0.5rem 0.7rem 0.2rem;
   }
@@ -240,7 +243,6 @@
     flex: none; width: 30px; height: 30px; border-radius: 8px;
     border: 1px solid var(--border); background: var(--surface);
     display: flex; align-items: center; justify-content: center;
-    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
     font-weight: 700; font-size: 0.82rem; color: var(--text-muted);
   }
   .trend-rank-track { flex: 1; min-width: 0; }
@@ -251,9 +253,8 @@
     transition: width 0.3s ease;
   }
 
-  .eyebrow { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.6rem; font-weight: 600; }
+  .eyebrow { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.6rem; font-weight: 600; }
   h1 {
-    font-family: ui-serif, Georgia, "Iowan Old Style", "Times New Roman", serif;
     font-size: clamp(1.5rem, 2.7vw, 1.95rem); font-weight: 500; letter-spacing: -0.015em;
     margin: 0 0 1.1rem; text-wrap: balance; line-height: 1.25;
   }
@@ -286,7 +287,7 @@
   .hint { color: var(--text-muted); font-size: 0.81rem; margin: 0.85rem 0 0; }
 
   .interpreted { display: none; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.1rem; }
-  .chip { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.74rem; padding: 0.32rem 0.7rem; border-radius: 20px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted); }
+  .chip { font-size: 0.74rem; padding: 0.32rem 0.7rem; border-radius: 20px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted); }
 
   .status { color: var(--text-muted); margin-top: 0.9rem; font-size: 0.88rem; }
   .status.error { color: var(--danger); }
@@ -348,7 +349,7 @@
   .mini-post:hover { transform: translateX(2px); }
   .mini-post-num {
     flex: none; width: 18px; text-align: center; color: var(--text-muted);
-    font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-weight: 700; font-size: 0.78rem;
+    font-weight: 700; font-size: 0.78rem;
   }
   .mini-post-thumb {
     flex: none; width: 48px; height: 48px; border-radius: 8px; overflow: hidden;
@@ -386,7 +387,7 @@
   }
   .person-name { font-weight: 600; font-size: 0.82rem; }
   .person-count {
-    margin-left: auto; font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+    margin-left: auto;
     font-size: 0.7rem; color: var(--text-muted);
   }
   .person-top .mini-post, .person-rest .mini-post { padding: 0.45rem 0; }
@@ -429,23 +430,16 @@
     background: var(--surface-2); color: var(--text); font-size: 0.8rem; cursor: pointer;
   }
   .pager-btn:disabled { opacity: 0.4; cursor: default; }
-  .pager-info { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.78rem; color: var(--text-muted); }
+  .pager-info { font-size: 0.78rem; color: var(--text-muted); }
 
-  /* ---------- Fotoğraf üstü başlık kartları (dergi/manşet tarzı) ---------- */
-  .photo-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 0.75rem;
-    padding: 0.2rem; max-height: 520px; overflow-y: auto;
-  }
+  /* ---------- Fotoğraf üstü başlık kartları (manşet/grid düzeni) ---------- */
   .photo-card {
-    position: relative; display: block; min-height: 160px; max-height: 420px; border-radius: 14px; overflow: hidden;
+    position: relative; display: block; border-radius: 14px; overflow: hidden;
     background: var(--item-accent, var(--surface-2)); text-decoration: none; color: #fff;
-    box-shadow: var(--shadow-sm); aspect-ratio: 4 / 3; /* görsel yüklenene kadar makul bir varsayılan */
-    transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease), aspect-ratio 0.1s linear;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
   }
   .photo-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
-  /* Görsel yüklenince gerçek en-boy oranını JS ile karta uyguluyoruz (bkz.
-     photoCard()'daki onload) — böylece üstteki metin katmanı (position:absolute;
-     inset:0) HER ZAMAN görselle birebir örtüşüyor; ikisi arasında boşluk kalmıyor. */
   .photo-card img {
     position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
     filter: brightness(0.8); transition: transform 0.6s var(--ease);
@@ -460,24 +454,35 @@
     content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
     box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
   }
-  .photo-card-meta { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.65rem; color: rgba(255,255,255,0.8); margin-bottom: 0.25rem; }
+  .photo-card-meta { font-size: 0.65rem; color: rgba(255,255,255,0.8); margin-bottom: 0.25rem; }
   .photo-card-title {
     font-weight: 700; font-size: 0.85rem; line-height: 1.3;
     display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
   }
-  .photo-card.hero .photo-card-title { font-size: 1.2rem; -webkit-line-clamp: 3; }
+  .photo-card.hero .photo-card-title { font-size: 1.35rem; -webkit-line-clamp: 4; }
   .photo-card.hero .photo-card-meta { font-size: 0.72rem; }
 
-  /* Pinterest tarzı masonry: her kart kendi görselinin doğal boyuna göre
-     yükseklik alır, sütunlar arasında birbirini tamamlayarak dizilir — sabit
-     bir ızgara hücresine zorla sıkıştırılmıyor, bu yüzden boş/kırpık görünen
-     kenarlar oluşmuyor. En yeni/önemli kayıt (hero) sırada en başta duruyor
-     ve başlığı biraz daha büyük — ama diğerleriyle AYNI sütun genişliğinde,
-     tek başına dev bir banere dönüşmüyor. */
-  .magazine { column-count: 3; column-gap: 0.75rem; }
-  .magazine .photo-card { break-inside: avoid; margin-bottom: 0.75rem; }
-  @media (max-width: 900px) { .magazine { column-count: 2; } }
-  @media (max-width: 560px) { .magazine { column-count: 1; } }
+  /* 1. sayfa — "Manşet düzeni": solda tam yükseklikte 1 büyük manşet kartı
+     (filtrelenmiş sonuçların en yüksek signal_score'lusu), sağda 2x2
+     düzeninde 4 küçük kart. Mobilde tek sütuna düşer, manşet üstte kalır. */
+  .headline-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 0.9rem; align-items: stretch; }
+  .headline-grid .photo-card.hero { min-height: 480px; }
+  .headline-side { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 0.9rem; }
+  .headline-side .photo-card.quad { aspect-ratio: 4 / 3; }
+  @media (max-width: 900px) {
+    .headline-grid { grid-template-columns: 1fr; }
+    .headline-grid .photo-card.hero { min-height: 280px; }
+  }
+  @media (max-width: 560px) {
+    .headline-side { grid-template-columns: 1fr; }
+  }
+
+  /* 2. ve sonraki sayfalar — düzenli, hepsi aynı boyutta "normal grid". */
+  .normal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.9rem; }
+  .normal-grid .photo-card.grid { aspect-ratio: 4 / 3; }
+  @media (max-width: 1100px) { .normal-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 800px) { .normal-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 520px) { .normal-grid { grid-template-columns: 1fr; } }
 
   /* Fare ile kart/liste satırı üzerine gelince çıkan önizleme kutusu. Tıklamayı
      engellememesi için pointer-events:none — altındaki karta gelen tıklama
@@ -513,7 +518,7 @@
   .stat-row { display: flex; flex-wrap: wrap; gap: 0.6rem; }
   .stat-chip { display: flex; align-items: center; gap: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.45rem 0.75rem; box-shadow: var(--shadow-sm); transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease); }
   .stat-chip:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-  .stat-chip .n { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-weight: 700; }
+  .stat-chip .n { font-weight: 700; }
   .stat-chip .lbl { font-size: 0.77rem; color: var(--text-muted); }
 
   .badge { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 6px; flex: none; }
@@ -527,7 +532,7 @@
   .col { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm); }
   .col-head { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
   .col-head .name { display: flex; align-items: center; gap: 0.55rem; font-weight: 700; font-size: 0.89rem; }
-  .col-head .count { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.76rem; color: var(--text-muted); }
+  .col-head .count { font-size: 0.76rem; color: var(--text-muted); }
 
   .item-list { max-height: 420px; overflow-y: auto; }
   .item {
@@ -536,7 +541,7 @@
     transition: background-color 0.2s var(--ease), border-left-color 0.2s var(--ease), transform 0.2s var(--ease);
   }
   .item:last-child { border-bottom: none; }
-  .item:hover { background: var(--surface-2); border-left-color: var(--item-accent, var(--border)); transform: translateX(2px); }
+  .item:hover { background: var(--surface-hover); border-left-color: var(--item-accent, var(--border)); transform: translateX(2px); }
 
   .item-media {
     width: 40px; height: 40px; border-radius: 8px; flex: none; overflow: hidden;
@@ -550,7 +555,7 @@
   .item-body a { text-decoration: none; font-size: 0.87rem; font-weight: 500; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .item-body a:hover { text-decoration: underline; }
   .item-body a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
-  .item-body .meta { font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace; font-size: 0.7rem; color: var(--text-muted); }
+  .item-body .meta { font-size: 0.7rem; color: var(--text-muted); }
 
   /* "N/10" biçimi, sayının bir puan/derece olduğunu tek başına anlatır */
   .score-chip {
@@ -576,7 +581,7 @@
 
   /* ---------- Okundu/yeni + kaydet ---------- */
   .new-badge {
-    display: inline-block; font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+    display: inline-block;
     font-size: 0.6rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
     color: var(--accent-ink); background: var(--accent); border-radius: 10px; padding: 0.05rem 0.4rem; margin-left: 0.35rem;
   }
@@ -844,7 +849,8 @@
   let currentSort = "recent";
   let eventsOnlineFilter = ""; // "" = tümü, "0" = sadece yüz yüze, "1" = sadece online
   let restPage = 1;
-  const MAGAZINE_PAGE_SIZE = 11; // masonry'de sayfa başına gösterilen kayıt sayısı (hero dahil)
+  const PAGE1_SIZE = 5;  // 1. sayfa: manşet düzeni (1 büyük manşet + 2x2 küçük kart)
+  const PAGEN_SIZE = 12; // 2. ve sonraki sayfalar: normal grid
 
   // Fare ile üzerine gelince kart/liste önizlemesi: HTML özniteliğine (attribute)
   // gömmek yerine küçük bir anahtarla bu Map'te tutuyoruz — böylece başlık/içerik
@@ -1017,13 +1023,8 @@
   function photoCard(it, meta, variant) {
     // Görsel yüklenemezse (404 vb.) img'i gizleyip kartın kendisini kaynak
     // rengiyle boyanmış düz bir arka plana düşürüyoruz (badge + başlık yine görünür kalır).
-    // Yüklenince ise gerçek en-boy oranını karta (aspect-ratio) yazıyoruz ki
-    // Pinterest tarzı masonry'de her kart kendi görselinin gerçek boyunu alsın
-    // (üstteki metin katmanı da her zaman görselle birebir örtüşsün).
     const img = it.image_url
-      ? `<img src="${it.image_url}" alt="" loading="lazy"
-           onload="this.parentElement.style.aspectRatio = this.naturalWidth + '/' + this.naturalHeight;"
-           onerror="this.remove();">`
+      ? `<img src="${it.image_url}" alt="" loading="lazy" onerror="this.remove();">`
       : "";
     const readClass = hasId(it) && it.is_read ? " is-read" : "";
     const save = saveButton(it);
@@ -1043,21 +1044,46 @@
     `;
   }
 
-  // Keşif panelindeki kart görünümü: Pinterest tarzı tek bir masonry akışı.
-  // Sayfa 1'in ilk kaydı "hero" (tam genişlikte, en üstte); "Önceki/Sonraki"
-  // ile sayfalanır (1-2-3-4-5, sonra 6-7-8...), her sayfa kendi masonry'sini gösterir.
-  function renderMagazinePaginated(items, metaFor, page) {
-    const totalPages = Math.max(1, Math.ceil(items.length / MAGAZINE_PAGE_SIZE));
-    const clampedPage = Math.min(Math.max(1, page), totalPages);
-    const pageItems = items.slice((clampedPage - 1) * MAGAZINE_PAGE_SIZE, clampedPage * MAGAZINE_PAGE_SIZE);
+  // Keşif panelindeki kart görünümü, hibrit düzen:
+  // - 1. sayfa "Manşet düzeni": filtrelenmiş TÜM sonuçlar içinde en yüksek
+  //   signal_score'lu kayıt manşet (büyük, solda) olarak ayrılır, geçerli
+  //   Yeni/Popüler sıralamasındaki sıradaki 4 kayıt sağda 2x2 küçük kart olur.
+  // - 2. ve sonraki sayfalar "normal grid": manşet hariç kalanlar, hepsi aynı
+  //   boyutta, sayfa başına PAGEN_SIZE kayıt.
+  function totalMagazinePages(totalCount) {
+    if (totalCount <= PAGE1_SIZE) return 1;
+    return 1 + Math.ceil((totalCount - PAGE1_SIZE) / PAGEN_SIZE);
+  }
 
-    if (!pageItems.length) {
+  function renderMagazinePaginated(items, metaFor, page) {
+    if (!items.length) {
       return `<div class="empty-note">Henüz kayıt yok.</div>`;
     }
 
-    const cardsHtml = pageItems
-      .map((it, i) => photoCard(it, metaFor(it), clampedPage === 1 && i === 0 ? "hero" : "grid"))
-      .join("");
+    let heroIndex = 0;
+    for (let i = 1; i < items.length; i++) {
+      if ((items[i].signal_score || 0) > (items[heroIndex].signal_score || 0)) heroIndex = i;
+    }
+    const hero = items[heroIndex];
+    const rest = items.filter((_, i) => i !== heroIndex);
+
+    const totalPages = totalMagazinePages(items.length);
+    const clampedPage = Math.min(Math.max(1, page), totalPages);
+
+    let bodyHtml;
+    if (clampedPage === 1) {
+      const quadItems = rest.slice(0, PAGE1_SIZE - 1);
+      bodyHtml = `
+        <div class="headline-grid">
+          ${photoCard(hero, metaFor(hero), "hero")}
+          <div class="headline-side">${quadItems.map(it => photoCard(it, metaFor(it), "quad")).join("")}</div>
+        </div>
+      `;
+    } else {
+      const start = (PAGE1_SIZE - 1) + (clampedPage - 2) * PAGEN_SIZE;
+      const pageItems = rest.slice(start, start + PAGEN_SIZE);
+      bodyHtml = `<div class="normal-grid">${pageItems.map(it => photoCard(it, metaFor(it), "grid")).join("")}</div>`;
+    }
 
     const pagerHtml = totalPages > 1
       ? `
@@ -1069,7 +1095,7 @@
       `
       : "";
 
-    return `<div class="magazine">${cardsHtml}</div>` + pagerHtml;
+    return bodyHtml + pagerHtml;
   }
 
   function groupBySource(items) {
