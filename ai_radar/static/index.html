@@ -215,11 +215,13 @@
     color: var(--text-muted); padding: 0.5rem 0.7rem 0.2rem;
   }
   .sidebar-topic-suggestion {
-    width: 100%; text-align: left; background: none; border: none; border-radius: 10px;
+    width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+    text-align: left; background: none; border: none; border-radius: 10px;
     padding: 0.45rem 0.7rem; color: var(--text-muted); font-size: 0.82rem; font-weight: 600; cursor: pointer;
     transition: background-color 0.15s var(--ease), color 0.15s var(--ease);
   }
   .sidebar-topic-suggestion:hover { background: var(--surface-2); color: var(--accent); }
+  .sidebar-topic-suggestion.active { background: var(--surface-2); color: var(--accent); }
 
   @media (max-width: 1000px) { nav.sidebar { display: none; } }
 
@@ -647,6 +649,16 @@
         <div id="sidebar-topic-suggestions"></div>
       </div>
     </div>
+
+    <div class="sidebar-group" id="rising-group">
+      <button type="button" class="sidebar-group-header">
+        <span class="sidebar-group-label">Yükselen Gündem</span>
+        <span class="sidebar-chevron">⌄</span>
+      </button>
+      <div class="sidebar-group-items">
+        <div id="rising-topics-list"></div>
+      </div>
+    </div>
   </nav>
 
   <div class="page">
@@ -1022,6 +1034,62 @@
     return wordFrequencies(items, n).map(([w]) => w);
   }
 
+  // "Yükselen Gündem": X'in kendi resmi trend uç noktasına erişimimiz yok, bu
+  // yüzden zaten topladığımız X kayıtları üzerinden KENDİMİZ hesaplıyoruz — son
+  // 12 saatte bir kelimenin geçiş sıklığı, önceki 12 saate göre en az %100
+  // artmışsa "yükseliyor" sayılır (takip edilen konularda kullandığımızla aynı mantık).
+  const RISING_MIN_MENTIONS = 3;
+  const RISING_THRESHOLD_PCT = 100;
+
+  function computeRisingWords(items, now) {
+    now = now || new Date();
+    const recentFreq = {};
+    const priorFreq = {};
+
+    for (const it of items) {
+      if (it.source !== "x_twitter" && it.source !== "x_following") continue;
+      if (!it.fetched_at) continue;
+      const dt = new Date(it.fetched_at.replace(" ", "T") + (it.fetched_at.endsWith("Z") ? "" : "Z"));
+      if (isNaN(dt.getTime())) continue;
+      const hoursAgo = (now - dt) / 3600000;
+
+      let bucket;
+      if (hoursAgo >= 0 && hoursAgo <= 12) bucket = recentFreq;
+      else if (hoursAgo > 12 && hoursAgo <= 24) bucket = priorFreq;
+      else continue;
+
+      const words = (it.title || "").toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/);
+      for (const w of words) {
+        if (w.length < 3 || STOPWORDS.has(w)) continue;
+        bucket[w] = (bucket[w] || 0) + 1;
+      }
+    }
+
+    const rising = [];
+    for (const w in recentFreq) {
+      const recentCount = recentFreq[w];
+      const priorCount = priorFreq[w] || 0;
+      if (recentCount < RISING_MIN_MENTIONS || priorCount === 0) continue;
+      const growthPct = Math.round((recentCount - priorCount) / priorCount * 100);
+      if (growthPct >= RISING_THRESHOLD_PCT) rising.push({ word: w, growthPct, recentCount });
+    }
+    rising.sort((a, b) => b.growthPct - a.growthPct);
+    return rising.slice(0, 8);
+  }
+
+  function renderRisingTopics() {
+    const el = document.getElementById("rising-topics-list");
+    const rising = computeRisingWords(ALL_ITEMS);
+    el.innerHTML = rising.length
+      ? rising.map(r => `
+          <button type="button" class="sidebar-topic-suggestion rising-topic-btn${currentTopic === r.word ? " active" : ""}" data-topic="${r.word}">
+            <span class="sidebar-label">${r.word.charAt(0).toUpperCase() + r.word.slice(1)}</span>
+            <span class="topic-rising-badge">🔥 %${r.growthPct}</span>
+          </button>
+        `).join("")
+      : `<span class="followed-empty">Şu an belirgin bir yükseliş yok.</span>`;
+  }
+
   // Sırayla döngüye giren renk paleti: en sık kelime en üstte, en dolgun bar
   const TREND_PALETTE = [
     { bg: "rgba(224, 90, 110, 0.14)",  border: "#e05a6e" },
@@ -1162,6 +1230,7 @@
     renderExplorer();
     renderBrowseOverview();
     updateSidebarBadges();
+    renderRisingTopics();
 
     document.getElementById("top-meta").textContent =
       `${ALL_ITEMS.length} kayıt · güncellendi: ` +
@@ -1199,6 +1268,7 @@
     updateMainViewVisibility();
     renderExplorer();
     renderSidebarTopics();
+    renderRisingTopics();
   }
 
   // Platformlar gibi: bir konu seçildiğinde tüm kaynaklardaki eşleşen kayıtlar gösterilir.
@@ -1211,6 +1281,7 @@
     updateMainViewVisibility();
     renderExplorer();
     renderSidebarTopics();
+    renderRisingTopics();
   }
 
   // X'in alt öğesi: "Takip Ettiklerin" — platform/konu sekmelerinden ayrılıp
@@ -1223,6 +1294,7 @@
     updateMainViewVisibility();
     updateSidebarActiveStates();
     renderSidebarTopics();
+    renderRisingTopics();
   }
 
   updateXPanelVisibility();
@@ -1565,6 +1637,13 @@
     const topic = btn.dataset.topic;
     await addFollowedTopic(topic);
     selectTopic(topic);
+  });
+
+  // Yükselen Gündem: takip listesine eklemeden, sadece o kelimeyi konu modunda gösterir.
+  document.getElementById("rising-topics-list").addEventListener("click", (e) => {
+    const btn = e.target.closest(".rising-topic-btn");
+    if (!btn) return;
+    selectTopic(btn.dataset.topic);
   });
 
   // --- Sol menüdeki gruplar (Platformlar / Takip Ettiğin Konular) açılıp kapanabilir ---

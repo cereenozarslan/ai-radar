@@ -53,9 +53,10 @@ async def _refresh_free_collectors_periodically() -> None:
 
 
 async def _snapshot_followed_topics_periodically() -> None:
+    # Ücretsiz koleksiyoncular gibi sunucu her açıldığında HEMEN bir kez kontrol
+    # ediyor (sonra döngü sonunda bekliyor) — yoksa kullanıcı sunucuyu sık sık
+    # kapatıp açtığında 4 saatlik bekleme hiç tamamlanmıyor ve geçmiş hiç birikmiyor.
     while True:
-        await asyncio.sleep(TOPIC_SNAPSHOT_REFRESH_SECONDS)
-
         conn = get_connection()
         topics = [r[0] for r in conn.execute("SELECT topic FROM followed_topics").fetchall()]
         conn.close()
@@ -76,6 +77,8 @@ async def _snapshot_followed_topics_periodically() -> None:
                 )
             except Exception as exc:
                 print(f"[konu anlık görüntüsü] {topic} başarısız: {exc}")
+
+        await asyncio.sleep(TOPIC_SNAPSHOT_REFRESH_SECONDS)
 
 
 @contextlib.asynccontextmanager
