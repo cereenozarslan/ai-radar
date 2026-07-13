@@ -477,6 +477,35 @@
   @media (max-width: 900px) { .magazine { column-count: 2; } }
   @media (max-width: 560px) { .magazine { column-count: 1; } }
 
+  /* Fare ile kart/liste satırı üzerine gelince çıkan önizleme kutusu. Tıklamayı
+     engellememesi için pointer-events:none — altındaki karta gelen tıklama
+     olduğu gibi geçer, kullanıcı isterse habere/repoya gider. */
+  .hover-preview {
+    position: fixed; z-index: 500; width: 320px; max-width: 90vw;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: 0 18px 44px rgba(0,0,0,0.35);
+    pointer-events: none; opacity: 0; transform: translateY(4px);
+    transition: opacity 0.12s var(--ease), transform 0.12s var(--ease);
+    overflow: hidden;
+  }
+  .hover-preview.visible { opacity: 1; transform: translateY(0); }
+  .hp-image-wrap { width: 100%; aspect-ratio: 16/9; background: var(--surface-2); }
+  .hp-image-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .hp-image-wrap:empty { display: none; }
+  .hp-body { padding: 0.85rem 1rem; }
+  .hp-source {
+    font-size: 0.66rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 0.3rem;
+  }
+  .hp-title { font-weight: 700; font-size: 0.92rem; line-height: 1.35; margin-bottom: 0.35rem; }
+  .hp-excerpt {
+    font-size: 0.8rem; line-height: 1.45; color: var(--text-muted);
+    display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+    margin-bottom: 0.45rem;
+  }
+  .hp-meta { font-size: 0.72rem; color: var(--text-muted); }
+  .hp-hint { font-size: 0.68rem; color: var(--accent); margin-top: 0.4rem; font-weight: 600; }
+
   /* ---------- Tüm kaynaklar (özet, en altta) ---------- */
   section.browse { margin: 2rem 0 3.5rem; padding: 2rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 20px; }
   .stat-row { display: flex; flex-wrap: wrap; gap: 0.6rem; }
@@ -745,6 +774,17 @@
   </div>
 </div>
 
+<div id="hover-preview" class="hover-preview">
+  <div class="hp-image-wrap" id="hp-image-wrap"><img id="hp-image" alt="" /></div>
+  <div class="hp-body">
+    <div class="hp-source" id="hp-source"></div>
+    <div class="hp-title" id="hp-title"></div>
+    <div class="hp-excerpt" id="hp-excerpt"></div>
+    <div class="hp-meta" id="hp-meta"></div>
+    <div class="hp-hint">Habere gitmek için tıkla ↗</div>
+  </div>
+</div>
+
 <script>
   const ICONS = {
     nuvemmag: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.5 19a4.5 4.5 0 0 1-.4-8.98A6 6 0 0 1 17.6 8.1 4.5 4.5 0 0 1 17 19H6.5z"/></svg>',
@@ -776,6 +816,12 @@
   let currentSort = "recent";
   let restPage = 1;
   const MAGAZINE_PAGE_SIZE = 11; // masonry'de sayfa başına gösterilen kayıt sayısı (hero dahil)
+
+  // Fare ile üzerine gelince kart/liste önizlemesi: HTML özniteliğine (attribute)
+  // gömmek yerine küçük bir anahtarla bu Map'te tutuyoruz — böylece başlık/içerik
+  // metnindeki tırnak vb. karakterler HTML'i bozma riski taşımaz.
+  let PREVIEW_SEQ = 0;
+  const PREVIEW_DATA = new Map();
 
   function fmtDate(iso) {
     if (!iso) return "tarih yok";
@@ -855,9 +901,11 @@
          <span class="badge" style="display:none;background:var(--${meta.varName});color:${meta.badgeText}">${meta.icon}</span>`
       : badge(meta);
     const readClass = hasId(it) && it.is_read ? " is-read" : "";
+    const previewKey = PREVIEW_SEQ++;
+    PREVIEW_DATA.set(previewKey, { it, sourceLabel: meta.label });
 
     return `
-      <div class="item${readClass}" style="--item-accent:var(--${meta.varName})">
+      <div class="item${readClass}" style="--item-accent:var(--${meta.varName})" data-preview-key="${previewKey}">
         <div class="item-media">${media}</div>
         <div class="item-body">
           <a href="${it.url}" target="_blank" rel="noopener noreferrer" onclick="markRead(${it.id})">${it.title}</a>
@@ -950,9 +998,11 @@
       : "";
     const readClass = hasId(it) && it.is_read ? " is-read" : "";
     const save = saveButton(it);
+    const previewKey = PREVIEW_SEQ++;
+    PREVIEW_DATA.set(previewKey, { it, sourceLabel: meta.label });
 
     return `
-      <a class="photo-card ${variant}${readClass}" href="${it.url}" target="_blank" rel="noopener noreferrer" style="--item-accent:var(--${meta.varName})" onclick="markRead(${it.id})">
+      <a class="photo-card ${variant}${readClass}" href="${it.url}" target="_blank" rel="noopener noreferrer" style="--item-accent:var(--${meta.varName})" onclick="markRead(${it.id})" data-preview-key="${previewKey}">
         ${img}
         <span class="photo-card-badge">${badge(meta, "sm")}</span>
         ${save ? `<span class="photo-card-save">${save}</span>` : ""}
@@ -1652,6 +1702,86 @@
       header.closest(".sidebar-group").classList.toggle("collapsed");
     });
   });
+
+  // --- Kart/liste satırı üzerine gelince önizleme kutusu (habere/repoya gitmeden içeriğe göz atma) ---
+  const HOVER_PREVIEW_DELAY_MS = 350;
+  const hoverPreviewEl = document.getElementById("hover-preview");
+  const hpImageWrap = document.getElementById("hp-image-wrap");
+  const hpImage = document.getElementById("hp-image");
+  const hpSource = document.getElementById("hp-source");
+  const hpTitle = document.getElementById("hp-title");
+  const hpExcerpt = document.getElementById("hp-excerpt");
+  const hpMeta = document.getElementById("hp-meta");
+  let hoverTimer = null;
+
+  function hidePreview() {
+    clearTimeout(hoverTimer);
+    hoverPreviewEl.classList.remove("visible");
+  }
+
+  function showPreviewFor(card, x, y) {
+    const key = Number(card.dataset.previewKey);
+    const entry = PREVIEW_DATA.get(key);
+    if (!entry) return;
+    const { it, sourceLabel } = entry;
+
+    if (it.image_url) {
+      hpImage.src = it.image_url;
+      hpImageWrap.style.display = "";
+    } else {
+      hpImage.removeAttribute("src");
+      hpImageWrap.style.display = "none";
+    }
+    hpSource.textContent = sourceLabel || "";
+    hpTitle.textContent = it.title || "";
+    hpExcerpt.textContent = it.content || "";
+    hpExcerpt.style.display = it.content ? "" : "none";
+    hpMeta.textContent = `${it.author ? "@" + it.author : "yazar yok"} · ${fmtDate(it.published_at)}`;
+
+    // Önce görünür yapıp gerçek boyutunu ölçüyoruz ki ekran kenarından taşmayı
+    // önleyecek şekilde konumu düzeltebilelim.
+    hoverPreviewEl.style.left = "0px";
+    hoverPreviewEl.style.top = "0px";
+    hoverPreviewEl.classList.add("visible");
+
+    const margin = 14;
+    const rect = hoverPreviewEl.getBoundingClientRect();
+    let left = x + margin;
+    let top = y + margin;
+    if (left + rect.width > window.innerWidth - margin) left = x - rect.width - margin;
+    if (top + rect.height > window.innerHeight - margin) top = window.innerHeight - rect.height - margin;
+    if (left < margin) left = margin;
+    if (top < margin) top = margin;
+
+    hoverPreviewEl.style.left = `${left}px`;
+    hoverPreviewEl.style.top = `${top}px`;
+  }
+
+  // "mouseenter/mouseleave" delegasyonu doğrudan desteklemiyor (bubble etmiyorlar);
+  // bu yüzden bubble eden "mouseover/mouseout" kullanıp, hareketin AYNI kart
+  // içindeki bir alt öğeye mi yoksa gerçekten dışına mı olduğunu ayırt ediyoruz.
+  if (window.matchMedia("(hover: hover)").matches) {
+    document.addEventListener("mouseover", (e) => {
+      const card = e.target.closest(".photo-card, .item");
+      if (!card || !card.dataset.previewKey) return;
+      if (card.contains(e.relatedTarget)) return;
+      clearTimeout(hoverTimer);
+      const x = e.clientX, y = e.clientY;
+      hoverTimer = setTimeout(() => showPreviewFor(card, x, y), HOVER_PREVIEW_DELAY_MS);
+    });
+
+    document.addEventListener("mouseout", (e) => {
+      const card = e.target.closest(".photo-card, .item");
+      if (!card || !card.dataset.previewKey) return;
+      if (card.contains(e.relatedTarget)) return;
+      hidePreview();
+    });
+
+    document.addEventListener("mousedown", (e) => {
+      if (e.target.closest(".photo-card, .item")) hidePreview();
+    });
+    window.addEventListener("scroll", hidePreview, true);
+  }
 
   loadFollowedAccounts();
   loadFollowedTopics();
