@@ -21,10 +21,17 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 
-from ai_radar.collectors import github_trending, kommunity_events, nuvemmag, x_twitter
+from ai_radar.collectors import (
+    coderspace_events,
+    github_trending,
+    kommunity_events,
+    meetup_events,
+    nuvemmag,
+    x_twitter,
+)
 from ai_radar.collectors.common import save_items
 from ai_radar.config import config
-from ai_radar.database import get_connection
+from ai_radar.database import get_connection, init_db
 from ai_radar.query_parser import parse_natural_query
 from ai_radar.signal_score import compute_signal_scores
 from ai_radar.topic_trends import compute_topic_growth
@@ -38,10 +45,15 @@ FREE_COLLECTOR_REFRESH_SECONDS = 3600
 # çok daha seyrek çalışıyor — günde 6 kez (her konu için).
 TOPIC_SNAPSHOT_REFRESH_SECONDS = 4 * 3600
 
-# kommunity.com resmi/belgelenmiş bir API sunmuyor; belgelenmemiş uç noktasına
-# karşı nazik olmak için diğer ücretsiz toplayıcılardan çok daha seyrek
-# çalışıyor (etkinlik listeleri zaten saatlik değişmiyor).
+# Bu üç kaynağın da resmi/belgelenmiş bir API'si yok; belgelenmemiş uç
+# noktalara karşı nazik olmak için diğer ücretsiz toplayıcılardan çok daha
+# seyrek çalışıyor (etkinlik listeleri zaten saatlik değişmiyor).
 EVENTS_REFRESH_SECONDS = 6 * 3600
+EVENT_COLLECTORS = (
+    ("kommunity.com", kommunity_events.collect),
+    ("meetup.com", meetup_events.collect),
+    ("coderspace.io", coderspace_events.collect),
+)
 
 
 async def _refresh_free_collectors_periodically() -> None:
@@ -59,14 +71,16 @@ async def _refresh_free_collectors_periodically() -> None:
 
 async def _refresh_events_periodically() -> None:
     # Diğer ücretsiz toplayıcılarla aynı desen: sunucu açılır açılmaz hemen bir
-    # kez kontrol eder, sonra döngü sonunda bekler.
+    # kez kontrol eder, sonra döngü sonunda bekler. Kaynaklardan biri
+    # başarısız olsa (site yapısı değişmiş vb.) diğerlerini etkilemez.
     while True:
-        try:
-            items = await asyncio.to_thread(kommunity_events.collect)
-            added = await asyncio.to_thread(save_items, items)
-            print(f"[otomatik yenileme] Etkinlikler: {added} yeni kayıt eklendi.")
-        except Exception as exc:
-            print(f"[otomatik yenileme] Etkinlikler başarısız: {exc}")
+        for name, collect in EVENT_COLLECTORS:
+            try:
+                items = await asyncio.to_thread(collect)
+                added = await asyncio.to_thread(save_items, items)
+                print(f"[otomatik yenileme] Etkinlikler ({name}): {added} yeni kayıt eklendi.")
+            except Exception as exc:
+                print(f"[otomatik yenileme] Etkinlikler ({name}) başarısız: {exc}")
         await asyncio.sleep(EVENTS_REFRESH_SECONDS)
 
 
@@ -101,6 +115,10 @@ async def _snapshot_followed_topics_periodically() -> None:
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Şemaya sonradan eklenen sütunları (ör. is_online) eski veritabanlarına
+    # da uygular — bu çağrı olmadan _COLUMN_MIGRATIONS hiç çalışmıyordu ve
+    # yeni bir sütun eklendiğinde uygulama sessizce runtime hatası veriyordu.
+    init_db()
     free_task = asyncio.create_task(_refresh_free_collectors_periodically())
     events_task = asyncio.create_task(_refresh_events_periodically())
     topic_task = asyncio.create_task(_snapshot_followed_topics_periodically())
@@ -133,14 +151,14 @@ def list_items():
     """Veritabanındaki tüm kayıtları (kaynak bazında) döner — tek sayfalık görünüm için."""
     conn = get_connection()
     rows = conn.execute(
-        "SELECT id, source, title, content, url, author, published_at, image_url, is_read, is_saved, popularity, fetched_at "
+        "SELECT id, source, title, content, url, author, published_at, image_url, is_read, is_saved, popularity, is_online, fetched_at "
         "FROM items ORDER BY source, fetched_at DESC"
     ).fetchall()
     conn.close()
 
     cols = [
         "id", "source", "title", "content", "url", "author", "published_at",
-        "image_url", "is_read", "is_saved", "popularity", "fetched_at",
+        "image_url", "is_read", "is_saved", "popularity", "is_online", "fetched_at",
     ]
     items = [dict(zip(cols, row)) for row in rows]
     compute_signal_scores(items)

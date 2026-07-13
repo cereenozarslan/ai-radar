@@ -697,10 +697,10 @@
         <span class="sidebar-chevron">⌄</span>
       </button>
       <div class="sidebar-group-items">
-        <button data-tab="kommunity_events" title="Türkiye'deki yapay zeka etkinlikleri" style="--icon-color:var(--events)">
+        <button data-tab="events" title="Türkiye'deki yapay zeka etkinlikleri" style="--icon-color:var(--events)">
           <span class="sidebar-icon" style="color:var(--events)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17"/><path d="M8 3v4"/><path d="M16 3v4"/></svg></span>
           <span class="sidebar-label">YZ Etkinlikleri</span>
-          <span class="sidebar-badge" data-badge="kommunity_events"></span>
+          <span class="sidebar-badge" data-badge="events"></span>
         </button>
       </div>
     </div>
@@ -714,6 +714,11 @@
         <div class="view-toggle text-toggle" id="sort-toggle">
           <button type="button" data-sort="recent" title="En yeni">Yeni</button>
           <button type="button" data-sort="popular" title="En popüler">Popüler</button>
+        </div>
+        <div class="view-toggle text-toggle" id="events-mode-toggle" style="display:none;">
+          <button type="button" data-online-filter="" title="Tüm etkinlikler" class="active">Tümü</button>
+          <button type="button" data-online-filter="0" title="Sadece yüz yüze etkinlikler">Yüz yüze</button>
+          <button type="button" data-online-filter="1" title="Sadece online etkinlikler">Online</button>
         </div>
         <input type="text" class="filter-input" id="explorer-filter" placeholder="İçinde ara…" />
         <div class="view-toggle" id="view-toggle">
@@ -815,9 +820,14 @@
     github_trending:  { label: "GitHub Trending",  varName: "github",   icon: ICONS.github,   badgeText: "#ffffff" },
     x_twitter:        { label: "X",                 varName: "x",        icon: ICONS.x,        badgeText: "#ffffff" },
     saved:            { label: "Kaydedilenler",     varName: "accent",   icon: ICONS.saved,    badgeText: "var(--accent-ink)" },
-    kommunity_events: { label: "Etkinlikler",        varName: "events",   icon: ICONS.events,   badgeText: "#ffffff" },
+    events:           { label: "Etkinlikler",        varName: "events",   icon: ICONS.events,   badgeText: "#ffffff" },
   };
   const SOURCE_ORDER = ["nuvemmag", "github_trending", "x_twitter"];
+
+  // "Etkinlikler" sekmesi, farklı kaynaklardan (kommunity.com, meetup.com,
+  // coderspace.io) gelen kayıtları TEK bir görünümde birleştirir — hepsi
+  // aynı "Etkinlikler" rozetiyle (SOURCE_META.events) gösterilir.
+  const EVENT_SOURCES = ["kommunity_events", "meetup_events", "coderspace_events"];
 
   const STOPWORDS = new Set([
     "the","a","an","of","to","in","on","for","and","is","are","with","this","that",
@@ -832,6 +842,7 @@
   let mainView = "explorer"; // "explorer" | "following-digest" (X'in alt öğesi "Takip Ettiklerin")
   let currentView = "card";
   let currentSort = "recent";
+  let eventsOnlineFilter = ""; // "" = tümü, "0" = sadece yüz yüze, "1" = sadece online
   let restPage = 1;
   const MAGAZINE_PAGE_SIZE = 11; // masonry'de sayfa başına gösterilen kayıt sayısı (hero dahil)
 
@@ -1083,9 +1094,9 @@
     // Etkinlikler, SOURCE_ORDER'da yer almadığı (Tüm kaynaklar özetine dahil
     // edilmediği) için ayrıca sayılıyor; yalnızca henüz geçmemiş etkinlikler.
     const now = new Date();
-    const upcomingEventsCount = (bySource.kommunity_events || [])
-      .filter(it => !it.is_read && (!it.published_at || new Date(it.published_at) >= now)).length;
-    const eventsBadgeEl = document.querySelector('.sidebar-badge[data-badge="kommunity_events"]');
+    const upcomingEventsCount = ALL_ITEMS
+      .filter(it => EVENT_SOURCES.includes(it.source) && !it.is_read && (!it.published_at || new Date(it.published_at) >= now)).length;
+    const eventsBadgeEl = document.querySelector('.sidebar-badge[data-badge="events"]');
     if (eventsBadgeEl) eventsBadgeEl.textContent = upcomingEventsCount > 0 ? upcomingEventsCount : "";
   }
 
@@ -1220,9 +1231,12 @@
     } else {
       const bySource = groupBySource(ALL_ITEMS);
       const isSavedTab = currentTab === "saved";
+      const isEventsTab = currentTab === "events";
       const meta = SOURCE_META[currentTab];
-      focusItems = (isSavedTab ? ALL_ITEMS.filter(it => it.is_saved) : (bySource[currentTab] || []))
-        .filter(it => matchesFilter(it, filterText));
+      const baseItems = isSavedTab ? ALL_ITEMS.filter(it => it.is_saved)
+        : isEventsTab ? ALL_ITEMS.filter(it => EVENT_SOURCES.includes(it.source))
+        : (bySource[currentTab] || []);
+      focusItems = baseItems.filter(it => matchesFilter(it, filterText));
       metaFor = () => meta;
       tintVar = meta.varName;
       // Platform modunda başlık göstermiyoruz (kaynak zaten sol menüde seçili duruyor).
@@ -1230,12 +1244,16 @@
       titleEl.style.display = "none";
     }
 
-    if (!currentTopic && currentTab === "kommunity_events") {
+    if (!currentTopic && currentTab === "events") {
       // Etkinliklerde öncelik "en yakında olacak" olmalı, "en son eklenen" değil
       // — bu yüzden Yeni/Popüler sıralamasını yok sayıp tarihe göre artan
       // sıralıyoruz; tarihi geçmiş etkinlikler de listeden düşer.
       const now = new Date();
       focusItems = focusItems.filter(it => !it.published_at || new Date(it.published_at) >= now);
+      if (eventsOnlineFilter !== "") {
+        const wantOnline = eventsOnlineFilter === "1";
+        focusItems = focusItems.filter(it => Boolean(it.is_online) === wantOnline);
+      }
       focusItems.sort((a, b) => new Date(a.published_at || 0) - new Date(b.published_at || 0));
     } else if (currentSort === "popular") {
       focusItems.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
@@ -1262,6 +1280,9 @@
     updateSidebarActiveStates();
     document.querySelectorAll("#sort-toggle button").forEach(btn => {
       btn.classList.toggle("active", btn.dataset.sort === currentSort);
+    });
+    document.querySelectorAll("#events-mode-toggle button").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.onlineFilter === eventsOnlineFilter);
     });
   }
 
@@ -1334,6 +1355,12 @@
     document.getElementById("x-refresh-btn").style.display = (currentTopic || currentTab === "x_twitter") ? "" : "none";
   }
 
+  // Online/yüz yüze filtre toggle'ı sadece Etkinlikler sekmesinde anlamlı.
+  function updateEventsModeVisibility() {
+    document.getElementById("events-mode-toggle").style.display =
+      (!currentTopic && currentTab === "events") ? "" : "none";
+  }
+
   // "Kaynakları keşfet" ile "Takip Ettiklerin" (X'in alt görünümü) aynı ana
   // alanı paylaşıyor; sadece biri görünür.
   function updateMainViewVisibility() {
@@ -1348,6 +1375,7 @@
     restPage = 1;
     updateXPanelVisibility();
     updateXRefreshVisibility();
+    updateEventsModeVisibility();
     updateMainViewVisibility();
     renderExplorer();
     renderSidebarTopics();
@@ -1361,6 +1389,7 @@
     restPage = 1;
     updateXPanelVisibility();
     updateXRefreshVisibility();
+    updateEventsModeVisibility();
     updateMainViewVisibility();
     renderExplorer();
     renderSidebarTopics();
@@ -1374,6 +1403,7 @@
     currentTopic = null;
     updateXPanelVisibility();
     updateXRefreshVisibility();
+    updateEventsModeVisibility();
     updateMainViewVisibility();
     updateSidebarActiveStates();
     renderSidebarTopics();
@@ -1382,6 +1412,7 @@
 
   updateXPanelVisibility();
   updateXRefreshVisibility();
+  updateEventsModeVisibility();
   updateMainViewVisibility();
   renderTrendRank([], "digest-trend-rank");
 
@@ -1417,6 +1448,14 @@
     renderExplorer();
   });
   document.querySelector('#sort-toggle button[data-sort="recent"]').classList.add("active");
+
+  document.getElementById("events-mode-toggle").addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    eventsOnlineFilter = btn.dataset.onlineFilter;
+    restPage = 1;
+    renderExplorer();
+  });
 
   // Sayfalama butonları içerik her renderExplorer()'da yeniden oluştuğu için
   // olay delegasyonu kullanıyoruz (sabit üst kapsayıcıya tek seferlik dinleyici).

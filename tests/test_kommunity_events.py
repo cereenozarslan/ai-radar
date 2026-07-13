@@ -59,6 +59,7 @@ RAW_EVENTS = [
         "has_ended": False,
         "highlight_photo": "https://media.kommunity.com/foo.jpeg",
         "users_count": 42,
+        "is_online": False,
         "venue": {"name": "Tech Istanbul | Küçükçekmece"},
         "community": {"name": "Tech Istanbul", "slug": "techistanbul"},
     },
@@ -108,6 +109,7 @@ def test_parse_events_keeps_only_ai_related_and_not_ended():
     assert item["published_at"] == "2026-07-24T14:00:00+03:00"
     assert item["image_url"] == "https://media.kommunity.com/foo.jpeg"
     assert item["popularity"] == 42
+    assert item["is_online"] is False
 
 
 def test_parse_events_skips_events_without_slug():

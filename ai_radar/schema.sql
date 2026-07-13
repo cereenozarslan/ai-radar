@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS items (
     is_read INTEGER NOT NULL DEFAULT 0,  -- 0/1: kullanıcı bu kaydı açtı mı ("yeni" rozeti için)
     is_saved INTEGER NOT NULL DEFAULT 0, -- 0/1: kullanıcı yıldızlayıp kaydetti mi
     popularity INTEGER,                  -- kaynağın kendi popülerlik ölçüsü: NuvemMag=görüntülenme, GitHub=yıldız, X=etkileşim
+    is_online INTEGER,                   -- 0/1/NULL: etkinlik kayıtları için online mı yüz yüze mi (diğer kaynaklarda NULL)
     fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

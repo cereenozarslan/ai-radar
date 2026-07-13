@@ -23,6 +23,7 @@ _COLUMN_MIGRATIONS = [
     ("is_read", "ALTER TABLE items ADD COLUMN is_read INTEGER NOT NULL DEFAULT 0"),
     ("is_saved", "ALTER TABLE items ADD COLUMN is_saved INTEGER NOT NULL DEFAULT 0"),
     ("popularity", "ALTER TABLE items ADD COLUMN popularity INTEGER"),
+    ("is_online", "ALTER TABLE items ADD COLUMN is_online INTEGER"),
 ]
 
 

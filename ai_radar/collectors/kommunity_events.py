@@ -106,6 +106,7 @@ def parse_events(raw_events: list[dict], city: str) -> list[dict]:
             "published_at": parse_start_date(event.get("start_date")),
             "image_url": event.get("highlight_photo"),
             "popularity": event.get("users_count"),
+            "is_online": bool(event.get("is_online")),
         })
     return items
 
