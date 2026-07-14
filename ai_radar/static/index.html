@@ -722,19 +722,20 @@
         <span class="sidebar-chevron">⌄</span>
       </button>
       <div class="sidebar-group-items">
-        <button data-tab="official_blog" data-blog-author="" title="Tüm resmi bloglar" style="--icon-color:var(--blogs)">
+        <button data-tab="official_blog" data-blog-author="OpenAI" title="OpenAI" style="--icon-color:var(--blogs)">
           <span class="sidebar-icon" style="color:var(--blogs)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="1.5"/><path d="M8.5 8V5.5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2V8"/></svg></span>
-          <span class="sidebar-label">Tümü</span>
-          <span class="sidebar-badge" data-badge="official_blog"></span>
-        </button>
-        <button type="button" class="sidebar-subitem" data-tab="official_blog" data-blog-author="OpenAI" title="OpenAI">
           <span class="sidebar-label">OpenAI</span>
+          <span class="sidebar-badge" data-badge="official_blog:OpenAI"></span>
         </button>
-        <button type="button" class="sidebar-subitem" data-tab="official_blog" data-blog-author="Google DeepMind" title="Google DeepMind">
+        <button data-tab="official_blog" data-blog-author="Google DeepMind" title="Google DeepMind" style="--icon-color:var(--blogs)">
+          <span class="sidebar-icon" style="color:var(--blogs)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="1.5"/><path d="M8.5 8V5.5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2V8"/></svg></span>
           <span class="sidebar-label">Google DeepMind</span>
+          <span class="sidebar-badge" data-badge="official_blog:Google DeepMind"></span>
         </button>
-        <button type="button" class="sidebar-subitem" data-tab="official_blog" data-blog-author="Anthropic" title="Anthropic">
+        <button data-tab="official_blog" data-blog-author="Anthropic" title="Anthropic" style="--icon-color:var(--blogs)">
+          <span class="sidebar-icon" style="color:var(--blogs)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="1.5"/><path d="M8.5 8V5.5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2V8"/></svg></span>
           <span class="sidebar-label">Anthropic</span>
+          <span class="sidebar-badge" data-badge="official_blog:Anthropic"></span>
         </button>
       </div>
     </div>
@@ -960,6 +961,10 @@
   // coderspace.io) gelen kayıtları TEK bir görünümde birleştirir — hepsi
   // aynı "Etkinlikler" rozetiyle (SOURCE_META.events) gösterilir.
   const EVENT_SOURCES = ["kommunity_events", "meetup_events", "coderspace_events"];
+
+  // "Resmi Bloglar" sidebar grubundaki alt başlıklar (şirket adları) — sidebar
+  // rozetlerini şirket başına hesaplamak için kullanılıyor.
+  const BLOG_AUTHORS = ["OpenAI", "Google DeepMind", "Anthropic"];
 
   const STOPWORDS = new Set([
     "the","a","an","of","to","in","on","for","and","is","are","with","this","that",
@@ -1355,6 +1360,14 @@
     const youtubeUnread = (bySource.youtube || []).filter(it => !it.is_read).length;
     const youtubeBadgeEl = document.querySelector('.sidebar-badge[data-badge="youtube"]');
     if (youtubeBadgeEl) youtubeBadgeEl.textContent = youtubeUnread > 0 ? youtubeUnread : "";
+
+    // Resmi Bloglar'da artık tek bir "Tümü" rozeti yok; her şirket kendi
+    // okunmamış sayısını gösteriyor (Platformlar'daki gibi).
+    for (const author of BLOG_AUTHORS) {
+      const unreadForAuthor = (bySource.official_blog || []).filter(it => it.author === author && !it.is_read).length;
+      const blogBadgeEl = document.querySelector(`.sidebar-badge[data-badge="official_blog:${author}"]`);
+      if (blogBadgeEl) blogBadgeEl.textContent = unreadForAuthor > 0 ? unreadForAuthor : "";
+    }
   }
 
   function matchesFilter(it, text) {
