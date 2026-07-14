@@ -536,6 +536,12 @@
     background: rgba(255,255,255,0.14); display: flex; align-items: center; justify-content: center;
     font-weight: 800; color: rgba(255,255,255,0.85); font-size: clamp(0.85rem, 3vw, 1.4rem); letter-spacing: -0.02em;
   }
+  /* Yüklenen logo dosyaları çoğunlukla koyu yazı + şeffaf/açık zemin — koyu
+     mor kart üzerinde okunsun diye altlarına beyaz bir "kart" koyuyoruz. */
+  .photo-card-logo-img {
+    max-width: 62%; max-height: 40%; background: #fff; border-radius: 10px;
+    padding: 0.6rem 0.9rem; box-shadow: var(--shadow-sm); object-fit: contain;
+  }
 
   /* Pinterest tarzı masonry: her kart kendi görselinin doğal boyuna göre
      yükseklik alır, sütunlar arasında birbirini tamamlayarak dizilir — sabit
@@ -1185,12 +1191,22 @@
   }
 
   // Resmi Bloglar'da kaynak sitede hiç görsel yayınlanmamış yazılar için
-  // (Anthropic, Meta AI, Google DeepMind'ın bazı girdileri gibi) şirket adının
-  // baş harflerinden otomatik bir rozet üretiyoruz — dışarıdan bir logo dosyası
-  // çekmiyoruz (o URL'ler her deploy'da değişebilen hash'li adresler, kırılgan
-  // olurdu); bunun yerine zaten elimizde olan "author" alanından türetiyoruz.
+  // kullanıcının kendi yüklediği şirket logolarını gösteriyoruz (/logos altında
+  // sunuluyor, bkz. web.py). Logosu olmayan şirketler için (ör. Meta AI'nin
+  // resimsiz yazıları) author alanından türetilen bir baş harf rozetine düşüyoruz.
+  const BLOG_LOGO_FILES = {
+    "OpenAI": "/logos/openai.png",
+    "Google DeepMind": "/logos/google-deepmind.png",
+    "Anthropic": "/logos/anthropic.png",
+    "xAI": "/logos/xai.png",
+  };
+
   function officialBlogLogoFallback(it) {
     if (it.source !== "official_blog" || it.image_url || !it.author) return "";
+    const logoFile = BLOG_LOGO_FILES[it.author];
+    if (logoFile) {
+      return `<div class="photo-card-logo-fallback"><img class="photo-card-logo-img" src="${logoFile}" alt="${it.author}"></div>`;
+    }
     const initials = it.author.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
     return `<div class="photo-card-logo-fallback"><span class="photo-card-logo-badge">${initials}</span></div>`;
   }

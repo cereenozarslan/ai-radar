@@ -20,6 +20,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 
 from ai_radar.collectors import (
     anthropic_news,
@@ -269,6 +270,11 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="AI-Radar — X Arama", lifespan=lifespan)
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+
+# Resmi Bloglar'da kaynak sitede görseli olmayan yazılar için kullandığımız
+# şirket logoları (kullanıcının kendi yüklediği dosyalar) — "/" index() route'u
+# zaten tüm sayfayı ele geçirdiği için bunları ayrı bir alt yoldan sunuyoruz.
+app.mount("/logos", StaticFiles(directory=STATIC_DIR / "logos"), name="logos")
 
 
 @app.get("/", response_class=HTMLResponse)
