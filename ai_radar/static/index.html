@@ -287,7 +287,7 @@
     box-shadow: var(--shadow-sm);
   }
 
-  /* ---------- Özet sayfası: KPI kartları ---------- */
+  /* ---------- İstatistikler sayfası: KPI kartları ---------- */
   .kpi-row { display: flex; flex-wrap: wrap; gap: 0.8rem; }
   .kpi-card {
     flex: 1 1 180px; display: flex; align-items: center; gap: 0.75rem;
@@ -314,7 +314,7 @@
     to { opacity: 1; transform: scale(1) translateY(0); }
   }
 
-  /* ---------- Özet sayfası: donut grafik (tüm zamanlar kaynak dağılımı) ---------- */
+  /* ---------- İstatistikler sayfası: donut grafik (tüm zamanlar kaynak dağılımı) ---------- */
   .donut-wrap { display: flex; align-items: center; gap: 1.75rem; flex-wrap: wrap; }
   .donut-chart {
     --donut-size: 148px; width: var(--donut-size); height: var(--donut-size); border-radius: 50%;
@@ -791,9 +791,9 @@
 
 <div class="layout">
   <nav class="sidebar" aria-label="Kaynak seç" id="sidebar-nav">
-    <button type="button" id="stats-nav-btn" title="Haftalık özet" style="margin-bottom:0.5rem;">
+    <button type="button" id="stats-nav-btn" title="İstatistikler" style="margin-bottom:0.5rem;">
       <span class="sidebar-icon" style="color:var(--accent)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M11 20V4M18 20v-7"/></svg></span>
-      <span class="sidebar-label">Özet</span>
+      <span class="sidebar-label">İstatistikler</span>
     </button>
 
     <div class="sidebar-group" id="platforms-group">
@@ -1017,7 +1017,7 @@
       <div class="widget-card-head">
         <div>
           <div class="eyebrow" style="margin-bottom:0.2rem;">Genel bakış</div>
-          <span>Haftalık Özet</span>
+          <span>İstatistikler</span>
         </div>
       </div>
 
@@ -1833,7 +1833,7 @@
     }
   }
 
-  // "Özet" sayfası: yeni bir API eklemeden, zaten yüklenmiş olan ALL_ITEMS /
+  // "İstatistikler" sayfası: yeni bir API eklemeden, zaten yüklenmiş olan ALL_ITEMS /
   // FOLLOWED_TOPICS / FOLLOWED_YOUTUBE_CHANNELS üzerinden istemci tarafında
   // hesaplıyoruz. "Bu hafta kaç kayıt okundu" gibi bir rakam VERMİYORUZ —
   // şemada okuma zamanı tutulmuyor (sadece okundu/okunmadı bayrağı var), o
@@ -2159,7 +2159,7 @@
     renderYoutubeChannelVideos();
   }
 
-  // Sidebar'daki bağımsız "Özet" düğmesi: platform/konu sekmelerinden ayrı,
+  // Sidebar'daki bağımsız "İstatistikler" düğmesi: platform/konu sekmelerinden ayrı,
   // "Takip Ettiklerin" ile aynı mantıkta farklı bir "sayfa".
   function selectStatsView() {
     mainView = "stats";
