@@ -698,11 +698,6 @@
           <span class="sidebar-label">NuvemMag</span>
           <span class="sidebar-badge" data-badge="nuvemmag"></span>
         </button>
-        <button data-tab="official_blog" title="Resmi Bloglar" style="--icon-color:var(--blogs)">
-          <span class="sidebar-icon" style="color:var(--blogs)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="1.5"/><path d="M8.5 8V5.5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2V8"/></svg></span>
-          <span class="sidebar-label">Resmi Bloglar</span>
-          <span class="sidebar-badge" data-badge="official_blog"></span>
-        </button>
         <button data-tab="github_trending" title="GitHub Trending" style="--icon-color:var(--github)">
           <span class="sidebar-icon" style="color:var(--github)"><svg viewBox="0 0 16 16" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="4" cy="3" r="1.6"/><circle cx="4" cy="13" r="1.6"/><circle cx="12" cy="8" r="1.6"/><path d="M4 4.6v6.8"/><path d="M4 6a6 6 0 0 0 6.4 2"/></svg></span>
           <span class="sidebar-label">GitHub Trending</span>
@@ -718,11 +713,35 @@
           <span class="sidebar-label">YouTube</span>
           <span class="sidebar-badge" data-badge="youtube"></span>
         </button>
-        <button type="button" class="sidebar-subitem" id="following-digest-nav-btn" title="Takip ettiklerinin gündemi">
-          <span class="sidebar-label">Takip Ettiklerin</span>
+      </div>
+    </div>
+
+    <div class="sidebar-group" id="official-blogs-group">
+      <button type="button" class="sidebar-group-header">
+        <span class="sidebar-group-label">Resmi Bloglar</span>
+        <span class="sidebar-chevron">⌄</span>
+      </button>
+      <div class="sidebar-group-items">
+        <button data-tab="official_blog" data-blog-author="" title="Tüm resmi bloglar" style="--icon-color:var(--blogs)">
+          <span class="sidebar-icon" style="color:var(--blogs)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="1.5"/><path d="M8.5 8V5.5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2V8"/></svg></span>
+          <span class="sidebar-label">Tümü</span>
+          <span class="sidebar-badge" data-badge="official_blog"></span>
+        </button>
+        <button type="button" class="sidebar-subitem" data-tab="official_blog" data-blog-author="OpenAI" title="OpenAI">
+          <span class="sidebar-label">OpenAI</span>
+        </button>
+        <button type="button" class="sidebar-subitem" data-tab="official_blog" data-blog-author="Google DeepMind" title="Google DeepMind">
+          <span class="sidebar-label">Google DeepMind</span>
+        </button>
+        <button type="button" class="sidebar-subitem" data-tab="official_blog" data-blog-author="Anthropic" title="Anthropic">
+          <span class="sidebar-label">Anthropic</span>
         </button>
       </div>
     </div>
+
+    <button type="button" class="sidebar-subitem" id="following-digest-nav-btn" title="Takip ettiklerinin gündemi" style="margin: -0.1rem 0 0.3rem;">
+      <span class="sidebar-label">Takip Ettiklerin</span>
+    </button>
 
     <div class="sidebar-group" id="topics-group">
       <button type="button" class="sidebar-group-header">
@@ -951,6 +970,7 @@
 
   let ALL_ITEMS = [];
   let currentTab = "nuvemmag";
+  let currentBlogAuthor = null; // "Resmi Bloglar" sekmesinde alt başlık (OpenAI/Google DeepMind/Anthropic) seçiliyse şirket adı, "Tümü" seçiliyse null
   let currentTopic = null; // dolu olduğunda, "platform sekmesi" yerine tüm kaynaklarda konu filtresi gösterilir
   let mainView = "explorer"; // "explorer" | "following-digest" (X'in alt öğesi "Takip Ettiklerin")
   let currentView = "card";
@@ -1470,15 +1490,25 @@
       const isSavedTab = currentTab === "saved";
       const isEventsTab = currentTab === "events";
       const meta = SOURCE_META[currentTab];
-      const baseItems = isSavedTab ? ALL_ITEMS.filter(it => it.is_saved)
+      let baseItems = isSavedTab ? ALL_ITEMS.filter(it => it.is_saved)
         : isEventsTab ? ALL_ITEMS.filter(it => EVENT_SOURCES.includes(it.source))
         : (bySource[currentTab] || []);
+      // Resmi Bloglar sekmesinde bir şirket alt başlığı seçiliyse (OpenAI vb.),
+      // "Tümü" listesini o şirketin yazılarına daraltıyoruz.
+      if (currentTab === "official_blog" && currentBlogAuthor) {
+        baseItems = baseItems.filter(it => it.author === currentBlogAuthor);
+      }
       focusItems = baseItems.filter(it => matchesFilter(it, filterText));
       metaFor = () => meta;
       tintVar = meta.varName;
-      // Platform modunda başlık göstermiyoruz (kaynak zaten sol menüde seçili duruyor).
-      titleEl.textContent = "";
-      titleEl.style.display = "none";
+      if (currentTab === "official_blog" && currentBlogAuthor) {
+        titleEl.textContent = `Resmi Bloglar: ${currentBlogAuthor}`;
+        titleEl.style.display = "";
+      } else {
+        // Platform modunda başlık göstermiyoruz (kaynak zaten sol menüde seçili duruyor).
+        titleEl.textContent = "";
+        titleEl.style.display = "none";
+      }
     }
 
     if (!currentTopic && currentTab === "events") {
@@ -1538,7 +1568,11 @@
   // "Takip Ettiklerin" alt öğesi (mainView="following-digest") burada karar veriliyor.
   function updateSidebarActiveStates() {
     document.querySelectorAll("#sidebar-nav button[data-tab]").forEach(btn => {
-      btn.classList.toggle("active", mainView === "explorer" && !currentTopic && btn.dataset.tab === currentTab);
+      const tabMatches = btn.dataset.tab === currentTab;
+      // Resmi Bloglar'ın alt başlıkları (data-blog-author) için ayrıca şirket eşleşmesi de gerekiyor.
+      const blogAuthorMatches = btn.dataset.tab !== "official_blog"
+        || (btn.dataset.blogAuthor || null) === currentBlogAuthor;
+      btn.classList.toggle("active", mainView === "explorer" && !currentTopic && tabMatches && blogAuthorMatches);
     });
     document.getElementById("following-digest-nav-btn").classList.toggle("active", mainView === "following-digest");
   }
@@ -1616,10 +1650,11 @@
     document.getElementById("following-digest-panel").style.display = mainView === "following-digest" ? "" : "none";
   }
 
-  function selectTab(tab) {
+  function selectTab(tab, blogAuthor) {
     mainView = "explorer";
     currentTopic = null;
     currentTab = tab;
+    currentBlogAuthor = blogAuthor || null;
     restPage = 1;
     updateXPanelVisibility();
     updateXRefreshVisibility();
@@ -1680,7 +1715,7 @@
       return;
     }
     const btn = e.target.closest("button[data-tab]");
-    if (btn) selectTab(btn.dataset.tab);
+    if (btn) selectTab(btn.dataset.tab, btn.dataset.blogAuthor);
   });
 
   document.getElementById("explorer-filter").addEventListener("input", () => {
