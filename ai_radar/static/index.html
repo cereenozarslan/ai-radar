@@ -705,6 +705,11 @@
 
 <div class="layout">
   <nav class="sidebar" aria-label="Kaynak seç" id="sidebar-nav">
+    <button type="button" id="stats-nav-btn" title="Haftalık özet" style="margin-bottom:0.5rem;">
+      <span class="sidebar-icon" style="color:var(--accent)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M11 20V4M18 20v-7"/></svg></span>
+      <span class="sidebar-label">Özet</span>
+    </button>
+
     <div class="sidebar-group" id="platforms-group">
       <button type="button" class="sidebar-group-header">
         <span class="sidebar-group-label">Platformlar</span>
@@ -920,6 +925,27 @@
       <p class="hint">YouTube Data API v3'ün ücretsiz kotasını kullanır (ödeme gerekmez); arka planda saatlik otomatik yenilenir, "Yenile" ile şimdi de çekebilirsin.</p>
       <div class="status" id="yt-channels-status"></div>
       <div class="yt-cards" id="yt-channels-videos"></div>
+    </section>
+
+    <section class="explorer" id="stats-panel" style="display:none;">
+      <div class="widget-card-head">
+        <div>
+          <div class="eyebrow" style="margin-bottom:0.2rem;">Genel bakış</div>
+          <span>Haftalık Özet</span>
+        </div>
+      </div>
+
+      <div class="stat-row" id="stats-summary-row"></div>
+
+      <div class="widget-card-head" style="margin-top:1.6rem;">
+        <span>Bu hafta kaynak dağılımı</span>
+      </div>
+      <div class="stat-row" id="stats-source-row"></div>
+
+      <div class="widget-card-head" style="margin-top:1.6rem;">
+        <span>Bu haftanın en popüler yazıları</span>
+      </div>
+      <div class="item-list" id="stats-top-items"></div>
     </section>
 
     <div id="x-panel">
@@ -1642,6 +1668,7 @@
       btn.classList.toggle("active", mainView === "explorer" && !currentTopic && tabMatches && blogAuthorMatches);
     });
     document.getElementById("following-digest-nav-btn").classList.toggle("active", mainView === "following-digest");
+    document.getElementById("stats-nav-btn").classList.toggle("active", mainView === "stats");
   }
 
   function renderBrowseOverview() {
@@ -1675,6 +1702,84 @@
     }
   }
 
+  // "Özet" sayfası: yeni bir API eklemeden, zaten yüklenmiş olan ALL_ITEMS /
+  // FOLLOWED_TOPICS / FOLLOWED_YOUTUBE_CHANNELS üzerinden istemci tarafında
+  // hesaplıyoruz. "Bu hafta kaç kayıt okundu" gibi bir rakam VERMİYORUZ —
+  // şemada okuma zamanı tutulmuyor (sadece okundu/okunmadı bayrağı var), o
+  // yüzden sadece gerçekten hesaplanabilecek şeyleri gösteriyoruz.
+  const STATS_WINDOW_DAYS = 7;
+
+  // Konu modundaki interleave/rising hesaplarında kullandığımız aynı fetched_at
+  // ayrıştırma kalıbı (bkz. computeRisingWords) — SQLite'ın "YYYY-MM-DD HH:MM:SS"
+  // biçimini tarayıcının Date'inin UTC olarak okuyabileceği hale getiriyor.
+  function parseFetchedAt(it) {
+    if (!it.fetched_at) return null;
+    const iso = it.fetched_at.replace(" ", "T") + (it.fetched_at.endsWith("Z") ? "" : "Z");
+    const dt = new Date(iso);
+    return isNaN(dt.getTime()) ? null : dt;
+  }
+
+  // x_following -> x_twitter, 3 etkinlik kaynağı -> events, youtube_channel ->
+  // youtube: sidebar rozetlerinde zaten yaptığımız gruplamanın aynısı, burada
+  // da kaynak dağılımını kalabalıklaştırmamak için kullanıyoruz.
+  function statsDisplaySource(it) {
+    if (it.source === "x_following") return "x_twitter";
+    if (EVENT_SOURCES.includes(it.source)) return "events";
+    if (it.source === "youtube_channel") return "youtube";
+    return it.source;
+  }
+
+  function renderStats() {
+    const summaryRow = document.getElementById("stats-summary-row");
+    const sourceRow = document.getElementById("stats-source-row");
+    const topItemsEl = document.getElementById("stats-top-items");
+    if (!summaryRow) return;
+
+    const now = new Date();
+    const weekAgo = new Date(now - STATS_WINDOW_DAYS * 86400000);
+    const twoWeeksAgo = new Date(now - 2 * STATS_WINDOW_DAYS * 86400000);
+
+    const thisWeek = ALL_ITEMS.filter(it => { const d = parseFetchedAt(it); return d && d >= weekAgo; });
+    const lastWeek = ALL_ITEMS.filter(it => { const d = parseFetchedAt(it); return d && d >= twoWeeksAgo && d < weekAgo; });
+
+    const unreadCount = ALL_ITEMS.filter(it => !it.is_read).length;
+    const savedCount = ALL_ITEMS.filter(it => it.is_saved).length;
+    const followedCount = FOLLOWED_TOPICS.length + FOLLOWED_YOUTUBE_CHANNELS.length;
+
+    const pctChange = lastWeek.length > 0
+      ? Math.round(((thisWeek.length - lastWeek.length) / lastWeek.length) * 100)
+      : null;
+    const changeText = pctChange === null ? "" : (pctChange >= 0 ? ` (+${pctChange}%)` : ` (${pctChange}%)`);
+
+    summaryRow.innerHTML = `
+      <div class="stat-chip"><span class="n">${thisWeek.length}</span><span class="lbl">bu hafta eklenen${changeText}</span></div>
+      <div class="stat-chip"><span class="n">${unreadCount}</span><span class="lbl">okunmamış</span></div>
+      <div class="stat-chip"><span class="n">${savedCount}</span><span class="lbl">kaydedilen</span></div>
+      <div class="stat-chip"><span class="n">${followedCount}</span><span class="lbl">takip edilen (konu + kanal)</span></div>
+    `;
+
+    const bySource = {};
+    for (const it of thisWeek) {
+      const key = statsDisplaySource(it);
+      (bySource[key] ||= []).push(it);
+    }
+    const sortedSources = Object.entries(bySource).sort((a, b) => b[1].length - a[1].length);
+    sourceRow.innerHTML = sortedSources.length
+      ? sortedSources.map(([src, items]) => {
+          const meta = SOURCE_META[src];
+          return `<div class="stat-chip">${badge(meta, "sm")}<span class="n">${items.length}</span><span class="lbl">${meta.label}</span></div>`;
+        }).join("")
+      : `<div class="empty-note">Bu hafta henüz yeni kayıt yok.</div>`;
+
+    const topItems = thisWeek
+      .filter(it => it.popularity)
+      .sort((a, b) => b.popularity - a.popularity)
+      .slice(0, 5);
+    topItemsEl.innerHTML = topItems.length
+      ? topItems.map(it => itemRow(it, SOURCE_META[statsDisplaySource(it)])).join("")
+      : `<div class="empty-note">Bu hafta popülerlik verisi olan bir kayıt yok.</div>`;
+  }
+
   async function loadEverything() {
     const resp = await fetch("/api/items");
     ALL_ITEMS = await resp.json();
@@ -1684,6 +1789,7 @@
     updateSidebarBadges();
     renderRisingTopics();
     renderYoutubeChannelVideos();
+    renderStats();
 
     document.getElementById("top-meta").textContent =
       `${ALL_ITEMS.length} kayıt · güncellendi: ` +
@@ -1715,6 +1821,7 @@
   function updateMainViewVisibility() {
     document.getElementById("explorer-panel").style.display = mainView === "explorer" ? "" : "none";
     document.getElementById("following-digest-panel").style.display = mainView === "following-digest" ? "" : "none";
+    document.getElementById("stats-panel").style.display = mainView === "stats" ? "" : "none";
   }
 
   function selectTab(tab, blogAuthor) {
@@ -1768,6 +1875,23 @@
     renderYoutubeChannelVideos();
   }
 
+  // Sidebar'daki bağımsız "Özet" düğmesi: platform/konu sekmelerinden ayrı,
+  // "Takip Ettiklerin" ile aynı mantıkta farklı bir "sayfa".
+  function selectStatsView() {
+    mainView = "stats";
+    currentTopic = null;
+    updateXPanelVisibility();
+    updateXRefreshVisibility();
+    updateEventsModeVisibility();
+    updateTopicVideosVisibility();
+    updateTopicManageVisibility();
+    updateMainViewVisibility();
+    updateSidebarActiveStates();
+    renderSidebarTopics();
+    renderRisingTopics();
+    renderStats();
+  }
+
   updateXPanelVisibility();
   updateXRefreshVisibility();
   updateEventsModeVisibility();
@@ -1775,6 +1899,8 @@
   updateTopicManageVisibility();
   updateMainViewVisibility();
   renderTrendRank([], "digest-trend-rank");
+
+  document.getElementById("stats-nav-btn").addEventListener("click", selectStatsView);
 
   document.getElementById("sidebar-nav").addEventListener("click", (e) => {
     if (e.target.closest("#following-digest-nav-btn")) {
@@ -2113,6 +2239,7 @@
     const resp = await fetch("/api/followed-youtube-channels");
     FOLLOWED_YOUTUBE_CHANNELS = await resp.json();
     renderFollowedYoutubeChannels();
+    renderStats();
   }
 
   ytChannelsForm.addEventListener("submit", async (e) => {
@@ -2206,6 +2333,7 @@
     const resp = await fetch("/api/followed-topics");
     FOLLOWED_TOPICS = await resp.json();
     renderSidebarTopics();
+    renderStats();
   }
 
   async function addFollowedTopic(topic) {
