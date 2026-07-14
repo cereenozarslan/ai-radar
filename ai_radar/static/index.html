@@ -254,20 +254,37 @@
     margin-top: 2.5rem; padding: 2.25rem 2.25rem 2rem; background: var(--surface);
     border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow-md);
   }
-  .trend-rank { display: flex; flex-direction: column; gap: 0.5rem; }
-  .trend-rank-row { display: flex; align-items: center; gap: 0.55rem; }
+  .trend-rank { display: flex; flex-direction: column; gap: 0.65rem; }
+  .trend-rank-row { display: flex; align-items: center; gap: 0.6rem; }
   .trend-rank-num {
     flex: none; width: 30px; height: 30px; border-radius: 8px;
     border: 1px solid var(--border); background: var(--surface);
     display: flex; align-items: center; justify-content: center;
     font-weight: 700; font-size: 0.82rem; color: var(--text-muted);
   }
-  .trend-rank-track { flex: 1; min-width: 0; }
-  .trend-rank-bar {
-    height: 30px; border-radius: 8px; border: 1px solid; display: flex; align-items: center;
-    padding: 0 0.65rem; font-size: 0.83rem; font-weight: 600;
+  /* data-to-viz.com'un sıralı kategorik veri için önerdiği "lollipop" —
+     kalın dolgun barlar yerine ince bir çizgi + ucunda sayıyı taşıyan bir
+     nokta; daha az "kalabalık" duruyor, etiket de her zaman tam okunuyor
+     (bar'ın İÇİNE sığdırmaya çalışmıyoruz). */
+  .lollipop-label {
+    flex: 0 0 auto; width: clamp(90px, 22%, 170px); font-size: 0.83rem; font-weight: 600;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    transition: width 0.5s var(--ease);
+  }
+  .lollipop-track { flex: 1; min-width: 0; position: relative; height: 30px; }
+  .lollipop-track::before {
+    content: ""; position: absolute; left: 0; right: 22px; top: 50%;
+    height: 2px; background: var(--border); transform: translateY(-50%);
+  }
+  .lollipop-stem {
+    position: absolute; left: 0; top: 50%; height: 3px; border-radius: 3px;
+    transform: translateY(-50%); transition: width 0.6s var(--ease);
+  }
+  .lollipop-dot {
+    position: absolute; top: 50%; width: 27px; height: 27px; border-radius: 50%;
+    background: var(--surface); border: 2.5px solid; transform: translate(-50%, -50%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.68rem; font-weight: 800; transition: left 0.6s var(--ease);
+    box-shadow: var(--shadow-sm);
   }
 
   /* ---------- Özet sayfası: KPI kartları ---------- */
@@ -1639,30 +1656,31 @@
   function renderRankBars(el, entries, opts = {}) {
     const emptyText = opts.emptyText || "Henüz yeterli veri yok.";
     const title = opts.title || ((label, count) => `${count} kez`);
-    const formatLabel = opts.formatLabel || ((label) => label);
     if (!entries.length) {
       el.innerHTML = `<span style="color:var(--text-muted);font-size:0.82rem;">${emptyText}</span>`;
       return;
     }
     const max = entries[0][1];
-    // Bar'lar %0'dan gerçek genişliğine büyüyerek belirsin diye başta genişliği
-    // 0 bırakıp, boyama bittikten SONRA (bir sonraki karede) gerçek yüzdeyi
-    // veriyoruz — .trend-rank-bar zaten "transition: width" tanımlı, tek eksik
-    // olan başlangıç/bitiş arasında gerçek bir "önce/sonra" anı yaratmaktı.
+    // Çizgi (stem) ve nokta (dot) %0'dan gerçek konumuna büyüyerek/kayarak
+    // belirsin diye başta 0 bırakıp, boyama bittikten SONRA (bir sonraki
+    // karede) gerçek yüzdeyi veriyoruz.
     el.innerHTML = entries.map(([label, count], i) => {
-      const pct = Math.max(35, Math.round((count / max) * 100));
+      const pct = Math.min(94, Math.max(8, Math.round((count / max) * 100)));
       const color = TREND_PALETTE[i % TREND_PALETTE.length];
       return `
         <div class="trend-rank-row">
           <div class="trend-rank-num">${i + 1}</div>
-          <div class="trend-rank-track">
-            <div class="trend-rank-bar" data-target-width="${pct}%" style="width:0%;background:${color.bg};border-color:${color.border};color:${color.border}" title="${title(label, count)}">${formatLabel(label, count)}</div>
+          <div class="lollipop-label" title="${label}">${label}</div>
+          <div class="lollipop-track">
+            <div class="lollipop-stem" data-target-width="${pct}%" style="width:0%;background:${color.border}"></div>
+            <div class="lollipop-dot" data-target-left="${pct}%" style="left:0%;border-color:${color.border};color:${color.border}" title="${title(label, count)}">${count}</div>
           </div>
         </div>
       `;
     }).join("");
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      el.querySelectorAll(".trend-rank-bar").forEach(bar => { bar.style.width = bar.dataset.targetWidth; });
+      el.querySelectorAll(".lollipop-stem").forEach(stem => { stem.style.width = stem.dataset.targetWidth; });
+      el.querySelectorAll(".lollipop-dot").forEach(dot => { dot.style.left = dot.dataset.targetLeft; });
     }));
   }
 
@@ -2030,7 +2048,6 @@
     renderRankBars(sourceReadsEl, sourceReadEntries, {
       emptyText: "Henüz hiçbir kaydı açmadın.",
       title: (label, count) => `${count} yazı okudun`,
-      formatLabel: (label, count) => `${label} · ${count}`,
     });
 
     const readsByBlogAuthor = {};
@@ -2043,7 +2060,6 @@
     if (blogReadEntries.length) {
       renderRankBars(blogReadsEl, blogReadEntries, {
         title: (label, count) => `${count} yazı okudun`,
-        formatLabel: (label, count) => `${label} · ${count}`,
       });
     }
   }
