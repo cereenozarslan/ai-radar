@@ -320,6 +320,16 @@
   .donut-legend-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .donut-legend-item b { font-weight: 700; }
   .donut-legend-pct { color: var(--text-muted); font-size: 0.72rem; min-width: 2.4em; text-align: right; }
+  .donut-legend-item:not(.clickable) { cursor: default; }
+  .donut-legend-item:not(.clickable):hover { background: transparent; }
+
+  .stats-donut-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem 2rem;
+  }
+  .stats-donut-title { font-size: 0.8rem; font-weight: 700; margin: 0 0 0.6rem; color: var(--text-muted); }
+  /* Bir kategoride kayıt yoksa (ör. hiç Etkinlik eklenmemiş), donut'u değil
+     sade bir not göstermek daha temiz duruyor. */
+  .stats-donut-block .empty-note { font-size: 0.82rem; }
 
   .eyebrow { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.6rem; font-weight: 600; }
   h1 {
@@ -989,10 +999,23 @@
       <div class="kpi-row" id="stats-summary-row"></div>
 
       <div class="widget-card-head" style="margin-top:1.6rem;">
-        <span>Tüm zamanlar kaynak dağılımı</span>
+        <span>Tüm zamanlar dağılımı</span>
       </div>
       <p class="hint" style="margin:0 0 0.6rem;">Bir dilime/etikete tıklayınca o kaynağa gidersin.</p>
-      <div id="stats-source-donut"></div>
+      <div class="stats-donut-grid">
+        <div class="stats-donut-block">
+          <h3 class="stats-donut-title">Platformlar</h3>
+          <div id="stats-platform-donut"></div>
+        </div>
+        <div class="stats-donut-block">
+          <h3 class="stats-donut-title">Resmi Bloglar</h3>
+          <div id="stats-blog-donut"></div>
+        </div>
+        <div class="stats-donut-block">
+          <h3 class="stats-donut-title">Etkinlikler</h3>
+          <div id="stats-events-donut"></div>
+        </div>
+      </div>
 
       <div class="widget-card-head" style="margin-top:1.6rem;">
         <span>Bu hafta kaynak dağılımı</span>
@@ -1842,26 +1865,38 @@
   // sırada). Renkleri TREND_PALETTE'ten değil doğrudan SOURCE_META'daki kaynağın
   // KENDİ renginden alıyoruz — böylece "NuvemMag" burada da, sidebar'da da,
   // kartlarda da hep aynı yeşil olsun (uygulama genelinde tutarlı kaynak kimliği).
-  function renderDonutChart(wrapEl, entries, opts = {}) {
-    const total = entries.reduce((sum, [, count]) => sum + count, 0);
+  // Donut'ta GitHub ve X'in marka renkleri (ikisi de neredeyse saf siyah)
+  // birbirinden ayırt edilemiyordu — sidebar/rozet/kart renklerine dokunmadan
+  // SADECE bu grafikte GitHub'a farklı bir ton veriyoruz.
+  const DONUT_COLOR_OVERRIDES = { github_trending: "#6e5494" };
+  function donutColorForSource(src) {
+    return DONUT_COLOR_OVERRIDES[src] || `var(--${SOURCE_META[src].varName})`;
+  }
+
+  // Genel amaçlı donut grafik: segments = [{ label, count, color, tabTarget?,
+  // blogAuthor? }]. tabTarget verilirse dilim/etiket tıklanabilir olur ve
+  // selectTab(tabTarget, blogAuthor)'a gider (bkz. aşağıdaki click handler).
+  function renderDonutChart(wrapEl, segments, opts = {}) {
+    const total = segments.reduce((sum, s) => sum + s.count, 0);
     if (!total) {
       wrapEl.innerHTML = `<div class="empty-note">${opts.emptyText || "Henüz veri yok."}</div>`;
       return;
     }
     let cumulative = 0;
     const stops = [];
-    const legendItems = entries.map(([src, count]) => {
-      const meta = SOURCE_META[src];
-      const color = `var(--${meta.varName})`;
+    const legendItems = segments.map(seg => {
       const start = cumulative;
-      cumulative += (count / total) * 100;
-      stops.push(`${color} ${start}% ${cumulative}%`);
-      const pct = Math.round((count / total) * 100);
+      cumulative += (seg.count / total) * 100;
+      stops.push(`${seg.color} ${start}% ${cumulative}%`);
+      const pct = Math.round((seg.count / total) * 100);
+      const clickAttrs = seg.tabTarget
+        ? ` data-donut-tab="${seg.tabTarget}"${seg.blogAuthor ? ` data-donut-blog-author="${seg.blogAuthor}"` : ""} title="${seg.label} sekmesine git"`
+        : "";
       return `
-        <div class="donut-legend-item" data-donut-tab="${src}" title="${meta.label} sekmesine git">
-          <span class="donut-legend-dot" style="background:${color}"></span>
-          <span class="donut-legend-text">${meta.label}</span>
-          <b>${count}</b><span class="donut-legend-pct">%${pct}</span>
+        <div class="donut-legend-item${seg.tabTarget ? " clickable" : ""}"${clickAttrs}>
+          <span class="donut-legend-dot" style="background:${seg.color}"></span>
+          <span class="donut-legend-text">${seg.label}</span>
+          <b>${seg.count}</b><span class="donut-legend-pct">%${pct}</span>
         </div>
       `;
     }).join("");
@@ -1871,7 +1906,7 @@
         <div class="donut-chart" style="background:conic-gradient(${stops.join(", ")})">
           <div class="donut-hole">
             <span class="n">${total}</span>
-            <span class="lbl">${opts.centerLabel || "toplam kayıt"}</span>
+            <span class="lbl">${opts.centerLabel || "toplam"}</span>
           </div>
         </div>
         <div class="donut-legend">${legendItems}</div>
@@ -1881,7 +1916,9 @@
 
   function renderStats() {
     const summaryRow = document.getElementById("stats-summary-row");
-    const sourceDonutEl = document.getElementById("stats-source-donut");
+    const platformDonutEl = document.getElementById("stats-platform-donut");
+    const blogDonutEl = document.getElementById("stats-blog-donut");
+    const eventsDonutEl = document.getElementById("stats-events-donut");
     const sourceRow = document.getElementById("stats-source-row");
     const topItemsEl = document.getElementById("stats-top-items");
     const sourceReadsEl = document.getElementById("stats-source-reads-rank");
@@ -1914,15 +1951,56 @@
       kpiCard({ color: "nuvemmag", icon: KPI_ICONS.bookmark, value: followedCount, label: "takip edilen (konu + kanal)", trend: null, delay: 180 }),
     ].join("");
 
-    // Tüm zamanlar kaynak dağılımı (donut) — haftalık pencereyle sınırlı değil,
-    // "genel resim" için ALL_ITEMS'ın tamamını kullanıyoruz.
-    const allTimeBySource = {};
+    // Tüm zamanlar dağılımı — 3 ayrı donut, üçü de haftalık pencereyle sınırlı
+    // değil (ALL_ITEMS'ın tamamından), çünkü "genel resmi" gösteriyorlar.
+
+    // 1) Platformlar: sadece sidebar'daki "Platformlar" grubundaki 4 kaynak —
+    // Resmi Bloglar ve Etkinlikler kendi donut'larında ayrı gösteriliyor.
+    const PLATFORM_SOURCES = ["nuvemmag", "github_trending", "x_twitter", "youtube"];
+    const platformCounts = {};
     for (const it of ALL_ITEMS) {
       const key = statsDisplaySource(it);
-      allTimeBySource[key] = (allTimeBySource[key] || 0) + 1;
+      if (PLATFORM_SOURCES.includes(key)) platformCounts[key] = (platformCounts[key] || 0) + 1;
     }
-    const allTimeEntries = Object.entries(allTimeBySource).sort((a, b) => b[1] - a[1]);
-    renderDonutChart(sourceDonutEl, allTimeEntries);
+    const platformSegments = Object.entries(platformCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([src, count]) => ({
+        label: SOURCE_META[src].label,
+        count,
+        color: donutColorForSource(src),
+        tabTarget: src,
+      }));
+    renderDonutChart(platformDonutEl, platformSegments, { centerLabel: "platform kaydı" });
+
+    // 2) Resmi Bloglar: kaynak değil, ŞİRKET (author) bazında kırılım —
+    // SOURCE_META'da her şirketin kendi rengi yok, o yüzden "Yükselen Gündem"de
+    // de kullandığımız genel TREND_PALETTE'i kullanıyoruz.
+    const blogAuthorCounts = {};
+    for (const it of ALL_ITEMS) {
+      if (it.source === "official_blog" && it.author) {
+        blogAuthorCounts[it.author] = (blogAuthorCounts[it.author] || 0) + 1;
+      }
+    }
+    const blogSegments = Object.entries(blogAuthorCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([author, count], i) => ({
+        label: author,
+        count,
+        color: TREND_PALETTE[i % TREND_PALETTE.length].border,
+        tabTarget: "official_blog",
+        blogAuthor: author,
+      }));
+    renderDonutChart(blogDonutEl, blogSegments, { centerLabel: "blog yazısı", emptyText: "Henüz Resmi Bloglar kaydı yok." });
+
+    // 3) Etkinlikler: online / yüz yüze kırılımı (is_online alanına göre).
+    const eventItems = ALL_ITEMS.filter(it => EVENT_SOURCES.includes(it.source));
+    const onlineCount = eventItems.filter(it => it.is_online).length;
+    const offlineCount = eventItems.length - onlineCount;
+    const eventSegments = [
+      { label: "Online", count: onlineCount, color: "var(--events)", tabTarget: "events" },
+      { label: "Yüz yüze", count: offlineCount, color: TREND_PALETTE[3].border, tabTarget: "events" },
+    ].filter(seg => seg.count > 0);
+    renderDonutChart(eventsDonutEl, eventSegments, { centerLabel: "etkinlik", emptyText: "Henüz Etkinlik kaydı yok." });
 
     const bySource = {};
     for (const it of thisWeek) {
@@ -2107,7 +2185,7 @@
   // sekmesine geçiyoruz (bkz. renderDonutChart'taki data-donut-tab).
   document.getElementById("stats-panel").addEventListener("click", (e) => {
     const el = e.target.closest("[data-donut-tab]");
-    if (el) selectTab(el.dataset.donutTab);
+    if (el) selectTab(el.dataset.donutTab, el.dataset.donutBlogAuthor);
   });
 
   document.getElementById("sidebar-nav").addEventListener("click", (e) => {
