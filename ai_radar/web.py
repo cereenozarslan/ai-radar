@@ -22,6 +22,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 
 from ai_radar.collectors import (
+    anthropic_news,
     coderspace_events,
     github_trending,
     kommunity_events,
@@ -107,6 +108,7 @@ async def _refresh_free_collectors_periodically() -> None:
         ("NuvemMag", nuvemmag.collect),
         ("GitHub Trending", github_trending.collect),
         ("Resmi Bloglar", official_blogs.collect),
+        ("Anthropic", anthropic_news.collect),
     )
     while True:
         for name, collect in collectors:
