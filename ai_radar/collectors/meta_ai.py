@@ -72,6 +72,18 @@ def _parse_date(date_text: str) -> str | None:
     return dt.replace(tzinfo=timezone.utc).isoformat()
 
 
+def _find_image(soup: BeautifulSoup, href: str) -> str | None:
+    # Aynı yazının linki sayfada birden çok yerde geçiyor (üstteki "öne çıkanlar"
+    # resimli kartı, alttaki tarih/başlık kartı vb.) — görsel genelde sadece
+    # ÜSTTEKİ resimli kartta bulunuyor, bu yüzden href'in TÜM kopyalarını tarayıp
+    # img'i olan ilkini kullanıyoruz.
+    for link_tag in soup.find_all("a", href=href):
+        img_tag = link_tag.find("img")
+        if img_tag and img_tag.get("src"):
+            return img_tag["src"]
+    return None
+
+
 def parse_blog(html: str, max_age_days: int | None = MAX_AGE_DAYS) -> list[dict]:
     """Blog sayfasındaki yazıları items şemasına uygun listeye çevirir."""
     cutoff = datetime.now(timezone.utc) - timedelta(days=max_age_days) if max_age_days else None
@@ -98,7 +110,7 @@ def parse_blog(html: str, max_age_days: int | None = MAX_AGE_DAYS) -> list[dict]
             "content": None,
             "author": "Meta AI",
             "published_at": published_at,
-            "image_url": None,
+            "image_url": _find_image(soup, href),
             "popularity": None,
         }
         for href, (title, published_at) in resolved.items()

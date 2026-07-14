@@ -7,7 +7,7 @@ from ai_radar.collectors.meta_ai import parse_blog
 META_STYLE_HTML = """
 <html><body>
 <a href="https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/">
-  <div><img src="thumb.png"/></div>
+  <div><img src="https://scontent.fna.fbcdn.net/thumb.png"/></div>
 </a>
 
 <div class="_8xm6">
@@ -42,6 +42,20 @@ def test_parse_blog_handles_card_with_single_heading():
     item = next(it for it in items if "canopy-height-maps" in it["url"])
     assert item["title"] == "Mapping the World's Forests with Greater Precision"
     assert item["published_at"] == "2026-03-10T00:00:00+00:00"
+
+
+def test_parse_blog_finds_image_from_a_different_occurrence_of_same_link():
+    # Gorsel, tarih/basligin bulundugu karttan degil, ayni linkin sayfadaki
+    # BASKA bir (resimli) kopyasindan geliyor.
+    items = parse_blog(META_STYLE_HTML, max_age_days=None)
+    item = next(it for it in items if "introducing-muse-spark" in it["url"])
+    assert item["image_url"] == "https://scontent.fna.fbcdn.net/thumb.png"
+
+
+def test_parse_blog_image_is_none_when_no_occurrence_has_one():
+    items = parse_blog(META_STYLE_HTML, max_age_days=None)
+    item = next(it for it in items if "canopy-height-maps" in it["url"])
+    assert item["image_url"] is None
 
 
 def test_parse_blog_skips_link_occurrence_without_nearby_date():
