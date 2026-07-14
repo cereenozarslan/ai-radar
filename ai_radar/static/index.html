@@ -267,8 +267,59 @@
     height: 30px; border-radius: 8px; border: 1px solid; display: flex; align-items: center;
     padding: 0 0.65rem; font-size: 0.83rem; font-weight: 600;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    transition: width 0.3s ease;
+    transition: width 0.5s var(--ease);
   }
+
+  /* ---------- Özet sayfası: KPI kartları ---------- */
+  .kpi-row { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+  .kpi-card {
+    flex: 1 1 180px; display: flex; align-items: center; gap: 0.75rem;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 0.85rem 1rem; box-shadow: var(--shadow-sm);
+    transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+    animation: statPopIn 0.4s var(--ease) backwards;
+  }
+  .kpi-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .kpi-icon {
+    flex: none; width: 42px; height: 42px; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--kpi-color, var(--accent)) 16%, transparent);
+    color: var(--kpi-color, var(--accent));
+  }
+  .kpi-body { min-width: 0; }
+  .kpi-value { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+  .kpi-label { font-size: 0.74rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi-trend { font-size: 0.72rem; font-weight: 700; margin-left: 0.35rem; }
+  .kpi-trend.up { color: #3f9d5c; }
+  .kpi-trend.down { color: #d15b5b; }
+  @keyframes statPopIn {
+    from { opacity: 0; transform: scale(0.94) translateY(4px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  /* ---------- Özet sayfası: donut grafik (tüm zamanlar kaynak dağılımı) ---------- */
+  .donut-wrap { display: flex; align-items: center; gap: 1.75rem; flex-wrap: wrap; }
+  .donut-chart {
+    --donut-size: 148px; width: var(--donut-size); height: var(--donut-size); border-radius: 50%;
+    position: relative; flex: none; animation: statPopIn 0.5s var(--ease);
+  }
+  .donut-hole {
+    position: absolute; inset: 22%; border-radius: 50%; background: var(--surface);
+    box-shadow: var(--shadow-sm); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center;
+  }
+  .donut-hole .n { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; }
+  .donut-hole .lbl { font-size: 0.62rem; color: var(--text-muted); }
+  .donut-legend { display: flex; flex-direction: column; gap: 0.15rem; min-width: 190px; }
+  .donut-legend-item {
+    display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; cursor: pointer;
+    padding: 0.35rem 0.5rem; border-radius: 8px; transition: background-color 0.15s var(--ease);
+  }
+  .donut-legend-item:hover { background: var(--surface-2); }
+  .donut-legend-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .donut-legend-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .donut-legend-item b { font-weight: 700; }
+  .donut-legend-pct { color: var(--text-muted); font-size: 0.72rem; min-width: 2.4em; text-align: right; }
 
   .eyebrow { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.6rem; font-weight: 600; }
   h1 {
@@ -935,12 +986,18 @@
         </div>
       </div>
 
-      <div class="stat-row" id="stats-summary-row"></div>
+      <div class="kpi-row" id="stats-summary-row"></div>
+
+      <div class="widget-card-head" style="margin-top:1.6rem;">
+        <span>Tüm zamanlar kaynak dağılımı</span>
+      </div>
+      <p class="hint" style="margin:0 0 0.6rem;">Bir dilime/etikete tıklayınca o kaynağa gidersin.</p>
+      <div id="stats-source-donut"></div>
 
       <div class="widget-card-head" style="margin-top:1.6rem;">
         <span>Bu hafta kaynak dağılımı</span>
       </div>
-      <div class="stat-row" id="stats-source-row"></div>
+      <div class="trend-rank" id="stats-source-row"></div>
 
       <div class="widget-card-head" style="margin-top:1.6rem;">
         <span>Bu haftanın en popüler yazıları</span>
@@ -1562,6 +1619,10 @@
       return;
     }
     const max = entries[0][1];
+    // Bar'lar %0'dan gerçek genişliğine büyüyerek belirsin diye başta genişliği
+    // 0 bırakıp, boyama bittikten SONRA (bir sonraki karede) gerçek yüzdeyi
+    // veriyoruz — .trend-rank-bar zaten "transition: width" tanımlı, tek eksik
+    // olan başlangıç/bitiş arasında gerçek bir "önce/sonra" anı yaratmaktı.
     el.innerHTML = entries.map(([label, count], i) => {
       const pct = Math.max(35, Math.round((count / max) * 100));
       const color = TREND_PALETTE[i % TREND_PALETTE.length];
@@ -1569,11 +1630,14 @@
         <div class="trend-rank-row">
           <div class="trend-rank-num">${i + 1}</div>
           <div class="trend-rank-track">
-            <div class="trend-rank-bar" style="width:${pct}%;background:${color.bg};border-color:${color.border};color:${color.border}" title="${title(label, count)}">${formatLabel(label, count)}</div>
+            <div class="trend-rank-bar" data-target-width="${pct}%" style="width:0%;background:${color.bg};border-color:${color.border};color:${color.border}" title="${title(label, count)}">${formatLabel(label, count)}</div>
           </div>
         </div>
       `;
     }).join("");
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      el.querySelectorAll(".trend-rank-bar").forEach(bar => { bar.style.width = bar.dataset.targetWidth; });
+    }));
   }
 
   function renderTrendRank(items, elId = "trend-rank") {
@@ -1752,8 +1816,72 @@
     return it.source;
   }
 
+  const KPI_ICONS = {
+    inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"/><path d="M8 8l4 4 4-4"/><path d="M12 2v10"/></svg>',
+    envelope: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
+    star: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6.4 7 .8-5.2 4.8 1.4 6.9L12 17.9 5.9 21.4l1.4-6.9L2.1 9.7l7-.8z"/></svg>',
+    bookmark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v16l-7-4-7 4V4z"/></svg>',
+  };
+
+  function kpiCard({ color, icon, value, label, trend, delay }) {
+    const trendHtml = trend === null
+      ? ""
+      : `<span class="kpi-trend ${trend >= 0 ? "up" : "down"}">${trend >= 0 ? "▲" : "▼"} ${Math.abs(trend)}%</span>`;
+    return `
+      <div class="kpi-card" style="--kpi-color:var(--${color});animation-delay:${delay}ms">
+        <div class="kpi-icon">${icon}</div>
+        <div class="kpi-body">
+          <div class="kpi-value">${value}${trendHtml}</div>
+          <div class="kpi-label">${label}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Genel amaçlı donut grafik: entries = [[kaynak_anahtarı, sayı], ...] (azalan
+  // sırada). Renkleri TREND_PALETTE'ten değil doğrudan SOURCE_META'daki kaynağın
+  // KENDİ renginden alıyoruz — böylece "NuvemMag" burada da, sidebar'da da,
+  // kartlarda da hep aynı yeşil olsun (uygulama genelinde tutarlı kaynak kimliği).
+  function renderDonutChart(wrapEl, entries, opts = {}) {
+    const total = entries.reduce((sum, [, count]) => sum + count, 0);
+    if (!total) {
+      wrapEl.innerHTML = `<div class="empty-note">${opts.emptyText || "Henüz veri yok."}</div>`;
+      return;
+    }
+    let cumulative = 0;
+    const stops = [];
+    const legendItems = entries.map(([src, count]) => {
+      const meta = SOURCE_META[src];
+      const color = `var(--${meta.varName})`;
+      const start = cumulative;
+      cumulative += (count / total) * 100;
+      stops.push(`${color} ${start}% ${cumulative}%`);
+      const pct = Math.round((count / total) * 100);
+      return `
+        <div class="donut-legend-item" data-donut-tab="${src}" title="${meta.label} sekmesine git">
+          <span class="donut-legend-dot" style="background:${color}"></span>
+          <span class="donut-legend-text">${meta.label}</span>
+          <b>${count}</b><span class="donut-legend-pct">%${pct}</span>
+        </div>
+      `;
+    }).join("");
+
+    wrapEl.innerHTML = `
+      <div class="donut-wrap">
+        <div class="donut-chart" style="background:conic-gradient(${stops.join(", ")})">
+          <div class="donut-hole">
+            <span class="n">${total}</span>
+            <span class="lbl">${opts.centerLabel || "toplam kayıt"}</span>
+          </div>
+        </div>
+        <div class="donut-legend">${legendItems}</div>
+      </div>
+    `;
+  }
+
   function renderStats() {
     const summaryRow = document.getElementById("stats-summary-row");
+    const sourceDonutEl = document.getElementById("stats-source-donut");
     const sourceRow = document.getElementById("stats-source-row");
     const topItemsEl = document.getElementById("stats-top-items");
     const sourceReadsEl = document.getElementById("stats-source-reads-rank");
@@ -1772,30 +1900,43 @@
     const savedCount = ALL_ITEMS.filter(it => it.is_saved).length;
     const followedCount = FOLLOWED_TOPICS.length + FOLLOWED_YOUTUBE_CHANNELS.length;
 
+    // Sadece "bu hafta eklenen"in doğal bir "önceki hafta" karşılaştırması var;
+    // diğer 3 metrik (okunmamış/kaydedilen/takip) birikimli toplamlar olduğu
+    // için onlara uydurma bir trend oku eklemedik.
     const pctChange = lastWeek.length > 0
       ? Math.round(((thisWeek.length - lastWeek.length) / lastWeek.length) * 100)
       : null;
-    const changeText = pctChange === null ? "" : (pctChange >= 0 ? ` (+${pctChange}%)` : ` (${pctChange}%)`);
 
-    summaryRow.innerHTML = `
-      <div class="stat-chip"><span class="n">${thisWeek.length}</span><span class="lbl">bu hafta eklenen${changeText}</span></div>
-      <div class="stat-chip"><span class="n">${unreadCount}</span><span class="lbl">okunmamış</span></div>
-      <div class="stat-chip"><span class="n">${savedCount}</span><span class="lbl">kaydedilen</span></div>
-      <div class="stat-chip"><span class="n">${followedCount}</span><span class="lbl">takip edilen (konu + kanal)</span></div>
-    `;
+    summaryRow.innerHTML = [
+      kpiCard({ color: "accent", icon: KPI_ICONS.inbox, value: thisWeek.length, label: "bu hafta eklenen", trend: pctChange, delay: 0 }),
+      kpiCard({ color: "events", icon: KPI_ICONS.envelope, value: unreadCount, label: "okunmamış", trend: null, delay: 60 }),
+      kpiCard({ color: "gold", icon: KPI_ICONS.star, value: savedCount, label: "kaydedilen", trend: null, delay: 120 }),
+      kpiCard({ color: "nuvemmag", icon: KPI_ICONS.bookmark, value: followedCount, label: "takip edilen (konu + kanal)", trend: null, delay: 180 }),
+    ].join("");
+
+    // Tüm zamanlar kaynak dağılımı (donut) — haftalık pencereyle sınırlı değil,
+    // "genel resim" için ALL_ITEMS'ın tamamını kullanıyoruz.
+    const allTimeBySource = {};
+    for (const it of ALL_ITEMS) {
+      const key = statsDisplaySource(it);
+      allTimeBySource[key] = (allTimeBySource[key] || 0) + 1;
+    }
+    const allTimeEntries = Object.entries(allTimeBySource).sort((a, b) => b[1] - a[1]);
+    renderDonutChart(sourceDonutEl, allTimeEntries);
 
     const bySource = {};
     for (const it of thisWeek) {
       const key = statsDisplaySource(it);
       (bySource[key] ||= []).push(it);
     }
-    const sortedSources = Object.entries(bySource).sort((a, b) => b[1].length - a[1].length);
-    sourceRow.innerHTML = sortedSources.length
-      ? sortedSources.map(([src, items]) => {
-          const meta = SOURCE_META[src];
-          return `<div class="stat-chip">${badge(meta, "sm")}<span class="n">${items.length}</span><span class="lbl">${meta.label}</span></div>`;
-        }).join("")
-      : `<div class="empty-note">Bu hafta henüz yeni kayıt yok.</div>`;
+    const sortedSources = Object.entries(bySource)
+      .map(([src, items]) => [SOURCE_META[src].label, items.length])
+      .sort((a, b) => b[1] - a[1]);
+    renderRankBars(sourceRow, sortedSources, {
+      emptyText: "Bu hafta henüz yeni kayıt yok.",
+      title: (label, count) => `${count} kayıt`,
+      formatLabel: (label, count) => `${label} · ${count}`,
+    });
 
     const topItems = thisWeek
       .filter(it => it.popularity)
@@ -1961,6 +2102,13 @@
   renderTrendRank([], "digest-trend-rank");
 
   document.getElementById("stats-nav-btn").addEventListener("click", selectStatsView);
+
+  // Donut grafikteki bir dilime/etikete tıklayınca doğrudan o kaynağın
+  // sekmesine geçiyoruz (bkz. renderDonutChart'taki data-donut-tab).
+  document.getElementById("stats-panel").addEventListener("click", (e) => {
+    const el = e.target.closest("[data-donut-tab]");
+    if (el) selectTab(el.dataset.donutTab);
+  });
 
   document.getElementById("sidebar-nav").addEventListener("click", (e) => {
     if (e.target.closest("#following-digest-nav-btn")) {
