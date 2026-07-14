@@ -525,6 +525,18 @@
   .photo-card.hero .photo-card-title { font-size: 1.2rem; -webkit-line-clamp: 3; }
   .photo-card.hero .photo-card-meta { font-size: 0.72rem; }
 
+  /* Resmi Bloglar'da bazı yazıların görseli yok (kaynak sitede hiç
+     yayınlanmamış) — kart boş durmasın diye şirket adının baş harflerinden
+     otomatik bir "logo" rozeti gösteriyoruz (bkz. officialBlogLogoFallback()). */
+  .photo-card-logo-fallback {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  }
+  .photo-card-logo-badge {
+    width: 30%; aspect-ratio: 1; max-width: 84px; min-width: 44px; border-radius: 50%;
+    background: rgba(255,255,255,0.14); display: flex; align-items: center; justify-content: center;
+    font-weight: 800; color: rgba(255,255,255,0.85); font-size: clamp(0.85rem, 3vw, 1.4rem); letter-spacing: -0.02em;
+  }
+
   /* Pinterest tarzı masonry: her kart kendi görselinin doğal boyuna göre
      yükseklik alır, sütunlar arasında birbirini tamamlayarak dizilir — sabit
      bir ızgara hücresine zorla sıkıştırılmıyor, bu yüzden boş/kırpık görünen
@@ -1172,6 +1184,17 @@
     return chips + groups;
   }
 
+  // Resmi Bloglar'da kaynak sitede hiç görsel yayınlanmamış yazılar için
+  // (Anthropic, Meta AI, Google DeepMind'ın bazı girdileri gibi) şirket adının
+  // baş harflerinden otomatik bir rozet üretiyoruz — dışarıdan bir logo dosyası
+  // çekmiyoruz (o URL'ler her deploy'da değişebilen hash'li adresler, kırılgan
+  // olurdu); bunun yerine zaten elimizde olan "author" alanından türetiyoruz.
+  function officialBlogLogoFallback(it) {
+    if (it.source !== "official_blog" || it.image_url || !it.author) return "";
+    const initials = it.author.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+    return `<div class="photo-card-logo-fallback"><span class="photo-card-logo-badge">${initials}</span></div>`;
+  }
+
   function photoCard(it, meta, variant) {
     // Görsel yüklenemezse (404 vb.) img'i gizleyip kartın kendisini kaynak
     // rengiyle boyanmış düz bir arka plana düşürüyoruz (badge + başlık yine görünür kalır).
@@ -1182,7 +1205,7 @@
       ? `<img src="${it.image_url}" alt="" loading="lazy"
            onload="this.parentElement.style.aspectRatio = this.naturalWidth + '/' + this.naturalHeight;"
            onerror="this.remove();">`
-      : "";
+      : officialBlogLogoFallback(it);
     const readClass = hasId(it) && it.is_read ? " is-read" : "";
     const save = saveButton(it);
     const previewKey = PREVIEW_SEQ++;
