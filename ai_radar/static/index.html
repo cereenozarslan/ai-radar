@@ -287,6 +287,14 @@
     box-shadow: var(--shadow-sm);
   }
 
+  /* ---------- İstatistikler sayfası: "Bugün ne okusan?" ---------- */
+  .daily-pick-wrap { max-width: 380px; }
+  .daily-pick-wrap .photo-card { animation: statPopIn 0.4s var(--ease); }
+  .daily-pick-wrap .empty-note {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 1.2rem; box-shadow: var(--shadow-sm);
+  }
+
   /* ---------- İstatistikler sayfası: KPI kartları ---------- */
   .kpi-row { display: flex; flex-wrap: wrap; gap: 0.8rem; }
   .kpi-card {
@@ -1021,7 +1029,14 @@
         </div>
       </div>
 
-      <div class="kpi-row" id="stats-summary-row"></div>
+      <div class="widget-card-head" style="margin-top:0.3rem;">
+        <span>Bugün ne okusan?</span>
+        <button type="button" class="primary" id="daily-pick-refresh-btn">🎲 Başka öner</button>
+      </div>
+      <p class="hint" style="margin:0 0 0.7rem;">Takip ettiğin konulardan, henüz okumadığın rastgele bir yazı.</p>
+      <div class="daily-pick-wrap" id="daily-pick-card"></div>
+
+      <div class="kpi-row" id="stats-summary-row" style="margin-top:1.6rem;"></div>
 
       <div class="widget-card-head" style="margin-top:1.6rem;">
         <span>Tüm zamanlar dağılımı</span>
@@ -1935,6 +1950,34 @@
     `;
   }
 
+  // "Bugün ne okusan?": takip ettiğin konulardan, henüz okumadığın rastgele
+  // bir yazı önerir. Kalıcı bir "günün yazısı" kaydı TUTMUYORUZ — her çağrıda
+  // ALL_ITEMS içinden anlık olarak seçiyoruz; "Başka öner" butonu bu fonksiyonu
+  // tekrar çağırıp yeni bir rastgele seçim yapar.
+  function pickDailyRead() {
+    if (!FOLLOWED_TOPICS.length) return null;
+    const topics = FOLLOWED_TOPICS.map(t => t.topic.toLowerCase());
+    const candidates = ALL_ITEMS.filter(it =>
+      !it.is_read && topics.some(topic => matchesFilter(it, topic))
+    );
+    if (!candidates.length) return null;
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }
+
+  function renderDailyPick() {
+    const el = document.getElementById("daily-pick-card");
+    if (!el) return;
+    const pick = pickDailyRead();
+    if (!pick) {
+      el.innerHTML = !FOLLOWED_TOPICS.length
+        ? `<div class="empty-note">Önce birkaç konu takip etmen lazım (sol menüden "+ Konu ekle").</div>`
+        : `<div class="empty-note">Takip ettiğin konularda okunmamış yazı kalmamış — hepsini okumuşsun! 🎉</div>`;
+      return;
+    }
+    const meta = SOURCE_META[statsDisplaySource(pick)];
+    el.innerHTML = photoCard(pick, meta, "hero");
+  }
+
   function renderStats() {
     const summaryRow = document.getElementById("stats-summary-row");
     const platformDonutEl = document.getElementById("stats-platform-donut");
@@ -1945,6 +1988,8 @@
     const blogReadsSection = document.getElementById("stats-blog-reads-section");
     const blogReadsEl = document.getElementById("stats-blog-reads-rank");
     if (!summaryRow) return;
+
+    renderDailyPick();
 
     const now = new Date();
     const weekAgo = new Date(now - STATS_WINDOW_DAYS * 86400000);
@@ -2185,6 +2230,8 @@
   renderTrendRank([], "digest-trend-rank");
 
   document.getElementById("stats-nav-btn").addEventListener("click", selectStatsView);
+
+  document.getElementById("daily-pick-refresh-btn").addEventListener("click", renderDailyPick);
 
   // Donut grafikteki bir dilime/etikete tıklayınca doğrudan o kaynağın
   // sekmesine geçiyoruz (bkz. renderDonutChart'taki data-donut-tab).
