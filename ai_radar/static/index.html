@@ -287,13 +287,40 @@
     box-shadow: var(--shadow-sm);
   }
 
-  /* ---------- İstatistikler sayfası: "Bugün ne okusan?" ---------- */
-  .daily-pick-wrap { max-width: 380px; }
-  .daily-pick-wrap .photo-card { animation: statPopIn 0.4s var(--ease); }
-  .daily-pick-wrap .empty-note {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
-    padding: 1.2rem; box-shadow: var(--shadow-sm);
+  /* ---------- "Bugün ne okusan?": sağ altta yüzen buton + popup ----------
+     Herhangi bir sayfada/sekmede görünsün diye .layout'ın DIŞINDA, sabit
+     konumlu (position:fixed) ayrı bir katman — hangi mainView/currentTab
+     seçili olursa olsun her zaman erişilebilir. */
+  #daily-pick-fab {
+    position: fixed; right: 22px; bottom: 22px; z-index: 90;
+    width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--border);
+    background: var(--accent); color: #fff; font-size: 1.3rem; line-height: 1;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    box-shadow: var(--shadow-lg);
+    transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
   }
+  #daily-pick-fab:hover { transform: scale(1.08) rotate(-8deg); box-shadow: var(--shadow-md); }
+  #daily-pick-popup {
+    position: fixed; right: 22px; bottom: 86px; z-index: 90;
+    width: min(340px, calc(100vw - 44px)); max-height: min(72vh, 560px); overflow-y: auto;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    box-shadow: var(--shadow-lg); padding: 1rem;
+    animation: statPopIn 0.22s var(--ease);
+  }
+  .daily-pick-popup-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.2rem; }
+  .daily-pick-popup-head span { font-weight: 700; font-size: 0.92rem; }
+  #daily-pick-popup-close {
+    flex: none; width: 26px; height: 26px; border-radius: 8px; border: none;
+    background: none; color: var(--text-muted); font-size: 0.9rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #daily-pick-popup-close:hover { background: var(--surface-2); color: var(--text); }
+  #daily-pick-popup .daily-pick-wrap { max-width: none; margin: 0.5rem 0 0.7rem; }
+  #daily-pick-popup .daily-pick-wrap .photo-card { animation: statPopIn 0.3s var(--ease); }
+  #daily-pick-popup .daily-pick-wrap .empty-note {
+    background: var(--surface-2); border-radius: 12px; padding: 1rem; font-size: 0.85rem;
+  }
+  #daily-pick-popup button.primary { width: 100%; }
 
   /* ---------- İstatistikler sayfası: KPI kartları ---------- */
   .kpi-row { display: flex; flex-wrap: wrap; gap: 0.8rem; }
@@ -1029,14 +1056,7 @@
         </div>
       </div>
 
-      <div class="widget-card-head" style="margin-top:0.3rem;">
-        <span>Bugün ne okusan?</span>
-        <button type="button" class="primary" id="daily-pick-refresh-btn">🎲 Başka öner</button>
-      </div>
-      <p class="hint" style="margin:0 0 0.7rem;">Takip ettiğin konulardan, henüz okumadığın rastgele bir yazı.</p>
-      <div class="daily-pick-wrap" id="daily-pick-card"></div>
-
-      <div class="kpi-row" id="stats-summary-row" style="margin-top:1.6rem;"></div>
+      <div class="kpi-row" id="stats-summary-row"></div>
 
       <div class="widget-card-head" style="margin-top:1.6rem;">
         <span>Tüm zamanlar dağılımı</span>
@@ -1119,6 +1139,18 @@
     <div class="hp-meta" id="hp-meta"></div>
     <div class="hp-hint">Habere gitmek için tıkla ↗</div>
   </div>
+</div>
+
+<button type="button" id="daily-pick-fab" title="Bugün ne okusan?" aria-label="Bugün ne okusan?">🎲</button>
+
+<div id="daily-pick-popup" style="display:none;">
+  <div class="daily-pick-popup-head">
+    <span>Bugün ne okusan?</span>
+    <button type="button" id="daily-pick-popup-close" aria-label="Kapat">✕</button>
+  </div>
+  <p class="hint" style="margin:0 0 0.6rem;">Takip ettiğin konulardan, henüz okumadığın rastgele bir yazı.</p>
+  <div class="daily-pick-wrap" id="daily-pick-card"></div>
+  <button type="button" class="primary" id="daily-pick-refresh-btn">🎲 Başka öner</button>
 </div>
 
 <script>
@@ -1989,8 +2021,6 @@
     const blogReadsEl = document.getElementById("stats-blog-reads-rank");
     if (!summaryRow) return;
 
-    renderDailyPick();
-
     const now = new Date();
     const weekAgo = new Date(now - STATS_WINDOW_DAYS * 86400000);
     const twoWeeksAgo = new Date(now - 2 * STATS_WINDOW_DAYS * 86400000);
@@ -2231,6 +2261,23 @@
 
   document.getElementById("stats-nav-btn").addEventListener("click", selectStatsView);
 
+  // "Bugün ne okusan?" — sayfadan bağımsız, sağ altta yüzen zar butonu.
+  // Açılırken taze bir rastgele seçim yapıyoruz (her açılışta yeni öneri);
+  // popup açıkken "Başka öner" de aynı fonksiyonu tekrar çağırıyor.
+  const dailyPickFab = document.getElementById("daily-pick-fab");
+  const dailyPickPopup = document.getElementById("daily-pick-popup");
+  dailyPickFab.addEventListener("click", () => {
+    const isOpen = dailyPickPopup.style.display !== "none";
+    if (isOpen) {
+      dailyPickPopup.style.display = "none";
+    } else {
+      renderDailyPick();
+      dailyPickPopup.style.display = "";
+    }
+  });
+  document.getElementById("daily-pick-popup-close").addEventListener("click", () => {
+    dailyPickPopup.style.display = "none";
+  });
   document.getElementById("daily-pick-refresh-btn").addEventListener("click", renderDailyPick);
 
   // Donut grafikteki bir dilime/etikete tıklayınca doğrudan o kaynağın
