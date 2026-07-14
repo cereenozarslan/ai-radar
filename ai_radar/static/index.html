@@ -1274,6 +1274,33 @@
     return map;
   }
 
+  // Konu modunda, mevcut sıralamayı (Yeni/Popüler) her kaynağın KENDİ
+  // grubunda koruyarak kaynaklar arasında dönüşümlü (round-robin) dizer —
+  // böylece tek bir kaynak (örn. devasa izlenme sayılarıyla YouTube) ilk
+  // sayfaları tek başına doldurup diğerlerini sayfalarca geriye itmez.
+  function interleaveBySource(items) {
+    const bySource = {};
+    const order = [];
+    for (const it of items) {
+      if (!bySource[it.source]) { bySource[it.source] = []; order.push(it.source); }
+      bySource[it.source].push(it);
+    }
+    const result = [];
+    let i = 0;
+    let remaining = items.length;
+    while (remaining > 0) {
+      for (const src of order) {
+        const bucket = bySource[src];
+        if (i < bucket.length) {
+          result.push(bucket[i]);
+          remaining--;
+        }
+      }
+      i++;
+    }
+    return result;
+  }
+
   // Sol menüdeki rozetler: kaynak başına okunmamış sayısı, Kaydedilenler'de ise
   // kaç kayıt yıldızlanmış. Boşsa (0) rozet hiç görünmez (.sidebar-badge:empty).
   function updateSidebarBadges() {
@@ -1460,6 +1487,16 @@
       focusItems.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
     } else {
       focusItems.sort((a, b) => (b.fetched_at || "").localeCompare(a.fetched_at || ""));
+    }
+
+    if (currentTopic) {
+      // Konu modunda kaynaklar çok farklı "popülerlik" ölçeklerine sahip
+      // (YouTube'un yüz binlerce izlenmesi vs. GitHub yıldızı/X etkileşimi) —
+      // düz bir sıralama YouTube'u ilk sayfalara yığıp diğer kaynakları
+      // sayfalarca geriye itiyordu. Her kaynağın KENDİ sıralamasını (Yeni/
+      // Popüler) koruyarak kaynaklar arasında dönüşümlü (round-robin) diziyoruz
+      // ki her sayfada hepsinden olsun.
+      focusItems = interleaveBySource(focusItems);
     }
 
     // Seçili kaynağın (veya konu modunda accent'in) rengiyle panele hafif bir vurgu uygula
