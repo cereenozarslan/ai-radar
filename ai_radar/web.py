@@ -27,6 +27,7 @@ from ai_radar.collectors import (
     kommunity_events,
     meetup_events,
     nuvemmag,
+    official_blogs,
     x_twitter,
     youtube_channels,
     youtube_topics,
@@ -102,7 +103,11 @@ def _save_topic_videos(topic: str, videos: list[dict]) -> None:
 
 
 async def _refresh_free_collectors_periodically() -> None:
-    collectors = (("NuvemMag", nuvemmag.collect), ("GitHub Trending", github_trending.collect))
+    collectors = (
+        ("NuvemMag", nuvemmag.collect),
+        ("GitHub Trending", github_trending.collect),
+        ("Resmi Bloglar", official_blogs.collect),
+    )
     while True:
         for name, collect in collectors:
             try:

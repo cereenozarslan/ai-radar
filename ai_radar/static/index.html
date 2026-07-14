@@ -31,6 +31,7 @@
     --events: #b8681f;
     --youtube: #cc0000;
     --gold: #b8860b;
+    --blogs: #6d43a0;
     --shadow-sm: 0 1px 2px rgba(15, 25, 40, 0.06);
     --shadow-md: 0 6px 22px rgba(15, 25, 40, 0.08), 0 1.5px 4px rgba(15, 25, 40, 0.05);
     --shadow-lg: 0 20px 45px rgba(15, 25, 40, 0.13), 0 4px 12px rgba(15, 25, 40, 0.07);
@@ -53,6 +54,7 @@
       --events: #e8a34f;
       --youtube: #ff5252;
       --gold: #e6b800;
+      --blogs: #b18aea;
       --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
       --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
       --shadow-lg: 0 26px 60px rgba(0, 0, 0, 0.55), 0 6px 16px rgba(0, 0, 0, 0.35);
@@ -61,7 +63,7 @@
   :root[data-theme="dark"] {
     --bg: #0a0f1a; --surface: #121a29; --surface-2: #16202f; --border: #253347;
     --text: #e7ecf3; --text-muted: #8b96a8; --accent: #5b8def; --accent-ink: #051022;
-    --danger: #e2806a; --nuvemmag: #a3d95c; --github: #d9dbe1; --x: #f2f3f5; --events: #e8a34f; --youtube: #ff5252; --gold: #e6b800;
+    --danger: #e2806a; --nuvemmag: #a3d95c; --github: #d9dbe1; --x: #f2f3f5; --events: #e8a34f; --youtube: #ff5252; --gold: #e6b800; --blogs: #b18aea;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4); --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 26px 60px rgba(0, 0, 0, 0.55), 0 6px 16px rgba(0, 0, 0, 0.35);
   }
@@ -696,6 +698,11 @@
           <span class="sidebar-label">NuvemMag</span>
           <span class="sidebar-badge" data-badge="nuvemmag"></span>
         </button>
+        <button data-tab="official_blog" title="Resmi Bloglar" style="--icon-color:var(--blogs)">
+          <span class="sidebar-icon" style="color:var(--blogs)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="1.5"/><path d="M8.5 8V5.5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2V8"/></svg></span>
+          <span class="sidebar-label">Resmi Bloglar</span>
+          <span class="sidebar-badge" data-badge="official_blog"></span>
+        </button>
         <button data-tab="github_trending" title="GitHub Trending" style="--icon-color:var(--github)">
           <span class="sidebar-icon" style="color:var(--github)"><svg viewBox="0 0 16 16" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="4" cy="3" r="1.6"/><circle cx="4" cy="13" r="1.6"/><circle cx="12" cy="8" r="1.6"/><path d="M4 4.6v6.8"/><path d="M4 6a6 6 0 0 0 6.4 2"/></svg></span>
           <span class="sidebar-label">GitHub Trending</span>
@@ -915,6 +922,7 @@
     saved:    '<span style="font-size:11px;line-height:1;">★</span>',
     events:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17"/><path d="M8 3v4"/><path d="M16 3v4"/></svg>',
     youtube:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="3.5"/><path d="M10.5 9.5l5 2.5-5 2.5z" fill="currentColor" stroke="none"/></svg>',
+    official_blog: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="1.5"/><path d="M8.5 8V5.5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2V8"/></svg>',
   };
 
   const SOURCE_META = {
@@ -925,8 +933,9 @@
     events:           { label: "Etkinlikler",        varName: "events",   icon: ICONS.events,   badgeText: "#ffffff" },
     youtube:          { label: "YouTube",             varName: "youtube",  icon: ICONS.youtube,  badgeText: "#ffffff" },
     youtube_channel:  { label: "YouTube",             varName: "youtube",  icon: ICONS.youtube,  badgeText: "#ffffff" },
+    official_blog:    { label: "Resmi Bloglar",       varName: "blogs",    icon: ICONS.official_blog, badgeText: "#ffffff" },
   };
-  const SOURCE_ORDER = ["nuvemmag", "github_trending", "x_twitter"];
+  const SOURCE_ORDER = ["nuvemmag", "github_trending", "x_twitter", "official_blog"];
 
   // "Etkinlikler" sekmesi, farklı kaynaklardan (kommunity.com, meetup.com,
   // coderspace.io) gelen kayıtları TEK bir görünümde birleştirir — hepsi
