@@ -300,6 +300,17 @@
     transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
   }
   #daily-pick-fab:hover { transform: scale(1.08) rotate(-8deg); box-shadow: var(--shadow-md); }
+  /* Zar atma animasyonu: döne döne büyüyüp küçülerek "gerçekten atılmış" hissi
+     versin — JS tarafında bu sürede zar yüzü emojisini de hızlıca değiştiriyoruz. */
+  @keyframes diceRoll {
+    0%   { transform: rotate(0deg) scale(1); }
+    20%  { transform: rotate(140deg) scale(1.15); }
+    40%  { transform: rotate(250deg) scale(0.9); }
+    60%  { transform: rotate(430deg) scale(1.15); }
+    80%  { transform: rotate(610deg) scale(0.92); }
+    100% { transform: rotate(720deg) scale(1); }
+  }
+  #daily-pick-fab.rolling { animation: diceRoll 0.65s cubic-bezier(0.34, 1.56, 0.64, 1); }
   #daily-pick-popup {
     position: fixed; right: 22px; bottom: 86px; z-index: 90;
     width: min(340px, calc(100vw - 44px)); max-height: min(72vh, 560px); overflow-y: auto;
@@ -2266,19 +2277,44 @@
   // popup açıkken "Başka öner" de aynı fonksiyonu tekrar çağırıyor.
   const dailyPickFab = document.getElementById("daily-pick-fab");
   const dailyPickPopup = document.getElementById("daily-pick-popup");
+
+  // Gerçek bir zar atılıyormuş hissi versin diye: buton dönerken (CSS
+  // animasyonu) İÇİNDEKİ emoji de hızlıca 6 zar yüzü arasında geziniyor,
+  // animasyon bitince "🎲"e dönüp popup'ı (sonucu) açıyoruz.
+  const DICE_FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+  let isRolling = false;
+  function rollDiceThenReveal() {
+    if (isRolling) return;
+    isRolling = true;
+    dailyPickFab.classList.add("rolling");
+    let i = 0;
+    const faceTimer = setInterval(() => {
+      dailyPickFab.textContent = DICE_FACES[i % DICE_FACES.length];
+      i++;
+    }, 90);
+    setTimeout(() => {
+      clearInterval(faceTimer);
+      dailyPickFab.textContent = "🎲";
+      dailyPickFab.classList.remove("rolling");
+      isRolling = false;
+      renderDailyPick();
+      dailyPickPopup.style.display = "";
+    }, 650);
+  }
+
   dailyPickFab.addEventListener("click", () => {
+    if (isRolling) return;
     const isOpen = dailyPickPopup.style.display !== "none";
     if (isOpen) {
       dailyPickPopup.style.display = "none";
     } else {
-      renderDailyPick();
-      dailyPickPopup.style.display = "";
+      rollDiceThenReveal();
     }
   });
   document.getElementById("daily-pick-popup-close").addEventListener("click", () => {
     dailyPickPopup.style.display = "none";
   });
-  document.getElementById("daily-pick-refresh-btn").addEventListener("click", renderDailyPick);
+  document.getElementById("daily-pick-refresh-btn").addEventListener("click", rollDiceThenReveal);
 
   // Donut grafikteki bir dilime/etikete tıklayınca doğrudan o kaynağın
   // sekmesine geçiyoruz (bkz. renderDonutChart'taki data-donut-tab).
