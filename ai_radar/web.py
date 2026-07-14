@@ -27,9 +27,12 @@ from ai_radar.collectors import (
     github_trending,
     kommunity_events,
     meetup_events,
+    meta_ai,
     nuvemmag,
     official_blogs,
+    perplexity_blog,
     x_twitter,
+    xai_news,
     youtube_channels,
     youtube_topics,
 )
@@ -109,6 +112,9 @@ async def _refresh_free_collectors_periodically() -> None:
         ("GitHub Trending", github_trending.collect),
         ("Resmi Bloglar", official_blogs.collect),
         ("Anthropic", anthropic_news.collect),
+        ("Meta AI", meta_ai.collect),
+        ("xAI", xai_news.collect),
+        ("Perplexity", perplexity_blog.collect),
     )
     while True:
         for name, collect in collectors:
