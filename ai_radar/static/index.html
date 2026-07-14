@@ -946,6 +946,19 @@
         <span>Bu haftanın en popüler yazıları</span>
       </div>
       <div class="item-list" id="stats-top-items"></div>
+
+      <div class="widget-card-head" style="margin-top:1.6rem;">
+        <span>En çok okuduğun kaynaklar</span>
+      </div>
+      <p class="hint" style="margin:0 0 0.6rem;">Tıklayıp açtığın (okundu işaretlenen) kayıtlara göre, tüm zamanlar.</p>
+      <div class="trend-rank" id="stats-source-reads-rank"></div>
+
+      <div id="stats-blog-reads-section" style="display:none;">
+        <div class="widget-card-head" style="margin-top:1.6rem;">
+          <span>Resmi Bloglar'da en çok okuduğun şirketler</span>
+        </div>
+        <div class="trend-rank" id="stats-blog-reads-rank"></div>
+      </div>
     </section>
 
     <div id="x-panel">
@@ -1537,26 +1550,36 @@
     { bg: "rgba(90, 180, 190, 0.16)",  border: "#4fa8b2" },
   ];
 
-  function renderTrendRank(items, elId = "trend-rank") {
-    const el = document.getElementById(elId);
-    const freqs = wordFrequencies(items, 6);
-    if (!freqs.length) {
-      el.innerHTML = `<span style="color:var(--text-muted);font-size:0.82rem;">Henüz yeterli veri yok.</span>`;
+  // Genel amaçlı sıra/bar görünümü — [etiket, sayı] çiftlerinden oluşan HERHANGİ
+  // bir listeyi (kelime sıklığı, kaynak/marka okunma sayısı vb.) aynı "Yükselen
+  // Gündem" görselinde çiziyor. En büyük sayı %100 bar alır, diğerleri orantılı.
+  function renderRankBars(el, entries, opts = {}) {
+    const emptyText = opts.emptyText || "Henüz yeterli veri yok.";
+    const title = opts.title || ((label, count) => `${count} kez`);
+    const formatLabel = opts.formatLabel || ((label) => label);
+    if (!entries.length) {
+      el.innerHTML = `<span style="color:var(--text-muted);font-size:0.82rem;">${emptyText}</span>`;
       return;
     }
-    const max = freqs[0][1];
-    el.innerHTML = freqs.map(([w, c], i) => {
-      const pct = Math.max(35, Math.round((c / max) * 100));
+    const max = entries[0][1];
+    el.innerHTML = entries.map(([label, count], i) => {
+      const pct = Math.max(35, Math.round((count / max) * 100));
       const color = TREND_PALETTE[i % TREND_PALETTE.length];
       return `
         <div class="trend-rank-row">
           <div class="trend-rank-num">${i + 1}</div>
           <div class="trend-rank-track">
-            <div class="trend-rank-bar" style="width:${pct}%;background:${color.bg};border-color:${color.border};color:${color.border}" title="${c} kez geçti">${w}</div>
+            <div class="trend-rank-bar" style="width:${pct}%;background:${color.bg};border-color:${color.border};color:${color.border}" title="${title(label, count)}">${formatLabel(label, count)}</div>
           </div>
         </div>
       `;
     }).join("");
+  }
+
+  function renderTrendRank(items, elId = "trend-rank") {
+    const el = document.getElementById(elId);
+    const freqs = wordFrequencies(items, 6);
+    renderRankBars(el, freqs, { title: (w, c) => `${c} kez geçti` });
   }
 
   function renderExplorer() {
@@ -1733,6 +1756,9 @@
     const summaryRow = document.getElementById("stats-summary-row");
     const sourceRow = document.getElementById("stats-source-row");
     const topItemsEl = document.getElementById("stats-top-items");
+    const sourceReadsEl = document.getElementById("stats-source-reads-rank");
+    const blogReadsSection = document.getElementById("stats-blog-reads-section");
+    const blogReadsEl = document.getElementById("stats-blog-reads-rank");
     if (!summaryRow) return;
 
     const now = new Date();
@@ -1778,6 +1804,40 @@
     topItemsEl.innerHTML = topItems.length
       ? topItems.map(it => itemRow(it, SOURCE_META[statsDisplaySource(it)])).join("")
       : `<div class="empty-note">Bu hafta popülerlik verisi olan bir kayıt yok.</div>`;
+
+    // "En çok tıkladığın kaynak/marka": tekil bir yazının kaç kez tıklandığını
+    // TUTMUYORUZ (is_read sadece bir bayrak), ama kaynak/marka bazında kaç
+    // FARKLI yazıyı okuduğun (tüm zamanlar) anlamlı ve hesaplanabilir bir sinyal.
+    const readItems = ALL_ITEMS.filter(it => it.is_read);
+
+    const readsBySource = {};
+    for (const it of readItems) {
+      const key = statsDisplaySource(it);
+      readsBySource[key] = (readsBySource[key] || 0) + 1;
+    }
+    const sourceReadEntries = Object.entries(readsBySource)
+      .map(([src, count]) => [SOURCE_META[src].label, count])
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6);
+    renderRankBars(sourceReadsEl, sourceReadEntries, {
+      emptyText: "Henüz hiçbir kaydı açmadın.",
+      title: (label, count) => `${count} yazı okudun`,
+      formatLabel: (label, count) => `${label} · ${count}`,
+    });
+
+    const readsByBlogAuthor = {};
+    for (const it of readItems) {
+      if (it.source !== "official_blog" || !it.author) continue;
+      readsByBlogAuthor[it.author] = (readsByBlogAuthor[it.author] || 0) + 1;
+    }
+    const blogReadEntries = Object.entries(readsByBlogAuthor).sort((a, b) => b[1] - a[1]);
+    blogReadsSection.style.display = blogReadEntries.length ? "" : "none";
+    if (blogReadEntries.length) {
+      renderRankBars(blogReadsEl, blogReadEntries, {
+        title: (label, count) => `${count} yazı okudun`,
+        formatLabel: (label, count) => `${label} · ${count}`,
+      });
+    }
   }
 
   async function loadEverything() {
