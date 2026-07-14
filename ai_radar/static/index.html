@@ -324,8 +324,16 @@
   .donut-legend-item:not(.clickable):hover { background: transparent; }
 
   .stats-donut-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem 2rem;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem;
   }
+  /* KPI kartlarıyla aynı "hafif kutucuk" hissi: her donut kendi kartında. */
+  .stats-donut-block {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 1rem 1.1rem; box-shadow: var(--shadow-sm);
+    transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+    animation: statPopIn 0.4s var(--ease) backwards;
+  }
+  .stats-donut-block:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
   .stats-donut-title { font-size: 0.8rem; font-weight: 700; margin: 0 0 0.6rem; color: var(--text-muted); }
   /* Bir kategoride kayıt yoksa (ör. hiç Etkinlik eklenmemiş), donut'u değil
      sade bir not göstermek daha temiz duruyor. */
@@ -1003,29 +1011,19 @@
       </div>
       <p class="hint" style="margin:0 0 0.6rem;">Bir dilime/etikete tıklayınca o kaynağa gidersin.</p>
       <div class="stats-donut-grid">
-        <div class="stats-donut-block">
+        <div class="stats-donut-block" style="animation-delay:0ms">
           <h3 class="stats-donut-title">Platformlar</h3>
           <div id="stats-platform-donut"></div>
         </div>
-        <div class="stats-donut-block">
+        <div class="stats-donut-block" style="animation-delay:60ms">
           <h3 class="stats-donut-title">Resmi Bloglar</h3>
           <div id="stats-blog-donut"></div>
         </div>
-        <div class="stats-donut-block">
+        <div class="stats-donut-block" style="animation-delay:120ms">
           <h3 class="stats-donut-title">Etkinlikler</h3>
           <div id="stats-events-donut"></div>
         </div>
       </div>
-
-      <div class="widget-card-head" style="margin-top:1.6rem;">
-        <span>Bu hafta kaynak dağılımı</span>
-      </div>
-      <div class="trend-rank" id="stats-source-row"></div>
-
-      <div class="widget-card-head" style="margin-top:1.6rem;">
-        <span>Bu haftanın en popüler yazıları</span>
-      </div>
-      <div class="item-list" id="stats-top-items"></div>
 
       <div class="widget-card-head" style="margin-top:1.6rem;">
         <span>En çok okuduğun kaynaklar</span>
@@ -1039,6 +1037,11 @@
         </div>
         <div class="trend-rank" id="stats-blog-reads-rank"></div>
       </div>
+
+      <div class="widget-card-head" style="margin-top:1.6rem;">
+        <span>Bu haftanın en popüler yazıları</span>
+      </div>
+      <div class="item-list" id="stats-top-items"></div>
     </section>
 
     <div id="x-panel">
@@ -1868,7 +1871,7 @@
   // Donut'ta GitHub ve X'in marka renkleri (ikisi de neredeyse saf siyah)
   // birbirinden ayırt edilemiyordu — sidebar/rozet/kart renklerine dokunmadan
   // SADECE bu grafikte GitHub'a farklı bir ton veriyoruz.
-  const DONUT_COLOR_OVERRIDES = { github_trending: "#6e5494" };
+  const DONUT_COLOR_OVERRIDES = { github_trending: "#8a8f98" };
   function donutColorForSource(src) {
     return DONUT_COLOR_OVERRIDES[src] || `var(--${SOURCE_META[src].varName})`;
   }
@@ -1919,7 +1922,6 @@
     const platformDonutEl = document.getElementById("stats-platform-donut");
     const blogDonutEl = document.getElementById("stats-blog-donut");
     const eventsDonutEl = document.getElementById("stats-events-donut");
-    const sourceRow = document.getElementById("stats-source-row");
     const topItemsEl = document.getElementById("stats-top-items");
     const sourceReadsEl = document.getElementById("stats-source-reads-rank");
     const blogReadsSection = document.getElementById("stats-blog-reads-section");
@@ -1993,28 +1995,15 @@
     renderDonutChart(blogDonutEl, blogSegments, { centerLabel: "blog yazısı", emptyText: "Henüz Resmi Bloglar kaydı yok." });
 
     // 3) Etkinlikler: online / yüz yüze kırılımı (is_online alanına göre).
+    // Online = parlak yeşil, yüz yüze = Etkinlikler'in kendi turuncusu (--events).
     const eventItems = ALL_ITEMS.filter(it => EVENT_SOURCES.includes(it.source));
     const onlineCount = eventItems.filter(it => it.is_online).length;
     const offlineCount = eventItems.length - onlineCount;
     const eventSegments = [
-      { label: "Online", count: onlineCount, color: "var(--events)", tabTarget: "events" },
-      { label: "Yüz yüze", count: offlineCount, color: TREND_PALETTE[3].border, tabTarget: "events" },
+      { label: "Online", count: onlineCount, color: "#22c55e", tabTarget: "events" },
+      { label: "Yüz yüze", count: offlineCount, color: "var(--events)", tabTarget: "events" },
     ].filter(seg => seg.count > 0);
     renderDonutChart(eventsDonutEl, eventSegments, { centerLabel: "etkinlik", emptyText: "Henüz Etkinlik kaydı yok." });
-
-    const bySource = {};
-    for (const it of thisWeek) {
-      const key = statsDisplaySource(it);
-      (bySource[key] ||= []).push(it);
-    }
-    const sortedSources = Object.entries(bySource)
-      .map(([src, items]) => [SOURCE_META[src].label, items.length])
-      .sort((a, b) => b[1] - a[1]);
-    renderRankBars(sourceRow, sortedSources, {
-      emptyText: "Bu hafta henüz yeni kayıt yok.",
-      title: (label, count) => `${count} kayıt`,
-      formatLabel: (label, count) => `${label} · ${count}`,
-    });
 
     const topItems = thisWeek
       .filter(it => it.popularity)
