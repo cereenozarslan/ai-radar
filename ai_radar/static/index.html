@@ -147,10 +147,6 @@
     max-height: calc(100vh - 57px);
     overflow-y: auto;
   }
-  .sidebar-group-label {
-    font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700;
-    color: var(--text-muted); padding: 0 0.7rem; margin-bottom: 0.4rem;
-  }
   .sidebar-divider { height: 1px; background: var(--border); margin: 0.6rem 0.5rem; }
   /* X'in alt öğesi ("Takip Ettiklerin") — bir platforma değil, o platformun
      içindeki bir alt görünüme (takip gündemi) götürdüğü için hafifçe girintili. */
@@ -176,31 +172,16 @@
   .sidebar-badge:empty { display: none; }
   nav.sidebar button.active .sidebar-badge { background: var(--icon-color, var(--accent)); color: #fff; }
 
-  /* Platformlar / Takip Ettiğin Konular: her biri açılıp kapanabilen bir grup */
-  .sidebar-group { margin-bottom: 0.3rem; }
-  .sidebar-group-header {
-    display: flex; align-items: center; justify-content: space-between; width: 100%;
-    background: none; border: none; padding: 0.3rem 0.7rem; margin-bottom: 0.2rem; cursor: pointer;
-  }
-  .sidebar-group-header .sidebar-group-label { margin-bottom: 0; padding: 0; }
-  .sidebar-chevron {
-    color: var(--text-muted); font-size: 0.8rem; transition: transform 0.2s var(--ease);
-  }
-  .sidebar-group.collapsed .sidebar-chevron { transform: rotate(-90deg); }
-  .sidebar-group-items {
-    display: flex; flex-direction: column; gap: 0.2rem;
-    overflow: hidden; max-height: 900px; transition: max-height 0.25s var(--ease);
-  }
-  .sidebar-group.collapsed .sidebar-group-items { max-height: 0; }
-
-  /* Takip edilen konular: ekleme formu, konu düğmeleri, öneriler */
+  /* Takip edilen konular / Yükselen Gündem / öneriler: hepsi artık ana içerik
+     alanındaki geniş "hub" sayfalarında — dar sidebar sütunu için tasarlanmış
+     tam-genişlik satırlar yerine yan yana sığan çipler kullanıyoruz. */
   .sidebar-topic-add-toggle {
-    width: 100%; text-align: left; background: none; border: none; border-radius: 10px;
-    padding: 0.45rem 0.7rem; margin-bottom: 0.2rem; color: var(--accent); font-size: 0.82rem; font-weight: 700; cursor: pointer;
+    width: auto; display: inline-block; background: none; border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.4rem 0.8rem; margin-bottom: 0.2rem; color: var(--accent); font-size: 0.82rem; font-weight: 700; cursor: pointer;
     transition: background-color 0.15s var(--ease);
   }
   .sidebar-topic-add-toggle:hover { background: var(--surface-2); }
-  .sidebar-topic-add { display: flex; gap: 0.35rem; padding: 0 0.7rem 0.5rem; }
+  .sidebar-topic-add { display: flex; gap: 0.35rem; padding: 0.5rem 0 0; max-width: 320px; }
   .sidebar-topic-add input {
     flex: 1; min-width: 0; padding: 0.4rem 0.55rem; border-radius: 8px;
     border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-size: 0.78rem;
@@ -210,7 +191,17 @@
     flex: none; width: auto; padding: 0.4rem 0.6rem; border-radius: 8px; border: none;
     background: var(--accent); color: var(--accent-ink); font-weight: 700; cursor: pointer;
   }
-  .sidebar-topic-btn { position: relative; }
+  .sidebar-topic-btn, .sidebar-topic-suggestion {
+    position: relative; display: flex; align-items: center; gap: 0.5rem;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    padding: 0.45rem 0.9rem; color: var(--text); font-size: 0.85rem; font-weight: 600; cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease), background-color 0.15s var(--ease), color 0.15s var(--ease);
+  }
+  .sidebar-topic-btn:hover, .sidebar-topic-suggestion:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); color: var(--accent); }
+  .sidebar-topic-btn.active, .sidebar-topic-suggestion.active {
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface)); border-color: var(--accent); color: var(--accent);
+  }
   .sidebar-topic-remove {
     flex: none; display: none; align-items: center; justify-content: center;
     width: 18px; height: 18px; border-radius: 50%; color: var(--text-muted); font-size: 0.85rem; line-height: 1;
@@ -219,30 +210,40 @@
   .sidebar-topic-btn:hover .sidebar-topic-remove { display: flex; }
   .sidebar-topic-remove:hover { background: var(--danger); color: #fff; }
   .sidebar-suggestions-label {
-    font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase;
-    color: var(--text-muted); padding: 0.5rem 0.7rem 0.2rem;
+    width: 100%; font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-muted); padding: 0.3rem 0;
   }
-  .sidebar-topic-suggestion {
-    width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
-    text-align: left; background: none; border: none; border-radius: 10px;
-    padding: 0.45rem 0.7rem; color: var(--text-muted); font-size: 0.82rem; font-weight: 600; cursor: pointer;
-    transition: background-color 0.15s var(--ease), color 0.15s var(--ease);
-  }
-  .sidebar-topic-suggestion:hover { background: var(--surface-2); color: var(--accent); }
-  .sidebar-topic-suggestion.active { background: var(--surface-2); color: var(--accent); }
 
-  /* Konu ekle/öneriler artık sidebar'da değil, konu sayfasının üstünde geniş
-     içerik alanında — dar sütun için tasarlanmış tam-genişlik satırlar yerine
-     yan yana sığan çipler daha uygun. */
-  #topic-manage-section { margin: 0.9rem 0 1.1rem; }
-  #topic-manage-section .sidebar-topic-add-toggle { width: auto; display: inline-block; padding: 0.4rem 0.8rem; border: 1px solid var(--border); }
-  #topic-manage-section .sidebar-topic-add { max-width: 320px; }
+  #topic-manage-section { margin: 0 0 1.3rem; }
   #topic-manage-section #sidebar-topic-suggestions {
     display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-top: 0.6rem;
   }
-  #topic-manage-section .sidebar-suggestions-label { width: 100%; padding: 0; }
-  #topic-manage-section .sidebar-topic-suggestion {
-    width: auto; border: 1px solid var(--border); border-radius: 20px; padding: 0.35rem 0.75rem;
+
+  /* "Hub" sayfaları: Platformlar / Şirket Blogları için tıklanabilir kartlar,
+     Takip Ettiğin Konular / Yükselen Gündem için çip listesi. */
+  .hub-chip-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .hub-grid { display: flex; flex-wrap: wrap; gap: 0.9rem; }
+  .hub-card {
+    flex: 1 1 220px; display: flex; align-items: center; gap: 0.85rem; text-align: left;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 1rem 1.15rem; box-shadow: var(--shadow-sm); cursor: pointer;
+    transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  }
+  .hub-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .hub-card-icon {
+    flex: none; width: 42px; height: 42px; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--hub-color, var(--accent)) 16%, transparent);
+    color: var(--hub-color, var(--accent));
+  }
+  .hub-card-icon img { width: 26px; height: 26px; object-fit: contain; }
+  .hub-card-body { min-width: 0; flex: 1; }
+  .hub-card-label { font-weight: 700; font-size: 0.92rem; }
+  .hub-card-count { font-size: 0.74rem; color: var(--text-muted); }
+  .hub-card-badge {
+    flex: none; min-width: 22px; height: 22px; padding: 0 0.4rem; border-radius: 11px;
+    background: var(--hub-color, var(--accent)); color: #fff;
+    font-size: 0.72rem; font-weight: 700; display: flex; align-items: center; justify-content: center;
   }
 
   @media (max-width: 1000px) { nav.sidebar { display: none; } }
@@ -657,7 +658,7 @@
   .photo-card.hero .photo-card-title { font-size: 1.2rem; -webkit-line-clamp: 3; }
   .photo-card.hero .photo-card-meta { font-size: 0.72rem; }
 
-  /* Resmi Bloglar'da bazı yazıların görseli yok (kaynak sitede hiç
+  /* Şirket Blogları'nda bazı yazıların görseli yok (kaynak sitede hiç
      yayınlanmamış) — kart boş durmasın diye şirket adının baş harflerinden
      otomatik bir "logo" rozeti gösteriyoruz (bkz. officialBlogLogoFallback()). */
   .photo-card-logo-fallback {
@@ -842,140 +843,50 @@
       <span class="sidebar-label">İstatistikler</span>
     </button>
 
-    <div class="sidebar-group" id="platforms-group">
-      <button type="button" class="sidebar-group-header">
-        <span class="sidebar-group-label">Platformlar</span>
-        <span class="sidebar-chevron">⌄</span>
-      </button>
-      <div class="sidebar-group-items">
-        <button data-tab="nuvemmag" title="NuvemMag" style="--icon-color:var(--nuvemmag)">
-          <span class="sidebar-icon" style="color:var(--nuvemmag)"><svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M6.5 19a4.5 4.5 0 0 1-.4-8.98A6 6 0 0 1 17.6 8.1 4.5 4.5 0 0 1 17 19H6.5z"/></svg></span>
-          <span class="sidebar-label">NuvemMag</span>
-          <span class="sidebar-badge" data-badge="nuvemmag"></span>
-        </button>
-        <button data-tab="github_trending" title="GitHub Trending" style="--icon-color:var(--github)">
-          <span class="sidebar-icon" style="color:var(--github)"><svg viewBox="0 0 16 16" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="4" cy="3" r="1.6"/><circle cx="4" cy="13" r="1.6"/><circle cx="12" cy="8" r="1.6"/><path d="M4 4.6v6.8"/><path d="M4 6a6 6 0 0 0 6.4 2"/></svg></span>
-          <span class="sidebar-label">GitHub Trending</span>
-          <span class="sidebar-badge" data-badge="github_trending"></span>
-        </button>
-        <button data-tab="x_twitter" title="X" style="--icon-color:var(--x)">
-          <span class="sidebar-icon" style="color:var(--x)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 4l16 16M20 4L4 20"/></svg></span>
-          <span class="sidebar-label">X</span>
-          <span class="sidebar-badge" data-badge="x_twitter"></span>
-        </button>
-        <button data-tab="youtube" title="YouTube" style="--icon-color:var(--youtube)">
-          <span class="sidebar-icon" style="color:var(--youtube)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="3.5"/><path d="M10.5 9.5l5 2.5-5 2.5z" fill="currentColor" stroke="none"/></svg></span>
-          <span class="sidebar-label">YouTube</span>
-          <span class="sidebar-badge" data-badge="youtube"></span>
-        </button>
-      </div>
-    </div>
+    <button type="button" id="platform-hub-nav-btn" title="Platformlar">
+      <span class="sidebar-icon" style="color:var(--accent)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></span>
+      <span class="sidebar-label">Platformlar</span>
+      <span class="sidebar-badge" data-badge="platform-hub"></span>
+    </button>
 
-    <div class="sidebar-group" id="official-blogs-group">
-      <button type="button" class="sidebar-group-header">
-        <span class="sidebar-group-label">Resmi Bloglar</span>
-        <span class="sidebar-chevron">⌄</span>
-      </button>
-      <div class="sidebar-group-items">
-        <button data-tab="official_blog" data-blog-author="OpenAI" title="OpenAI" style="--icon-color:var(--blogs)">
-          <span class="sidebar-icon" style="color:var(--blogs)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="1.5"/><path d="M8.5 8V5.5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2V8"/></svg></span>
-          <span class="sidebar-label">OpenAI</span>
-          <span class="sidebar-badge" data-badge="official_blog:OpenAI"></span>
-        </button>
-        <button data-tab="official_blog" data-blog-author="Google DeepMind" title="Google DeepMind" style="--icon-color:var(--blogs)">
-          <span class="sidebar-icon" style="color:var(--blogs)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="1.5"/><path d="M8.5 8V5.5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2V8"/></svg></span>
-          <span class="sidebar-label">Google DeepMind</span>
-          <span class="sidebar-badge" data-badge="official_blog:Google DeepMind"></span>
-        </button>
-        <button data-tab="official_blog" data-blog-author="Anthropic" title="Anthropic" style="--icon-color:var(--blogs)">
-          <span class="sidebar-icon" style="color:var(--blogs)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="1.5"/><path d="M8.5 8V5.5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2V8"/></svg></span>
-          <span class="sidebar-label">Anthropic</span>
-          <span class="sidebar-badge" data-badge="official_blog:Anthropic"></span>
-        </button>
-        <button data-tab="official_blog" data-blog-author="Meta AI" title="Meta AI" style="--icon-color:var(--blogs)">
-          <span class="sidebar-icon" style="color:var(--blogs)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="1.5"/><path d="M8.5 8V5.5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2V8"/></svg></span>
-          <span class="sidebar-label">Meta AI</span>
-          <span class="sidebar-badge" data-badge="official_blog:Meta AI"></span>
-        </button>
-        <button data-tab="official_blog" data-blog-author="xAI" title="xAI" style="--icon-color:var(--blogs)">
-          <span class="sidebar-icon" style="color:var(--blogs)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="1.5"/><path d="M8.5 8V5.5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2V8"/></svg></span>
-          <span class="sidebar-label">xAI</span>
-          <span class="sidebar-badge" data-badge="official_blog:xAI"></span>
-        </button>
-        <button data-tab="official_blog" data-blog-author="Perplexity" title="Perplexity" style="--icon-color:var(--blogs)">
-          <span class="sidebar-icon" style="color:var(--blogs)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="1.5"/><path d="M8.5 8V5.5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2V8"/></svg></span>
-          <span class="sidebar-label">Perplexity</span>
-          <span class="sidebar-badge" data-badge="official_blog:Perplexity"></span>
-        </button>
-      </div>
-    </div>
+    <button type="button" id="blog-hub-nav-btn" title="Şirket Blogları">
+      <span class="sidebar-icon" style="color:var(--blogs)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="1.5"/><path d="M8.5 8V5.5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2V8"/></svg></span>
+      <span class="sidebar-label">Şirket Blogları</span>
+      <span class="sidebar-badge" data-badge="blog-hub"></span>
+    </button>
 
     <button type="button" class="sidebar-subitem" id="following-digest-nav-btn" title="Takip ettiklerinin gündemi" style="margin: -0.1rem 0 0.3rem;">
       <span class="sidebar-label">Takip Ettiklerin</span>
     </button>
 
-    <div class="sidebar-group" id="topics-group">
-      <button type="button" class="sidebar-group-header">
-        <span class="sidebar-group-label">Takip Ettiğin Konular</span>
-        <span class="sidebar-chevron">⌄</span>
-      </button>
-      <div class="sidebar-group-items">
-        <div id="sidebar-topics-list"></div>
-      </div>
-    </div>
+    <button type="button" id="topics-hub-nav-btn" title="Takip Ettiğin Konular">
+      <span class="sidebar-icon" style="color:var(--accent)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 9h14M5 15h14M9 4L7 20M17 4l-2 16"/></svg></span>
+      <span class="sidebar-label">Takip Ettiğin Konular</span>
+      <span class="sidebar-badge" data-badge="topics-hub"></span>
+    </button>
 
-    <div class="sidebar-group" id="rising-group">
-      <button type="button" class="sidebar-group-header">
-        <span class="sidebar-group-label">Yükselen Gündem</span>
-        <span class="sidebar-chevron">⌄</span>
-      </button>
-      <div class="sidebar-group-items">
-        <div id="rising-topics-list"></div>
-      </div>
-    </div>
+    <button type="button" id="rising-hub-nav-btn" title="Yükselen Gündem">
+      <span class="sidebar-icon" style="color:var(--accent)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 6h6v6"/></svg></span>
+      <span class="sidebar-label">Yükselen Gündem</span>
+    </button>
 
-    <div class="sidebar-group" id="events-group">
-      <button type="button" class="sidebar-group-header">
-        <span class="sidebar-group-label">Etkinlikler</span>
-        <span class="sidebar-chevron">⌄</span>
-      </button>
-      <div class="sidebar-group-items">
-        <button data-tab="events" title="Türkiye'deki yapay zeka etkinlikleri" style="--icon-color:var(--events)">
-          <span class="sidebar-icon" style="color:var(--events)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17"/><path d="M8 3v4"/><path d="M16 3v4"/></svg></span>
-          <span class="sidebar-label">YZ Etkinlikleri</span>
-          <span class="sidebar-badge" data-badge="events"></span>
-        </button>
-      </div>
-    </div>
+    <button data-tab="events" title="Türkiye'deki yapay zeka etkinlikleri" style="--icon-color:var(--events)">
+      <span class="sidebar-icon" style="color:var(--events)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17"/><path d="M8 3v4"/><path d="M16 3v4"/></svg></span>
+      <span class="sidebar-label">Etkinlikler</span>
+      <span class="sidebar-badge" data-badge="events"></span>
+    </button>
 
-    <div class="sidebar-group" id="saved-group">
-      <button type="button" class="sidebar-group-header">
-        <span class="sidebar-group-label">Kaydedilenler</span>
-        <span class="sidebar-chevron">⌄</span>
-      </button>
-      <div class="sidebar-group-items">
-        <button data-tab="saved" title="Kaydedilenler" style="--icon-color:var(--gold)">
-          <span class="sidebar-icon" style="color:var(--gold);font-size:15px;">★</span>
-          <span class="sidebar-label">Kaydedilenler</span>
-          <span class="sidebar-badge" data-badge="saved"></span>
-        </button>
-      </div>
-    </div>
+    <button data-tab="saved" title="Kaydedilenler" style="--icon-color:var(--gold)">
+      <span class="sidebar-icon" style="color:var(--gold);font-size:15px;">★</span>
+      <span class="sidebar-label">Kaydedilenler</span>
+      <span class="sidebar-badge" data-badge="saved"></span>
+    </button>
   </nav>
 
   <div class="page">
 
     <section class="explorer" id="explorer-panel">
       <h2 class="section-title" id="explorer-title" style="display:none;"></h2>
-
-      <div id="topic-manage-section" style="display:none;">
-        <button type="button" class="sidebar-topic-add-toggle" id="sidebar-topic-add-toggle">+ Konu ekle</button>
-        <form class="sidebar-topic-add" id="sidebar-topic-form" style="display:none;">
-          <input type="text" id="sidebar-topic-input" placeholder="konu adı…" autocomplete="off" />
-          <button type="submit" title="Ekle">✓</button>
-        </form>
-        <div id="sidebar-topic-suggestions"></div>
-      </div>
 
       <div class="explorer-toolbar">
         <div class="view-toggle text-toggle" id="sort-toggle">
@@ -1079,7 +990,7 @@
           <div id="stats-platform-donut"></div>
         </div>
         <div class="stats-donut-block" style="animation-delay:60ms">
-          <h3 class="stats-donut-title">Resmi Bloglar</h3>
+          <h3 class="stats-donut-title">Şirket Blogları</h3>
           <div id="stats-blog-donut"></div>
         </div>
         <div class="stats-donut-block" style="animation-delay:120ms">
@@ -1096,7 +1007,7 @@
 
       <div id="stats-blog-reads-section" style="display:none;">
         <div class="widget-card-head" style="margin-top:1.6rem;">
-          <span>Resmi Bloglar'da en çok okuduğun şirketler</span>
+          <span>Şirket Blogları'nda en çok okuduğun şirketler</span>
         </div>
         <div class="trend-rank" id="stats-blog-reads-rank"></div>
       </div>
@@ -1105,6 +1016,40 @@
         <span>Bu haftanın en popüler yazıları</span>
       </div>
       <div class="item-list" id="stats-top-items"></div>
+    </section>
+
+    <section class="explorer" id="platform-hub-panel" style="display:none;">
+      <h2 class="section-title">Platformlar</h2>
+      <p class="hint" style="margin:0.6rem 0 1.1rem;">Bir platforma tıklayınca o kaynağın akışına gidersin.</p>
+      <div class="hub-grid" id="platform-hub-grid"></div>
+    </section>
+
+    <section class="explorer" id="blog-hub-panel" style="display:none;">
+      <h2 class="section-title">Şirket Blogları</h2>
+      <p class="hint" style="margin:0.6rem 0 1.1rem;">Bir şirkete tıklayınca sadece onun yazılarını görürsün.</p>
+      <div class="hub-grid" id="blog-hub-grid"></div>
+    </section>
+
+    <section class="explorer" id="topics-hub-panel" style="display:none;">
+      <h2 class="section-title">Takip Ettiğin Konular</h2>
+      <p class="hint" style="margin:0.6rem 0 1.1rem;">Bir konuya tıklayınca tüm kaynaklardaki ilgili kayıtları görürsün.</p>
+
+      <div id="topic-manage-section">
+        <button type="button" class="sidebar-topic-add-toggle" id="sidebar-topic-add-toggle">+ Konu ekle</button>
+        <form class="sidebar-topic-add" id="sidebar-topic-form" style="display:none;">
+          <input type="text" id="sidebar-topic-input" placeholder="konu adı…" autocomplete="off" />
+          <button type="submit" title="Ekle">✓</button>
+        </form>
+        <div id="sidebar-topic-suggestions"></div>
+      </div>
+
+      <div id="sidebar-topics-list" class="hub-chip-list"></div>
+    </section>
+
+    <section class="explorer" id="rising-hub-panel" style="display:none;">
+      <h2 class="section-title">Yükselen Gündem</h2>
+      <p class="hint" style="margin:0.6rem 0 1.1rem;">Son 12 saatte etkileşimi hızla artan kelimeler — birine tıklayınca o konudaki kayıtları görürsün.</p>
+      <div id="rising-topics-list" class="hub-chip-list"></div>
     </section>
 
     <div id="x-panel">
@@ -1183,7 +1128,7 @@
     events:           { label: "Etkinlikler",        varName: "events",   icon: ICONS.events,   badgeText: "#ffffff" },
     youtube:          { label: "YouTube",             varName: "youtube",  icon: ICONS.youtube,  badgeText: "#ffffff" },
     youtube_channel:  { label: "YouTube",             varName: "youtube",  icon: ICONS.youtube,  badgeText: "#ffffff" },
-    official_blog:    { label: "Resmi Bloglar",       varName: "blogs",    icon: ICONS.official_blog, badgeText: "#ffffff" },
+    official_blog:    { label: "Şirket Blogları",     varName: "blogs",    icon: ICONS.official_blog, badgeText: "#ffffff" },
   };
   const SOURCE_ORDER = ["nuvemmag", "github_trending", "x_twitter", "official_blog"];
 
@@ -1192,9 +1137,13 @@
   // aynı "Etkinlikler" rozetiyle (SOURCE_META.events) gösterilir.
   const EVENT_SOURCES = ["kommunity_events", "meetup_events", "coderspace_events"];
 
-  // "Resmi Bloglar" sidebar grubundaki alt başlıklar (şirket adları) — sidebar
-  // rozetlerini şirket başına hesaplamak için kullanılıyor.
+  // "Şirket Blogları" hub sayfasındaki şirketler — hem rozet hesaplarken hem
+  // hub kartlarını oluştururken kullanılıyor.
   const BLOG_AUTHORS = ["OpenAI", "Google DeepMind", "Anthropic", "Meta AI", "xAI", "Perplexity"];
+
+  // "Platformlar" hub sayfasının kapsadığı kaynaklar (x_following/youtube_channel
+  // ayrı işlenip bunlarla birleştiriliyor, bkz. statsDisplaySource()).
+  const PLATFORM_SOURCES = ["nuvemmag", "github_trending", "x_twitter", "youtube"];
 
   const STOPWORDS = new Set([
     "the","a","an","of","to","in","on","for","and","is","are","with","this","that",
@@ -1205,7 +1154,7 @@
 
   let ALL_ITEMS = [];
   let currentTab = "nuvemmag";
-  let currentBlogAuthor = null; // "Resmi Bloglar" sekmesinde alt başlık (OpenAI/Google DeepMind/Anthropic) seçiliyse şirket adı, "Tümü" seçiliyse null
+  let currentBlogAuthor = null; // "Şirket Blogları" sekmesinde alt başlık (OpenAI/Google DeepMind/Anthropic) seçiliyse şirket adı, "Tümü" seçiliyse null
   let currentTopic = null; // dolu olduğunda, "platform sekmesi" yerine tüm kaynaklarda konu filtresi gösterilir
   let mainView = "explorer"; // "explorer" | "following-digest" (X'in alt öğesi "Takip Ettiklerin")
   let currentView = "card";
@@ -1387,7 +1336,7 @@
     return chips + groups;
   }
 
-  // Resmi Bloglar'da kaynak sitede hiç görsel yayınlanmamış yazılar için
+  // Şirket Blogları'nda kaynak sitede hiç görsel yayınlanmamış yazılar için
   // kullanıcının kendi yüklediği şirket logolarını gösteriyoruz (/logos altında
   // sunuluyor, bkz. web.py). Logosu olmayan şirketler için (ör. Meta AI'nin
   // resimsiz yazıları) author alanından türetilen bir baş harf rozetine düşüyoruz.
@@ -1517,13 +1466,6 @@
       (mainView === "explorer" && currentTopic) ? "" : "none";
   }
 
-  // "Konu ekle" + "Öneriler" artık sidebar'da her zaman durmuyor, sadece bir
-  // konu sayfasındayken (herhangi bir konuya tıklandığında) en üstte çıkıyor.
-  function updateTopicManageVisibility() {
-    document.getElementById("topic-manage-section").style.display =
-      (mainView === "explorer" && currentTopic) ? "" : "none";
-  }
-
   // Keşif panelindeki kart görünümü: Pinterest tarzı tek bir masonry akışı.
   // Sayfa 1'in ilk kaydı "hero" (tam genişlikte, en üstte); "Önceki/Sonraki"
   // ile sayfalanır (1-2-3-4-5, sonra 6-7-8...), her sayfa kendi masonry'sini gösterir.
@@ -1586,39 +1528,38 @@
     return result;
   }
 
-  // Sol menüdeki rozetler: kaynak başına okunmamış sayısı, Kaydedilenler'de ise
-  // kaç kayıt yıldızlanmış. Boşsa (0) rozet hiç görünmez (.sidebar-badge:empty).
+  // Sol menüdeki rozetler: Platformlar/Şirket Blogları/Takip Ettiğin Konular
+  // artık tek bir başlık olduğu için TOPLAM okunmamış sayısını gösteriyoruz;
+  // hangi platformun/şirketin kaçı olduğu ayrıntısı hub sayfasının kendi
+  // kartlarında (bkz. renderPlatformHub/renderBlogHub). Boşsa (0) rozet hiç
+  // görünmez (.sidebar-badge:empty).
   function updateSidebarBadges() {
     const bySource = groupBySource(ALL_ITEMS);
-    for (const src of SOURCE_ORDER) {
-      const unread = (bySource[src] || []).filter(it => !it.is_read).length;
-      const badgeEl = document.querySelector(`.sidebar-badge[data-badge="${src}"]`);
-      if (badgeEl) badgeEl.textContent = unread > 0 ? unread : "";
-    }
+
     const savedCount = ALL_ITEMS.filter(it => it.is_saved).length;
     const savedBadgeEl = document.querySelector('.sidebar-badge[data-badge="saved"]');
     if (savedBadgeEl) savedBadgeEl.textContent = savedCount > 0 ? savedCount : "";
 
-    // Etkinlikler, SOURCE_ORDER'da yer almadığı (Tüm kaynaklar özetine dahil
-    // edilmediği) için ayrıca sayılıyor; yalnızca henüz geçmemiş etkinlikler.
+    // Etkinlikler: yalnızca henüz geçmemiş, okunmamış etkinlikler.
     const now = new Date();
     const upcomingEventsCount = ALL_ITEMS
       .filter(it => EVENT_SOURCES.includes(it.source) && !it.is_read && (!it.published_at || new Date(it.published_at) >= now)).length;
     const eventsBadgeEl = document.querySelector('.sidebar-badge[data-badge="events"]');
     if (eventsBadgeEl) eventsBadgeEl.textContent = upcomingEventsCount > 0 ? upcomingEventsCount : "";
 
-    // YouTube de aynı sebeple (SOURCE_ORDER dışında) ayrıca sayılıyor.
-    const youtubeUnread = (bySource.youtube || []).filter(it => !it.is_read).length;
-    const youtubeBadgeEl = document.querySelector('.sidebar-badge[data-badge="youtube"]');
-    if (youtubeBadgeEl) youtubeBadgeEl.textContent = youtubeUnread > 0 ? youtubeUnread : "";
+    const platformUnread = PLATFORM_SOURCES.reduce(
+      (sum, src) => sum + (bySource[src] || []).filter(it => !it.is_read).length, 0);
+    const platformBadgeEl = document.querySelector('.sidebar-badge[data-badge="platform-hub"]');
+    if (platformBadgeEl) platformBadgeEl.textContent = platformUnread > 0 ? platformUnread : "";
 
-    // Resmi Bloglar'da artık tek bir "Tümü" rozeti yok; her şirket kendi
-    // okunmamış sayısını gösteriyor (Platformlar'daki gibi).
-    for (const author of BLOG_AUTHORS) {
-      const unreadForAuthor = (bySource.official_blog || []).filter(it => it.author === author && !it.is_read).length;
-      const blogBadgeEl = document.querySelector(`.sidebar-badge[data-badge="official_blog:${author}"]`);
-      if (blogBadgeEl) blogBadgeEl.textContent = unreadForAuthor > 0 ? unreadForAuthor : "";
-    }
+    const blogUnread = (bySource.official_blog || []).filter(it => !it.is_read).length;
+    const blogBadgeEl = document.querySelector('.sidebar-badge[data-badge="blog-hub"]');
+    if (blogBadgeEl) blogBadgeEl.textContent = blogUnread > 0 ? blogUnread : "";
+
+    const topicsLower = FOLLOWED_TOPICS.map(t => t.topic.toLowerCase());
+    const topicsUnread = ALL_ITEMS.filter(it => !it.is_read && topicsLower.some(topic => matchesFilter(it, topic))).length;
+    const topicsBadgeEl = document.querySelector('.sidebar-badge[data-badge="topics-hub"]');
+    if (topicsBadgeEl) topicsBadgeEl.textContent = topicsUnread > 0 ? topicsUnread : "";
   }
 
   function matchesFilter(it, text) {
@@ -1775,7 +1716,7 @@
       let baseItems = isSavedTab ? ALL_ITEMS.filter(it => it.is_saved)
         : isEventsTab ? ALL_ITEMS.filter(it => EVENT_SOURCES.includes(it.source))
         : (bySource[currentTab] || []);
-      // Resmi Bloglar sekmesinde bir şirket alt başlığı seçiliyse (OpenAI vb.),
+      // Şirket Blogları sekmesinde bir şirket alt başlığı seçiliyse (OpenAI vb.),
       // "Tümü" listesini o şirketin yazılarına daraltıyoruz.
       if (currentTab === "official_blog" && currentBlogAuthor) {
         baseItems = baseItems.filter(it => it.author === currentBlogAuthor);
@@ -1784,7 +1725,7 @@
       metaFor = () => meta;
       tintVar = meta.varName;
       if (currentTab === "official_blog" && currentBlogAuthor) {
-        titleEl.textContent = `Resmi Bloglar: ${currentBlogAuthor}`;
+        titleEl.textContent = `Şirket Blogları: ${currentBlogAuthor}`;
         titleEl.style.display = "";
       } else {
         // Platform modunda başlık göstermiyoruz (kaynak zaten sol menüde seçili duruyor).
@@ -1849,15 +1790,17 @@
   // hem platform sekmeleri (mainView="explorer" + tab eşleşmesi) hem de
   // "Takip Ettiklerin" alt öğesi (mainView="following-digest") burada karar veriliyor.
   function updateSidebarActiveStates() {
+    // Etkinlikler/Kaydedilenler hâlâ doğrudan sidebar'da (tek öğeli gruplar,
+    // hub sayfasına gerek yoktu) — bu ikisi hâlâ data-tab ile eşleşiyor.
     document.querySelectorAll("#sidebar-nav button[data-tab]").forEach(btn => {
-      const tabMatches = btn.dataset.tab === currentTab;
-      // Resmi Bloglar'ın alt başlıkları (data-blog-author) için ayrıca şirket eşleşmesi de gerekiyor.
-      const blogAuthorMatches = btn.dataset.tab !== "official_blog"
-        || (btn.dataset.blogAuthor || null) === currentBlogAuthor;
-      btn.classList.toggle("active", mainView === "explorer" && !currentTopic && tabMatches && blogAuthorMatches);
+      btn.classList.toggle("active", mainView === "explorer" && !currentTopic && btn.dataset.tab === currentTab);
     });
     document.getElementById("following-digest-nav-btn").classList.toggle("active", mainView === "following-digest");
     document.getElementById("stats-nav-btn").classList.toggle("active", mainView === "stats");
+    document.getElementById("platform-hub-nav-btn").classList.toggle("active", mainView === "platform-hub");
+    document.getElementById("blog-hub-nav-btn").classList.toggle("active", mainView === "blog-hub");
+    document.getElementById("topics-hub-nav-btn").classList.toggle("active", mainView === "topics-hub");
+    document.getElementById("rising-hub-nav-btn").classList.toggle("active", mainView === "rising-hub");
   }
 
   function renderBrowseOverview() {
@@ -1889,6 +1832,58 @@
       `;
       columns.appendChild(col);
     }
+  }
+
+  // "Platformlar" hub sayfası: her platform için tıklanabilir bir kart —
+  // ikonu/rengi/etiketi SOURCE_META'dan (sidebar'da/kartlarda kullandığımız
+  // aynı kimlik), tıklayınca selectTab(src) ile o platformun akışına gidilir
+  // (bkz. aşağıdaki #platform-hub-grid click handler'ı).
+  function renderPlatformHub() {
+    const grid = document.getElementById("platform-hub-grid");
+    if (!grid) return;
+    const bySource = groupBySource(ALL_ITEMS);
+    grid.innerHTML = PLATFORM_SOURCES.map(src => {
+      const meta = SOURCE_META[src];
+      const items = bySource[src] || [];
+      const unread = items.filter(it => !it.is_read).length;
+      return `
+        <button type="button" class="hub-card" data-tab="${src}" style="--hub-color:var(--${meta.varName})">
+          <span class="hub-card-icon">${meta.icon}</span>
+          <span class="hub-card-body">
+            <span class="hub-card-label">${meta.label}</span>
+            <span class="hub-card-count">${items.length} kayıt</span>
+          </span>
+          ${unread > 0 ? `<span class="hub-card-badge">${unread}</span>` : ""}
+        </button>
+      `;
+    }).join("");
+  }
+
+  // "Şirket Blogları" hub sayfası: her şirket için tıklanabilir bir kart —
+  // logosu varsa (BLOG_LOGO_FILES) onu, yoksa baş harflerini gösteriyoruz
+  // (photoCard'daki officialBlogLogoFallback ile aynı mantık, küçük ikon hâli).
+  function renderBlogHub() {
+    const grid = document.getElementById("blog-hub-grid");
+    if (!grid) return;
+    const officialBlogItems = ALL_ITEMS.filter(it => it.source === "official_blog");
+    grid.innerHTML = BLOG_AUTHORS.map(author => {
+      const items = officialBlogItems.filter(it => it.author === author);
+      const unread = items.filter(it => !it.is_read).length;
+      const logoFile = BLOG_LOGO_FILES[author];
+      const iconHtml = logoFile
+        ? `<img src="${logoFile}" alt="${author}">`
+        : author.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+      return `
+        <button type="button" class="hub-card" data-tab="official_blog" data-blog-author="${author}" style="--hub-color:var(--blogs)">
+          <span class="hub-card-icon">${iconHtml}</span>
+          <span class="hub-card-body">
+            <span class="hub-card-label">${author}</span>
+            <span class="hub-card-count">${items.length} yazı</span>
+          </span>
+          ${unread > 0 ? `<span class="hub-card-badge">${unread}</span>` : ""}
+        </button>
+      `;
+    }).join("");
   }
 
   // "İstatistikler" sayfası: yeni bir API eklemeden, zaten yüklenmiş olan ALL_ITEMS /
@@ -2060,9 +2055,8 @@
     // Tüm zamanlar dağılımı — 3 ayrı donut, üçü de haftalık pencereyle sınırlı
     // değil (ALL_ITEMS'ın tamamından), çünkü "genel resmi" gösteriyorlar.
 
-    // 1) Platformlar: sadece sidebar'daki "Platformlar" grubundaki 4 kaynak —
-    // Resmi Bloglar ve Etkinlikler kendi donut'larında ayrı gösteriliyor.
-    const PLATFORM_SOURCES = ["nuvemmag", "github_trending", "x_twitter", "youtube"];
+    // 1) Platformlar: sadece "Platformlar" hub'ındaki 4 kaynak — Şirket
+    // Blogları ve Etkinlikler kendi donut'larında ayrı gösteriliyor.
     const platformCounts = {};
     for (const it of ALL_ITEMS) {
       const key = statsDisplaySource(it);
@@ -2078,7 +2072,7 @@
       }));
     renderDonutChart(platformDonutEl, platformSegments, { centerLabel: "platform kaydı" });
 
-    // 2) Resmi Bloglar: kaynak değil, ŞİRKET (author) bazında kırılım —
+    // 2) Şirket Blogları: kaynak değil, ŞİRKET (author) bazında kırılım —
     // SOURCE_META'da her şirketin kendi rengi yok, o yüzden "Yükselen Gündem"de
     // de kullandığımız genel TREND_PALETTE'i kullanıyoruz.
     const blogAuthorCounts = {};
@@ -2096,7 +2090,7 @@
         tabTarget: "official_blog",
         blogAuthor: author,
       }));
-    renderDonutChart(blogDonutEl, blogSegments, { centerLabel: "blog yazısı", emptyText: "Henüz Resmi Bloglar kaydı yok." });
+    renderDonutChart(blogDonutEl, blogSegments, { centerLabel: "blog yazısı", emptyText: "Henüz Şirket Blogları kaydı yok." });
 
     // 3) Etkinlikler: online / yüz yüze kırılımı (is_online alanına göre).
     // Online = parlak yeşil, yüz yüze = Etkinlikler'in kendi turuncusu (--events).
@@ -2160,6 +2154,8 @@
     renderRisingTopics();
     renderYoutubeChannelVideos();
     renderStats();
+    renderPlatformHub();
+    renderBlogHub();
 
     document.getElementById("top-meta").textContent =
       `${ALL_ITEMS.length} kayıt · güncellendi: ` +
@@ -2192,6 +2188,10 @@
     document.getElementById("explorer-panel").style.display = mainView === "explorer" ? "" : "none";
     document.getElementById("following-digest-panel").style.display = mainView === "following-digest" ? "" : "none";
     document.getElementById("stats-panel").style.display = mainView === "stats" ? "" : "none";
+    document.getElementById("platform-hub-panel").style.display = mainView === "platform-hub" ? "" : "none";
+    document.getElementById("blog-hub-panel").style.display = mainView === "blog-hub" ? "" : "none";
+    document.getElementById("topics-hub-panel").style.display = mainView === "topics-hub" ? "" : "none";
+    document.getElementById("rising-hub-panel").style.display = mainView === "rising-hub" ? "" : "none";
   }
 
   function selectTab(tab, blogAuthor) {
@@ -2204,11 +2204,8 @@
     updateXRefreshVisibility();
     updateEventsModeVisibility();
     updateTopicVideosVisibility();
-    updateTopicManageVisibility();
     updateMainViewVisibility();
     renderExplorer();
-    renderSidebarTopics();
-    renderRisingTopics();
   }
 
   // Platformlar gibi: bir konu seçildiğinde tüm kaynaklardaki eşleşen kayıtlar gösterilir.
@@ -2220,11 +2217,8 @@
     updateXRefreshVisibility();
     updateEventsModeVisibility();
     updateTopicVideosVisibility();
-    updateTopicManageVisibility();
     updateMainViewVisibility();
     renderExplorer();
-    renderSidebarTopics();
-    renderRisingTopics();
     loadTopicVideos(topic);
   }
 
@@ -2237,11 +2231,8 @@
     updateXRefreshVisibility();
     updateEventsModeVisibility();
     updateTopicVideosVisibility();
-    updateTopicManageVisibility();
     updateMainViewVisibility();
     updateSidebarActiveStates();
-    renderSidebarTopics();
-    renderRisingTopics();
     renderYoutubeChannelVideos();
   }
 
@@ -2254,23 +2245,76 @@
     updateXRefreshVisibility();
     updateEventsModeVisibility();
     updateTopicVideosVisibility();
-    updateTopicManageVisibility();
+    updateMainViewVisibility();
+    updateSidebarActiveStates();
+    renderStats();
+  }
+
+  // Sidebar artık her grubu (Platformlar, Şirket Blogları, Takip Ettiğin
+  // Konular, Yükselen Gündem) tek bir başlık olarak gösteriyor — tıklanınca
+  // alt öğelerin listelendiği kendi "hub" sayfasına gidiyor (eskiden sidebar
+  // içinde açılıp kapanan bir listeydi, konu/şirket sayısı arttıkça sidebar'ı
+  // kalabalıklaştırıyordu).
+  function selectPlatformHub() {
+    mainView = "platform-hub";
+    currentTopic = null;
+    updateXPanelVisibility();
+    updateXRefreshVisibility();
+    updateEventsModeVisibility();
+    updateTopicVideosVisibility();
+    updateMainViewVisibility();
+    updateSidebarActiveStates();
+    renderPlatformHub();
+  }
+
+  function selectBlogHub() {
+    mainView = "blog-hub";
+    currentTopic = null;
+    updateXPanelVisibility();
+    updateXRefreshVisibility();
+    updateEventsModeVisibility();
+    updateTopicVideosVisibility();
+    updateMainViewVisibility();
+    updateSidebarActiveStates();
+    renderBlogHub();
+  }
+
+  function selectTopicsHub() {
+    mainView = "topics-hub";
+    currentTopic = null;
+    updateXPanelVisibility();
+    updateXRefreshVisibility();
+    updateEventsModeVisibility();
+    updateTopicVideosVisibility();
     updateMainViewVisibility();
     updateSidebarActiveStates();
     renderSidebarTopics();
+  }
+
+  function selectRisingHub() {
+    mainView = "rising-hub";
+    currentTopic = null;
+    updateXPanelVisibility();
+    updateXRefreshVisibility();
+    updateEventsModeVisibility();
+    updateTopicVideosVisibility();
+    updateMainViewVisibility();
+    updateSidebarActiveStates();
     renderRisingTopics();
-    renderStats();
   }
 
   updateXPanelVisibility();
   updateXRefreshVisibility();
   updateEventsModeVisibility();
   updateTopicVideosVisibility();
-  updateTopicManageVisibility();
   updateMainViewVisibility();
   renderTrendRank([], "digest-trend-rank");
 
   document.getElementById("stats-nav-btn").addEventListener("click", selectStatsView);
+  document.getElementById("platform-hub-nav-btn").addEventListener("click", selectPlatformHub);
+  document.getElementById("blog-hub-nav-btn").addEventListener("click", selectBlogHub);
+  document.getElementById("topics-hub-nav-btn").addEventListener("click", selectTopicsHub);
+  document.getElementById("rising-hub-nav-btn").addEventListener("click", selectRisingHub);
 
   // "Bugün ne okusan?" — sayfadan bağımsız, sağ altta yüzen zar butonu.
   // Açılırken taze bir rastgele seçim yapıyoruz (her açılışta yeni öneri);
@@ -2755,6 +2799,7 @@
     FOLLOWED_TOPICS = await resp.json();
     renderSidebarTopics();
     renderStats();
+    updateSidebarBadges();
   }
 
   async function addFollowedTopic(topic) {
@@ -2809,11 +2854,15 @@
     selectTopic(btn.dataset.topic);
   });
 
-  // --- Sol menüdeki gruplar (Platformlar / Takip Ettiğin Konular) açılıp kapanabilir ---
-  document.querySelectorAll(".sidebar-group-header").forEach(header => {
-    header.addEventListener("click", () => {
-      header.closest(".sidebar-group").classList.toggle("collapsed");
-    });
+  // Platformlar / Şirket Blogları hub sayfalarındaki kartlara tıklayınca
+  // ilgili sekmeye/şirkete gidilir (aynı selectTab(tab, blogAuthor) mantığı).
+  document.getElementById("platform-hub-grid").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-tab]");
+    if (btn) selectTab(btn.dataset.tab);
+  });
+  document.getElementById("blog-hub-grid").addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-tab]");
+    if (btn) selectTab(btn.dataset.tab, btn.dataset.blogAuthor);
   });
 
   // --- Kart/liste satırı üzerine gelince önizleme kutusu (habere/repoya gitmeden içeriğe göz atma) ---
