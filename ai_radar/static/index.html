@@ -469,6 +469,20 @@
   .refresh-icon.spinning { animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* Başlık satırındaki eylem düğmeleri ("+" ekle, yenile) yan yana — "+" ekleme
+     popover'ını (aşağıdaki .followed-manage-popover) doğrudan açıp giriş
+     kutusuna odaklanıyor, "N kişi takip ediliyor" özetiyle aynı işi görüyor
+     ama başlığa yakın, hızlı erişim için. */
+  .widget-card-actions { display: flex; align-items: center; gap: 0.5rem; flex: none; }
+  .icon-btn.add-btn {
+    width: 34px; height: 34px; padding: 0; border-radius: 10px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    font-size: 1.1rem; font-weight: 800; cursor: pointer; box-shadow: var(--shadow-sm);
+    transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), background-color 0.2s var(--ease);
+  }
+  .icon-btn.add-btn:hover { background: var(--surface-2); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+
   /* Takip listesi yönetimi: kalabalıklaşmasın diye bir özet düğmesinin
      ardında (popover) — hem eklenen hesaplar/kanallar hem de ekleme formu
      tıklanana kadar gizli kalıyor. */
@@ -970,9 +984,12 @@
           <div class="eyebrow" style="margin-bottom:0.2rem;">X · takip ettiklerin</div>
           <span>Takip ettiklerinin gündemi</span>
         </div>
-        <button type="button" class="icon-btn refresh-btn" id="digest-refresh-btn" title="Yenile">
-          <svg class="refresh-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v6h-6"/></svg>
-        </button>
+        <div class="widget-card-actions">
+          <button type="button" class="icon-btn add-btn" id="followed-accounts-add-btn" title="Hesap ekle">+</button>
+          <button type="button" class="icon-btn refresh-btn" id="digest-refresh-btn" title="Yenile">
+            <svg class="refresh-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v6h-6"/></svg>
+          </button>
+        </div>
       </div>
 
       <div class="followed-manage" id="followed-accounts-manage">
@@ -1002,9 +1019,12 @@
           <div class="eyebrow" style="margin-bottom:0.2rem;">YouTube · takip ettiklerin</div>
           <span>Takip ettiğin kanalların son videoları</span>
         </div>
-        <button type="button" class="icon-btn refresh-btn" id="yt-channels-refresh-btn" title="Yenile">
-          <svg class="refresh-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v6h-6"/></svg>
-        </button>
+        <div class="widget-card-actions">
+          <button type="button" class="icon-btn add-btn" id="yt-channels-add-btn" title="Kanal ekle">+</button>
+          <button type="button" class="icon-btn refresh-btn" id="yt-channels-refresh-btn" title="Yenile">
+            <svg class="refresh-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v6h-6"/></svg>
+          </button>
+        </div>
       </div>
 
       <div class="followed-manage" id="yt-channels-manage">
@@ -2672,26 +2692,46 @@
 
   // Takip ettiğin hesaplar/kanallar listesi kalabalıklaşmasın diye bir özet
   // düğmesinin (ör. "8 kişi takip ediliyor") ardında popover olarak açılıyor;
-  // ekleme formu da aynı popover'ın içinde (ayrı bir yerde değil).
-  function setupFollowedManagePopover(wrapperId, triggerId, popoverId) {
+  // ekleme formu da aynı popover'ın içinde (ayrı bir yerde değil). Başlık
+  // satırındaki "+" düğmesi (extraOpenBtnId) de AYNI popover'ı açıyor, ayrıca
+  // giriş kutusuna odaklanıyor — "Yenile"nin yanından hızlı ekleme için.
+  function setupFollowedManagePopover(wrapperId, triggerId, popoverId, opts = {}) {
     const wrapper = document.getElementById(wrapperId);
     const trigger = document.getElementById(triggerId);
     const popover = document.getElementById(popoverId);
+
+    const open = () => {
+      popover.style.display = "";
+      wrapper.classList.add("open");
+      if (opts.inputId) document.getElementById(opts.inputId).focus();
+    };
+    const close = () => {
+      popover.style.display = "none";
+      wrapper.classList.remove("open");
+    };
+
     trigger.addEventListener("click", (e) => {
       e.stopPropagation();
-      const isOpen = popover.style.display !== "none";
-      popover.style.display = isOpen ? "none" : "";
-      wrapper.classList.toggle("open", !isOpen);
+      popover.style.display !== "none" ? close() : open();
     });
+
+    if (opts.extraOpenBtnId) {
+      document.getElementById(opts.extraOpenBtnId).addEventListener("click", (e) => {
+        e.stopPropagation();
+        open();
+      });
+    }
+
     document.addEventListener("click", (e) => {
-      if (!wrapper.contains(e.target)) {
-        popover.style.display = "none";
-        wrapper.classList.remove("open");
-      }
+      if (!wrapper.contains(e.target)) close();
     });
   }
-  setupFollowedManagePopover("followed-accounts-manage", "followed-accounts-trigger", "followed-accounts-popover");
-  setupFollowedManagePopover("yt-channels-manage", "yt-channels-trigger", "yt-channels-popover");
+  setupFollowedManagePopover("followed-accounts-manage", "followed-accounts-trigger", "followed-accounts-popover", {
+    extraOpenBtnId: "followed-accounts-add-btn", inputId: "followed-accounts-input",
+  });
+  setupFollowedManagePopover("yt-channels-manage", "yt-channels-trigger", "yt-channels-popover", {
+    extraOpenBtnId: "yt-channels-add-btn", inputId: "yt-channels-input",
+  });
 
   // --- Takip listesi yönetimi (arayüzden ekle/kaldır) ---
   let FOLLOWED_ACCOUNTS = [];
