@@ -452,11 +452,45 @@
     font-weight: 700; font-size: 0.95rem;
   }
   #following-digest-panel .hint { font-size: 0.82rem; margin: 0.9rem 0 0; }
-  #following-digest-panel button.primary { padding: 0.5rem 0.9rem; font-size: 0.8rem; flex: none; }
   #following-digest-panel .mini-post-list { max-height: none; }
 
-  /* Takip listesi yönetimi: eklenen hesaplar chip olarak, altında ekleme formu */
-  .followed-accounts { margin-top: 0.9rem; }
+  /* "Yenile" butonları artık metin değil, dönen bir ok ikonu — yüklenirken
+     .spinning class'ı ile sürekli döner (metin değiştirmek yerine). */
+  .icon-btn.refresh-btn {
+    width: 34px; height: 34px; padding: 0; border-radius: 10px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    border: none; color: var(--accent-ink); cursor: pointer;
+    background: linear-gradient(155deg, color-mix(in srgb, var(--accent) 100%, white 8%), var(--accent));
+    box-shadow: var(--shadow-sm), 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
+    transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), filter 0.15s ease;
+  }
+  .icon-btn.refresh-btn:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+  .icon-btn.refresh-btn:disabled { opacity: 0.6; cursor: default; }
+  .refresh-icon.spinning { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Takip listesi yönetimi: kalabalıklaşmasın diye bir özet düğmesinin
+     ardında (popover) — hem eklenen hesaplar/kanallar hem de ekleme formu
+     tıklanana kadar gizli kalıyor. */
+  .followed-manage { margin-top: 0.9rem; position: relative; display: inline-block; }
+  .followed-manage-trigger {
+    display: flex; align-items: center; gap: 0.5rem;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    padding: 0.5rem 0.9rem; font-size: 0.82rem; font-weight: 600; color: var(--text); cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
+  }
+  .followed-manage-trigger:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .followed-manage-icon { font-size: 0.9rem; }
+  .followed-manage-chevron { color: var(--text-muted); font-size: 0.7rem; transition: transform 0.2s var(--ease); }
+  .followed-manage.open .followed-manage-chevron { transform: rotate(180deg); }
+  .followed-manage-popover {
+    position: absolute; top: calc(100% + 0.5rem); left: 0; z-index: 20;
+    width: min(360px, 90vw);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: var(--shadow-lg); padding: 0.9rem;
+    animation: statPopIn 0.18s var(--ease);
+  }
   .followed-accounts-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.6rem; }
   .followed-chip {
     display: inline-flex; align-items: center; gap: 0.3rem;
@@ -480,8 +514,9 @@
   }
   .followed-accounts-form input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
   .followed-accounts-form button {
-    flex: none; padding: 0.4rem 0.7rem; border-radius: 8px; border: none;
-    background: var(--accent); color: var(--accent-ink); font-size: 0.78rem; font-weight: 600; cursor: pointer;
+    flex: none; width: 32px; height: 32px; padding: 0; border-radius: 8px; border: none;
+    background: var(--accent); color: var(--accent-ink); font-size: 1rem; font-weight: 800; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
   }
 
   .topic-rising-badge {
@@ -907,7 +942,9 @@
             <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
           </button>
         </div>
-        <button type="button" class="primary" id="x-refresh-btn" style="display:none;" title="X'ten gerçek, taze veri çeker (kredi harcar)">Yenile</button>
+        <button type="button" class="icon-btn refresh-btn" id="x-refresh-btn" style="display:none;" title="X'ten gerçek, taze veri çeker (kredi harcar)">
+          <svg class="refresh-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v6h-6"/></svg>
+        </button>
       </div>
       <div class="status" id="x-refresh-status"></div>
 
@@ -916,7 +953,9 @@
       <div id="topic-videos-section" style="display:none;">
         <div class="widget-card-head" style="margin-top:1.5rem;">
           <span>YouTube'dan Öne Çıkanlar</span>
-          <button type="button" class="primary" id="topic-videos-refresh-btn">Yenile</button>
+          <button type="button" class="icon-btn refresh-btn" id="topic-videos-refresh-btn" title="Yenile">
+            <svg class="refresh-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v6h-6"/></svg>
+          </button>
         </div>
         <div class="status" id="topic-videos-status"></div>
         <div class="yt-cards" id="topic-videos-cards"></div>
@@ -931,18 +970,27 @@
           <div class="eyebrow" style="margin-bottom:0.2rem;">X · takip ettiklerin</div>
           <span>Takip ettiklerinin gündemi</span>
         </div>
-        <button type="button" class="primary" id="digest-refresh-btn">Yenile</button>
+        <button type="button" class="icon-btn refresh-btn" id="digest-refresh-btn" title="Yenile">
+          <svg class="refresh-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v6h-6"/></svg>
+        </button>
       </div>
 
-      <div class="followed-accounts">
-        <div class="followed-accounts-list" id="followed-accounts-list"></div>
-        <form class="followed-accounts-form" id="followed-accounts-form">
-          <input type="text" id="followed-accounts-input" placeholder="kullanıcı adı ekle…" autocomplete="off" />
-          <button type="submit">Ekle</button>
-        </form>
+      <div class="followed-manage" id="followed-accounts-manage">
+        <button type="button" class="followed-manage-trigger" id="followed-accounts-trigger">
+          <span class="followed-manage-icon">👤</span>
+          <span id="followed-accounts-summary">Henüz kimse eklenmedi</span>
+          <span class="followed-manage-chevron">▾</span>
+        </button>
+        <div class="followed-manage-popover" id="followed-accounts-popover" style="display:none;">
+          <div class="followed-accounts-list" id="followed-accounts-list"></div>
+          <form class="followed-accounts-form" id="followed-accounts-form">
+            <input type="text" id="followed-accounts-input" placeholder="kullanıcı adı ekle…" autocomplete="off" />
+            <button type="submit" title="Ekle">+</button>
+          </form>
+        </div>
       </div>
 
-      <p class="hint">Takip ettiğin hesapların son 36 saatte paylaştıklarına bakar, gerçek X API istekleri gönderir (kredi harcar) — bu yüzden otomatik açılmaz, sadece "Yenile"ye bastığında çalışır.</p>
+      <p class="hint">Takip ettiğin hesapların son 36 saatte paylaştıklarına bakar, gerçek X API istekleri gönderir (kredi harcar) — bu yüzden otomatik açılmaz, sadece yenile butonuna bastığında çalışır.</p>
       <div class="status" id="digest-status"></div>
       <div class="mini-post-list" id="digest-results"></div>
 
@@ -954,18 +1002,27 @@
           <div class="eyebrow" style="margin-bottom:0.2rem;">YouTube · takip ettiklerin</div>
           <span>Takip ettiğin kanalların son videoları</span>
         </div>
-        <button type="button" class="primary" id="yt-channels-refresh-btn">Yenile</button>
+        <button type="button" class="icon-btn refresh-btn" id="yt-channels-refresh-btn" title="Yenile">
+          <svg class="refresh-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v6h-6"/></svg>
+        </button>
       </div>
 
-      <div class="followed-accounts">
-        <div class="followed-accounts-list" id="yt-channels-list"></div>
-        <form class="followed-accounts-form" id="yt-channels-form">
-          <input type="text" id="yt-channels-input" placeholder="@kanal-adı ekle…" autocomplete="off" />
-          <button type="submit">Ekle</button>
-        </form>
+      <div class="followed-manage" id="yt-channels-manage">
+        <button type="button" class="followed-manage-trigger" id="yt-channels-trigger">
+          <span class="followed-manage-icon">📺</span>
+          <span id="yt-channels-summary">Henüz kanal eklenmedi</span>
+          <span class="followed-manage-chevron">▾</span>
+        </button>
+        <div class="followed-manage-popover" id="yt-channels-popover" style="display:none;">
+          <div class="followed-accounts-list" id="yt-channels-list"></div>
+          <form class="followed-accounts-form" id="yt-channels-form">
+            <input type="text" id="yt-channels-input" placeholder="@kanal-adı ekle…" autocomplete="off" />
+            <button type="submit" title="Ekle">+</button>
+          </form>
+        </div>
       </div>
 
-      <p class="hint">YouTube Data API v3'ün ücretsiz kotasını kullanır (ödeme gerekmez); arka planda saatlik otomatik yenilenir, "Yenile" ile şimdi de çekebilirsin.</p>
+      <p class="hint">YouTube Data API v3'ün ücretsiz kotasını kullanır (ödeme gerekmez); arka planda saatlik otomatik yenilenir, yenile butonuyla şimdi de çekebilirsin.</p>
       <div class="status" id="yt-channels-status"></div>
       <div class="yt-cards" id="yt-channels-videos"></div>
     </section>
@@ -2495,7 +2552,7 @@
 
   xRefreshBtn.addEventListener("click", async () => {
     xRefreshBtn.disabled = true;
-    xRefreshBtn.textContent = "Yenileniyor…";
+    xRefreshBtn.querySelector(".refresh-icon").classList.add("spinning");
     xRefreshStatus.className = "status";
     xRefreshStatus.textContent = currentTopic
       ? `"${currentTopic}" için X'ten gerçek bir istek gönderiliyor…`
@@ -2514,7 +2571,7 @@
       xRefreshStatus.textContent = "Hata: " + err.message;
     } finally {
       xRefreshBtn.disabled = false;
-      xRefreshBtn.textContent = "Yenile";
+      xRefreshBtn.querySelector(".refresh-icon").classList.remove("spinning");
     }
   });
 
@@ -2525,7 +2582,7 @@
   topicVideosRefreshBtn.addEventListener("click", async () => {
     if (!currentTopic) return;
     topicVideosRefreshBtn.disabled = true;
-    topicVideosRefreshBtn.textContent = "Yenileniyor…";
+    topicVideosRefreshBtn.querySelector(".refresh-icon").classList.add("spinning");
     topicVideosStatus.className = "status";
     topicVideosStatus.textContent = `"${currentTopic}" için YouTube'dan güncel videolar çekiliyor…`;
 
@@ -2541,7 +2598,7 @@
       topicVideosStatus.textContent = "Hata: " + err.message;
     } finally {
       topicVideosRefreshBtn.disabled = false;
-      topicVideosRefreshBtn.textContent = "Yenile";
+      topicVideosRefreshBtn.querySelector(".refresh-icon").classList.remove("spinning");
     }
   });
 
@@ -2581,7 +2638,7 @@
 
   digestBtn.addEventListener("click", async () => {
     digestBtn.disabled = true;
-    digestBtn.textContent = "Yükleniyor…";
+    digestBtn.querySelector(".refresh-icon").classList.add("spinning");
     digestStatus.className = "status";
     digestStatus.textContent = "Takip ettiğin hesaplar taranıyor, gerçek X API istekleri gönderiliyor (birden fazla olabilir)…";
     digestResults.innerHTML = "";
@@ -2609,9 +2666,32 @@
       digestStatus.textContent = "Hata: " + err.message;
     } finally {
       digestBtn.disabled = false;
-      digestBtn.textContent = "Yenile";
+      digestBtn.querySelector(".refresh-icon").classList.remove("spinning");
     }
   });
+
+  // Takip ettiğin hesaplar/kanallar listesi kalabalıklaşmasın diye bir özet
+  // düğmesinin (ör. "8 kişi takip ediliyor") ardında popover olarak açılıyor;
+  // ekleme formu da aynı popover'ın içinde (ayrı bir yerde değil).
+  function setupFollowedManagePopover(wrapperId, triggerId, popoverId) {
+    const wrapper = document.getElementById(wrapperId);
+    const trigger = document.getElementById(triggerId);
+    const popover = document.getElementById(popoverId);
+    trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isOpen = popover.style.display !== "none";
+      popover.style.display = isOpen ? "none" : "";
+      wrapper.classList.toggle("open", !isOpen);
+    });
+    document.addEventListener("click", (e) => {
+      if (!wrapper.contains(e.target)) {
+        popover.style.display = "none";
+        wrapper.classList.remove("open");
+      }
+    });
+  }
+  setupFollowedManagePopover("followed-accounts-manage", "followed-accounts-trigger", "followed-accounts-popover");
+  setupFollowedManagePopover("yt-channels-manage", "yt-channels-trigger", "yt-channels-popover");
 
   // --- Takip listesi yönetimi (arayüzden ekle/kaldır) ---
   let FOLLOWED_ACCOUNTS = [];
@@ -2628,6 +2708,9 @@
           </span>
         `).join("")
       : `<span class="followed-empty">Henüz kimse eklenmedi — aşağıya kullanıcı adı yaz.</span>`;
+    document.getElementById("followed-accounts-summary").textContent = FOLLOWED_ACCOUNTS.length
+      ? `${FOLLOWED_ACCOUNTS.length} kişi takip ediliyor`
+      : "Henüz kimse eklenmedi";
   }
 
   async function loadFollowedAccounts() {
@@ -2671,6 +2754,9 @@
           </span>
         `).join("")
       : `<span class="followed-empty">Henüz bir kanal eklenmedi — aşağıya @kanal-adı yaz.</span>`;
+    document.getElementById("yt-channels-summary").textContent = FOLLOWED_YOUTUBE_CHANNELS.length
+      ? `${FOLLOWED_YOUTUBE_CHANNELS.length} kanal takip ediliyor`
+      : "Henüz kanal eklenmedi";
   }
 
   function ytChannelCard(it) {
@@ -2735,7 +2821,7 @@
 
   ytChannelsRefreshBtn.addEventListener("click", async () => {
     ytChannelsRefreshBtn.disabled = true;
-    ytChannelsRefreshBtn.textContent = "Yenileniyor…";
+    ytChannelsRefreshBtn.querySelector(".refresh-icon").classList.add("spinning");
     ytChannelsStatus.className = "status";
     ytChannelsStatus.textContent = "Takip ettiğin kanallardan güncel videolar çekiliyor…";
     try {
@@ -2749,7 +2835,7 @@
       ytChannelsStatus.textContent = "Hata: " + err.message;
     } finally {
       ytChannelsRefreshBtn.disabled = false;
-      ytChannelsRefreshBtn.textContent = "Yenile";
+      ytChannelsRefreshBtn.querySelector(".refresh-icon").classList.remove("spinning");
     }
   });
 
