@@ -18,3 +18,14 @@ chroma_data/
 
 # Geliştirme sırasında oluşan geçici sunucu logu
 _uvicorn.log
+
+# --- Guvenlik eki (Claude) ---
+.env.*
+!.env.example
+*.pem
+*.key
+*.crx
+*.db
+*.sqlite3
+*.log
+.DS_Store
